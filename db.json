@@ -1,0 +1,84 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "name": "Admin Utama u-Cademy",
+      "username": "admin",
+      "email": "admin@ucademy.id",
+      "password": "admin123",
+      "role": "admin"
+    },
+    {
+      "id": "2",
+      "name": "Super Admin IT",
+      "username": "admin_it",
+      "email": "it.support@ucademy.id",
+      "password": "admin123",
+      "role": "admin"
+    },
+    {
+      "id": "3",
+      "name": "Muhammad Rifa Alfadli, S.T, M.Kom.",
+      "email": "rifa@ucademy.id",
+      "nidn": "0305076802",
+      "password": "dosen123",
+      "role": "dosen"
+    },
+    {
+      "id": "4",
+      "name": "Siti Aminah, M.Pd",
+      "email": "siti@ucademy.id",
+      "nidn": "0305076803",
+      "password": "dosen123",
+      "role": "dosen"
+    },
+    {
+      "id": "5",
+      "name": "Dr. Ahmad Fauzi, M.T",
+      "email": "ahmad.fauzi@ucademy.id",
+      "nidn": "0305076804",
+      "password": "dosen123",
+      "role": "dosen"
+    },
+    {
+      "id": "6",
+      "name": "Budi Santoso, S.Kom, M.Cs",
+      "email": "budi.s@ucademy.id",
+      "nidn": "0305076805",
+      "password": "dosen123",
+      "role": "dosen"
+    },
+    {
+      "id": "7",
+      "name": "Laila Majnun, M.Kom",
+      "email": "laila.m@ucademy.id",
+      "nidn": "0305076806",
+      "password": "dosen123",
+      "role": "dosen"
+    },
+    {
+      "id": "8",
+      "name": "Andi Wijaya, S.T, M.Eng",
+      "email": "andi.w@ucademy.id",
+      "nidn": "0305076807",
+      "password": "dosen123",
+      "role": "dosen"
+    },
+    {
+      "id": "9",
+      "name": "Rina Lestari, M.Si",
+      "email": "rina.l@ucademy.id",
+      "nidn": "0305076808",
+      "password": "dosen123",
+      "role": "dosen"
+    },
+    {
+      "id": "10",
+      "name": "Eko Prasetyo, Ph.D",
+      "email": "eko.p@ucademy.id",
+      "nidn": "0305076809",
+      "password": "dosen123",
+      "role": "dosen"
+    }
+  ]
+}

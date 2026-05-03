@@ -1,0 +1,22 @@
+<svg width="260" height="240" viewBox="0 0 260 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_3007_780)">
+<path d="M56.9706 39.9999L40 23.0293L23.0294 39.9999L40 56.9704L56.9706 39.9999Z" stroke="#FCEEA7" stroke-opacity="0.06" stroke-width="0.5"/>
+<path d="M52 28H28V52H52V28Z" stroke="#FCEEA7" stroke-opacity="0.06" stroke-width="0.5"/>
+<path d="M146.971 79.9999L130 63.0293L113.029 79.9999L130 96.9704L146.971 79.9999Z" stroke="#FCEEA7" stroke-opacity="0.06" stroke-width="0.5"/>
+<path d="M142 68H118V92H142V68Z" stroke="#FCEEA7" stroke-opacity="0.06" stroke-width="0.5"/>
+<path d="M236.971 39.9999L220 23.0293L203.029 39.9999L220 56.9704L236.971 39.9999Z" stroke="#FCEEA7" stroke-opacity="0.06" stroke-width="0.5"/>
+<path d="M232 28H208V52H232V28Z" stroke="#FCEEA7" stroke-opacity="0.06" stroke-width="0.5"/>
+<path d="M101.971 140L85 123.029L68.0294 140L85 156.97L101.971 140Z" stroke="#FCEEA7" stroke-opacity="0.06" stroke-width="0.5"/>
+<path d="M97 128H73V152H97V128Z" stroke="#FCEEA7" stroke-opacity="0.06" stroke-width="0.5"/>
+<path d="M191.971 180L175 163.029L158.029 180L175 196.97L191.971 180Z" stroke="#FCEEA7" stroke-opacity="0.06" stroke-width="0.5"/>
+<path d="M187 168H163V192H187V168Z" stroke="#FCEEA7" stroke-opacity="0.06" stroke-width="0.5"/>
+<path d="M90 240V170C116.667 136.667 143.333 136.667 170 170V240" fill="#FCEEA7" fill-opacity="0.03"/>
+<path d="M76 140H72C70.8954 140 70 140.895 70 142V238C70 239.105 70.8954 240 72 240H76C77.1046 240 78 239.105 78 238V142C78 140.895 77.1046 140 76 140Z" fill="#FCEEA7" fill-opacity="0.02"/>
+<path d="M188 140H184C182.895 140 182 140.895 182 142V238C182 239.105 182.895 240 184 240H188C189.105 240 190 239.105 190 238V142C190 140.895 189.105 140 188 140Z" fill="#FCEEA7" fill-opacity="0.02"/>
+</g>
+<defs>
+<clipPath id="clip0_3007_780">
+<rect width="260" height="240" fill="white"/>
+</clipPath>
+</defs>
+</svg>

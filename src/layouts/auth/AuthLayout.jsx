@@ -9,7 +9,7 @@ export default function AuthLayout() {
       <img
         src={bgLogin}
         alt="bg"
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[180px]"
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[650px] h-[160px]"
       />
 
       {/* Content */}

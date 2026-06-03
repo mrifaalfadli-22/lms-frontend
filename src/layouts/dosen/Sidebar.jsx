@@ -7,8 +7,8 @@ import bgAside from "../../assets/images/bg-aside.svg";
 const menuItems = [
   { name: "Dashboard", path: "/dosen/dashboard" },
   {
-    name: "Kelola Jadwal Perkuliahan",
-    path: "/dosen/kelola-jadwal-perkuliahan",
+    name: "Kelola Sesi Pertemuan",
+    path: "/dosen/kelola-sesi-pertemuan",
   },
   { name: "Monitoring Progres", path: "/dosen/monitoring-progres" },
   { name: "Forum Diskusi", path: "/dosen/forum-diskusi" },

@@ -1,55 +1,24 @@
 import api from "../config/api";
 
 export const authService = {
-  login: async (credentials, role) => {
+  registerDosen: async (data) => {
     try {
-      /**
-       * BAGIAN 1: ENDPOINT API
-       * -----------------------------------------------------------
-       * SEKARANG: Masih get semua user untuk simulasi.
-       * NANTI: Ganti menjadi api.post("/auth/login", { ...credentials, role })
-       */
-      const { data: users } = await api.get("/users");
-
-      /**
-       * BAGIAN 2: LOGIKA VERIFIKASI
-       * -----------------------------------------------------------
-       * SEKARANG: Verifikasi manual di frontend (Cari di array).
-       * NANTI: Hapus baris find() ini. Backend yang akan melakukan verifikasi
-       * dan mengirimkan data user beserta Token jika berhasil.
-       */
-      const user = users.find(
-        (u) =>
-          (u.email === credentials.email ||
-            u.nidn === credentials.email ||
-            u.username === credentials.email) &&
-          u.password === credentials.password &&
-          u.role === role,
-      );
-
-      if (user) {
-        /**
-         * BAGIAN 3: PENYIMPANAN TOKEN (JWT)
-         * -----------------------------------------------------------
-         * SEKARANG: Pakai fake-token string biasa.
-         * NANTI: Ambil token asli dari response backend,
-         * misal: localStorage.setItem("user_token", response.data.token);
-         */
-        localStorage.setItem("user_token", `fake-token-${user.id}`);
-        localStorage.setItem("user_role", user.role);
-
-        return user;
-      } else {
-        throw new Error("Akun Pengguna atau Password anda tidak sesuai.");
-      }
+      const response = await api.post("/register/dosen", data);
+      return response.data;
     } catch (error) {
-      /**
-       * BAGIAN 4: ERROR HANDLING
-       * -----------------------------------------------------------
-       * SEKARANG: Masih handle error network json-server.
-       * NANTI: Sesuaikan catch untuk menangkap status code 401 (Unauthorized)
-       * atau 500 (Internal Server Error) dari backend asli.
-       */
+      if (error.response) {
+        const resData = error.response.data;
+
+        if (error.response.status === 422) {
+          if (resData.errors) {
+            const allErrors = Object.values(resData.errors).flat().join(" ");
+            throw new Error(allErrors);
+          }
+          throw new Error(resData.message || "Data tidak valid");
+        }
+
+        throw new Error(resData.message || "Terjadi kesalahan pada server");
+      }
       if (error.code === "ERR_NETWORK") {
         throw new Error(
           "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
@@ -59,18 +28,77 @@ export const authService = {
     }
   },
 
+  login: async (credentials, role) => {
+    try {
+      const inputIdentifier =
+        credentials.identifier ||
+        credentials.email ||
+        credentials.username ||
+        credentials.nomor_induk;
+
+      const response = await api.post("/login", {
+        identifier: inputIdentifier,
+        password: credentials.password,
+        role: role,
+      });
+
+      const resData = response.data;
+
+      if (resData.status === "success") {
+        const { token, user } = resData.data;
+        const normalizedRole = (user.role || role).toLowerCase();
+
+        localStorage.setItem("user_token", token);
+        localStorage.setItem("user_role", normalizedRole);
+
+        return { ...user, role: normalizedRole };
+      } else {
+        throw new Error(resData.message || "Login gagal");
+      }
+    } catch (error) {
+      if (error.response) {
+        // ✅ Bawa status code ke dalam error object
+        const message =
+          error.response.data?.message || "Terjadi kesalahan pada server";
+        const err = new Error(message);
+        err.status = error.response.status; // <-- INI YANG KURANG
+        throw err;
+      }
+      if (error.code === "ERR_NETWORK") {
+        const err = new Error(
+          "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
+        );
+        err.status = 0; // <-- Supaya useAuth bisa deteksi koneksi error
+        throw err;
+      }
+      throw error;
+    }
+  },
+
   logout: () => {
-    localStorage.clear();
-    // Jika perlu, tambahkan navigasi balik ke login di sini
+    localStorage.removeItem("user_token");
+    localStorage.removeItem("user_role");
   },
 
   getCurrentUser: async () => {
-    const token = localStorage.getItem("user_token");
-    if (!token) return null;
+    try {
+      const token = localStorage.getItem("user_token");
+      if (!token) return null;
 
-    // Ambil ID dari token (format: fake-token-ID)
-    const userId = token.split("-").pop();
-    const response = await api.get(`/users/${userId}`);
-    return response.data;
+      const response = await api.get("/user");
+      const userData = response.data.data || response.data;
+
+      if (userData && userData.role) {
+        userData.role = userData.role.toLowerCase();
+      }
+
+      return userData;
+    } catch (error) {
+      if (error.response?.status === 401) {
+        localStorage.removeItem("user_token");
+        localStorage.removeItem("user_role");
+      }
+      return null;
+    }
   },
 };

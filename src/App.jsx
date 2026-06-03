@@ -13,14 +13,17 @@ import DosenDashboardLayout from "./layouts/dosen/DashboardLayout";
 import LoginForm from "./components/auth/LoginForm";
 import RegisterForm from "./components/auth/RegistrasiForm";
 import DosenDashboard from "./pages/dosen/Dashboard";
-import KelolaJadwalPerkuliahan from "./pages/dosen/KelolaJadwalPerkuliahan";
+import KelolaSesiPertemuan from "./pages/dosen/KelolaSesiPertemuan";
 import MonitoringProgres from "./pages/dosen/MonitoringProgres";
 import ForumDiskusiMahasiswa from "./pages/dosen/ForumDiskusi";
 import VerifikasiSertifikat from "./pages/dosen/VerifikasiSertifikat";
 
 import AdminDashboard from "./pages/admin/Dashboard";
 import KelolaPengguna from "./pages/admin/KelolaPengguna";
+import KelolaKelas from "./pages/admin/KelolaKelas";
 import KelolaMataKuliah from "./pages/admin/KelolaMataKuliah";
+import KelolaJadwalKuliah from "./pages/admin/KelolaJadwalKuliah";
+import KelolaMateriPerkuliahan from "./pages/admin/KelolaMateriPerkuliahan";
 import ForumDiskusi from "./pages/admin/ForumDiskusi";
 import KelolaSertifikat from "./pages/admin/KelolaSertifikat";
 import VerifikasiDosen from "./pages/admin/VerifikasiDosen";
@@ -50,8 +53,8 @@ function App() {
         >
           <Route path="dashboard" element={<DosenDashboard />} />
           <Route
-            path="kelola-jadwal-perkuliahan"
-            element={<KelolaJadwalPerkuliahan />}
+            path="kelola-sesi-pertemuan"
+            element={<KelolaSesiPertemuan />}
           />
           <Route path="monitoring-progres" element={<MonitoringProgres />} />
           <Route path="forum-diskusi" element={<ForumDiskusiMahasiswa />} />
@@ -72,7 +75,16 @@ function App() {
         >
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="kelola-pengguna" element={<KelolaPengguna />} />
+          <Route path="kelola-kelas" element={<KelolaKelas />} />
           <Route path="kelola-mata-kuliah" element={<KelolaMataKuliah />} />
+          <Route
+            path="kelola-jadwal-perkuliahan"
+            element={<KelolaJadwalKuliah />}
+          />
+          <Route
+            path="kelola-materi-perkuliahan"
+            element={<KelolaMateriPerkuliahan />}
+          />
           <Route path="forum-diskusi" element={<ForumDiskusi />} />
           <Route path="kelola-sertifikat" element={<KelolaSertifikat />} />
           <Route path="verifikasi-dosen" element={<VerifikasiDosen />} />

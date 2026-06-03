@@ -7,7 +7,16 @@ import bgAside from "../../assets/images/bg-aside.svg";
 const menuItems = [
   { name: "Dashboard", path: "/admin/dashboard" },
   { name: "Kelola Pengguna", path: "/admin/kelola-pengguna" },
+  { name: "Kelola Kelas", path: "/admin/kelola-kelas" },
   { name: "Kelola Mata Kuliah", path: "/admin/kelola-mata-kuliah" },
+  {
+    name: "Kelola Jadwal Perkuliahan",
+    path: "/admin/kelola-jadwal-perkuliahan",
+  },
+  {
+    name: "Kelola Materi Perkuliahan",
+    path: "/admin/kelola-materi-perkuliahan",
+  },
   { name: "Forum Diskusi", path: "/admin/forum-diskusi" },
   { name: "Kelola Sertifikat", path: "/admin/kelola-sertifikat" },
   { name: "Verifikasi Dosen", path: "/admin/verifikasi-dosen" },

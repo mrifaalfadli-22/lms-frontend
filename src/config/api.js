@@ -1,9 +1,25 @@
 import axios from "axios";
 
 const api = axios.create({
-  // Jika json-server jalan di port 5000
-  baseURL: "http://localhost:5000",
-  timeout: 5000,
+  baseURL: "http://127.0.0.1:8000/api",
+  timeout: 15000,
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
 });
+
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("user_token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
 
 export default api;

@@ -2,40 +2,51 @@ import * as Yup from "yup";
 
 // Validasi untuk Portal Dosen
 export const dosenLoginSchema = Yup.object().shape({
-  email: Yup.string().required("NIDN or Email is required"),
-  password: Yup.string().required("Password is required"),
+  identifier: Yup.string().required("NIDN or Email is required"),
+  password: Yup.string()
+    .min(8, "Password minimal 8 karakter")
+    .matches(/[a-zA-Z]/, "Password harus mengandung huruf")
+    .matches(/[0-9]/, "Password harus mengandung angka")
+    .required("Password is required"),
 });
 
 // Validasi untuk Portal Admin
 export const adminLoginSchema = Yup.object().shape({
-  email: Yup.string().required("Username or Email is required"),
-  password: Yup.string().required("Password is required"),
+  identifier: Yup.string().required("Username or Email is required"),
+  password: Yup.string()
+    .min(8, "Password minimal 8 karakter")
+    .matches(/[a-zA-Z]/, "Password harus mengandung huruf")
+    .matches(/[0-9]/, "Password harus mengandung angka")
+    .required("Password is required"),
 });
 
 // --- Register Schema ---
 export const registerSchema = Yup.object().shape({
-  fullName: Yup.string()
-    .min(3, "Name is too short")
-    .required("Full name is required"),
+  nama_lengkap: Yup.string()
+    .min(3, "Nama terlalu pendek")
+    .required("Nama lengkap wajib diisi"),
 
   nidn: Yup.string()
-    .matches(/^[0-9]+$/, "NIDN must be a number")
-    .min(10, "NIDN must be at least 10 digits")
-    .max(12, "NIDN must not exceed 12 digits")
-    .required("NIDN is required"),
+    .matches(/^[0-9]+$/, "NIDN harus berupa angka")
+    .min(10, "NIDN minimal 10 digit")
+    .max(12, "NIDN maksimal 12 digit")
+    .required("NIDN wajib diisi"),
 
   email: Yup.string()
-    .email("Please enter a valid email address")
-    .required("Email is required"),
+    .email("Format email tidak valid")
+    .required("Email wajib diisi"),
+
+  fakultas: Yup.string().required("Fakultas wajib dipilih"),
+
+  prodi: Yup.string().required("Program studi wajib dipilih"),
 
   password: Yup.string()
-    .min(8, "Password must be at least 8 characters")
-    .matches(/[a-z]/, "Must contain at least one lowercase letter")
-    .matches(/[A-Z]/, "Must contain at least one uppercase letter")
-    .matches(/[0-9]/, "Must contain at least one number")
-    .required("Password is required"),
+    .min(8, "Password minimal 8 karakter")
+    .matches(/[a-zA-Z]/, "Password harus mengandung huruf")
+    .matches(/[0-9]/, "Password harus mengandung angka")
+    .required("Password wajib diisi"),
 
-  confirmPassword: Yup.string()
-    .oneOf([Yup.ref("password"), null], "Passwords must match")
-    .required("Please confirm your password"),
+  password_confirmation: Yup.string()
+    .oneOf([Yup.ref("password"), null], "Password tidak cocok")
+    .required("Konfirmasi password wajib diisi"),
 });

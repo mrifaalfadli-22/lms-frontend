@@ -1,35 +1,42 @@
 import { useFormik } from "formik";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth"; // Import hook yang baru dibuat
+import { useAuth } from "../../hooks/useAuth";
 import { dosenLoginSchema, adminLoginSchema } from "../../schemas/authSchema";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
-import ErrorPopup from "../ui/ErrorPopup"; // Import popup error
-import googleIcon from "../../assets/images/google.svg";
+import NotificationPopup from "../ui/NotificationPopup";
+import googleIcon from "../../assets/images/google-icon.svg";
 
 export default function LoginForm({ role = "dosen" }) {
   const isAdmin = role === "admin";
   const navigate = useNavigate();
 
-  // Ambil fungsi dan state dari useAuth hook
-  const { login, loading, errorMsg, setErrorMsg } = useAuth();
+  const { login, loading, errorMsg, errorType, setErrorMsg } = useAuth();
 
   const formik = useFormik({
-    initialValues: { email: "", password: "" },
+    // REVISI: Mengubah 'email' menjadi 'identifier' agar universal (bisa Email/Username/NIDN)
+    initialValues: { identifier: "", password: "" },
     validationSchema: isAdmin ? adminLoginSchema : dosenLoginSchema,
     onSubmit: (values) => {
-      // Panggil fungsi login dari hook dengan menyertakan role
       login(values, role);
     },
   });
 
   return (
     <>
-      {/* Tampilkan popup jika ada pesan error dari proses login */}
-      <ErrorPopup message={errorMsg} onClose={() => setErrorMsg(null)} />
+      <NotificationPopup
+        type={errorType}
+        message={errorMsg}
+        onClose={() => setErrorMsg(null)}
+      />
 
       <div className="bg-[#F8FAFA] w-[420px] rounded-[28px] shadow-2xl px-10 py-8 flex flex-col items-center">
-        <div className="text-center mb-8">
+        <div className="text-center mb-7">
+          <img
+            src="/uCademy-icon.svg"
+            alt="u-Cademy Logo"
+            className="w-16 h-16 mx-auto"
+          />
           <h1 className="text-3xl font-black text-[#0E5C46] tracking-tight">
             u-Cademy
           </h1>
@@ -39,9 +46,10 @@ export default function LoginForm({ role = "dosen" }) {
         </div>
 
         <form onSubmit={formik.handleSubmit} className="w-full">
+          {/* REVISI: name, value, error, dan touched disesuaikan ke 'identifier' */}
           <Input
             label={isAdmin ? "Username or Email" : "NIDN or Email"}
-            name="email"
+            name="identifier"
             placeholder={
               isAdmin
                 ? "Enter your Username or Email"
@@ -49,10 +57,10 @@ export default function LoginForm({ role = "dosen" }) {
             }
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
-            value={formik.values.email}
-            error={formik.errors.email}
-            touched={formik.touched.email}
-            disabled={loading} // Disable saat loading
+            value={formik.values.identifier}
+            error={formik.errors.identifier}
+            touched={formik.touched.identifier}
+            disabled={loading}
           />
 
           <Input
@@ -65,7 +73,7 @@ export default function LoginForm({ role = "dosen" }) {
             value={formik.values.password}
             error={formik.errors.password}
             touched={formik.touched.password}
-            disabled={loading} // Disable saat loading
+            disabled={loading}
           />
 
           <div className="mt-2">

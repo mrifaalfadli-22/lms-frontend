@@ -24,8 +24,8 @@ export default function Input({
           type={inputType}
           className={`
             w-full mt-1.5 px-4 py-3 
-            bg-[#F3F6F6] 
-            border border-gray-200
+            bg-white 
+            border border-gray-300
             rounded-lg 
             text-sm text-gray-700
             placeholder-gray-400/80

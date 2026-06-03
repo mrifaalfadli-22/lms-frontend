@@ -7,22 +7,21 @@ import {
   Trash2,
   Eye,
   Loader2,
-  BookOpen,
+  Layout,
 } from "lucide-react";
-import { useMataKuliah } from "../../hooks/useMataKuliah";
+import { useKelas } from "../../hooks/useKelas";
 import DeleteConfirmModal from "../../components/admin/DeleteConfirmModal";
-import TambahMataKuliahModal from "../../components/admin/TambahMataKuliahModal";
-import UbahMataKuliahModal from "../../components/admin/UbahMataKuliahModal";
-import DetailMataKuliahModal from "../../components/admin/DetailMataKuliahModal";
+import TambahKelasModal from "../../components/admin/TambahKelasModal";
+import UbahKelasModal from "../../components/admin/UbahKelasModal";
+import DetailKelasModal from "../../components/admin/DetailKelasModal";
 
 const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
 
-export default function DaftarMataKuliah() {
-  const { mataKuliah, loading, error, tambah, update, hapus } = useMataKuliah();
+export default function KelolaKelas() {
+  const { kelas, loading, error, tambah, update, hapus } = useKelas();
 
   const [search, setSearch] = useState("");
-  const [sksFilter, setSksFilter] = useState("");
-  const [semesterFilter, setSemesterFilter] = useState("");
+  const [tahunFilter, setTahunFilter] = useState("");
 
   const [showTambah, setShowTambah] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -30,24 +29,19 @@ export default function DaftarMataKuliah() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const semesterOptions = [
-    ...new Set(mataKuliah.map((mk) => mk.semester).filter(Boolean)),
-  ].sort((a, b) => a - b);
-  const sksOptions = [
-    ...new Set(mataKuliah.map((mk) => mk.sks).filter(Boolean)),
-  ].sort((a, b) => a - b);
+  const tahunOptions = [
+    ...new Set(kelas.map((k) => k.tahun_angkatan).filter(Boolean)),
+  ].sort((a, b) => b - a);
 
-  const filtered = mataKuliah.filter((mk) => {
+  const filtered = kelas.filter((k) => {
     const q = search.toLowerCase();
     const matchQ =
       !q ||
-      [mk.kode_mk, mk.nama_mk, mk.fakultas, mk.prodi].some((v) =>
+      [k.nama_kelas, k.kode_kelas, k.fakultas, k.prodi].some((v) =>
         v?.toLowerCase().includes(q),
       );
-    const matchSks = !sksFilter || mk.sks === parseInt(sksFilter);
-    const matchSemester =
-      !semesterFilter || String(mk.semester) === semesterFilter;
-    return matchQ && matchSks && matchSemester;
+    const matchTahun = !tahunFilter || k.tahun_angkatan === tahunFilter;
+    return matchQ && matchTahun;
   });
 
   const handleTambahSuccess = async (values) => {
@@ -68,10 +62,10 @@ export default function DaftarMataKuliah() {
     if (!deleteTarget) return;
     setDeleteLoading(true);
     try {
-      await hapus(deleteTarget.id_mk);
+      await hapus(deleteTarget.id_kelas);
       setDeleteTarget(null);
     } catch {
-      alert("Gagal menghapus data.");
+      alert("Gagal menghapus data kelas.");
     } finally {
       setDeleteLoading(false);
     }
@@ -79,31 +73,31 @@ export default function DaftarMataKuliah() {
 
   return (
     <>
-      <TambahMataKuliahModal
+      <TambahKelasModal
         isOpen={showTambah}
         onClose={() => setShowTambah(false)}
         onSuccess={handleTambahSuccess}
       />
-      <UbahMataKuliahModal
+      <UbahKelasModal
         isOpen={!!editTarget}
         data={editTarget}
         onClose={() => setEditTarget(null)}
         onSuccess={handleEditSuccess}
       />
-      <DetailMataKuliahModal
+      <DetailKelasModal
         isOpen={!!detailTarget}
         data={detailTarget}
         onClose={() => setDetailTarget(null)}
       />
       <DeleteConfirmModal
         data={deleteTarget}
-        title="Hapus Mata Kuliah"
+        title="Hapus Data Kelas"
         fields={[
-          { label: "Kode MK", key: "kode_mk" },
-          { label: "Nama", key: "nama_mk" },
+          { label: "Kode Kelas", key: "kode_kelas" },
+          { label: "Nama Kelas", key: "nama_kelas" },
+          { label: "Tahun Angkatan", key: "tahun_angkatan" },
           { label: "Fakultas", key: "fakultas" },
           { label: "Program Studi", key: "prodi" },
-          { label: "SKS", key: "sks" },
         ]}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTarget(null)}
@@ -114,7 +108,7 @@ export default function DaftarMataKuliah() {
         {/* Header */}
         <div className="flex justify-between items-center px-7 pb-5 flex-wrap gap-3">
           <h3 className="text-[17px] font-extrabold text-[#1E293B]">
-            Daftar Mata Kuliah
+            Daftar Kelas
           </h3>
           <div className="flex gap-2.5">
             <button className="flex items-center gap-1.5 text-sm font-bold text-[#167A61] border border-[#167A61] px-4 py-2 rounded-lg hover:bg-[#167A61] hover:text-white transition-all">
@@ -126,7 +120,7 @@ export default function DaftarMataKuliah() {
               className="flex items-center gap-1.5 text-sm font-bold text-white bg-[#167A61] border border-[#167A61] px-4 py-2 rounded-lg hover:bg-[#0E5C46] transition-all"
             >
               <Plus size={14} />
-              Tambah Mata Kuliah
+              Tambah Kelas
             </button>
           </div>
         </div>
@@ -143,41 +137,27 @@ export default function DaftarMataKuliah() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari kode, nama, fakultas, atau prodi..."
+              placeholder="Cari nama, kode, fakultas, atau prodi..."
               className="w-full pl-9 pr-4 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] placeholder:text-[#94A3B8] outline-none focus:border-[#167A61] transition-all"
             />
           </div>
-          {semesterOptions.length > 0 && (
+          {tahunOptions.length > 0 && (
             <select
-              value={semesterFilter}
-              onChange={(e) => setSemesterFilter(e.target.value)}
+              value={tahunFilter}
+              onChange={(e) => setTahunFilter(e.target.value)}
               className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
             >
-              <option value="">Semua Semester</option>
-              {semesterOptions.map((s) => (
-                <option key={s} value={String(s)}>
-                  Semester {s}
-                </option>
-              ))}
-            </select>
-          )}
-          {sksOptions.length > 0 && (
-            <select
-              value={sksFilter}
-              onChange={(e) => setSksFilter(e.target.value)}
-              className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
-            >
-              <option value="">Semua SKS</option>
-              {sksOptions.map((s) => (
-                <option key={s} value={s}>
-                  {s} SKS
+              <option value="">Semua Tahun Angkatan</option>
+              {tahunOptions.map((t) => (
+                <option key={t} value={t}>
+                  {t}
                 </option>
               ))}
             </select>
           )}
         </div>
 
-        {/* Table */}
+        {/* Table / State */}
         <div className="px-7 overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center py-16 gap-3 text-[#94A3B8]">
@@ -188,13 +168,13 @@ export default function DaftarMataKuliah() {
             <div className="flex justify-center py-16">
               <p className="text-[14px] font-bold text-red-500">{error}</p>
             </div>
-          ) : mataKuliah.length === 0 ? (
+          ) : kelas.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-16 h-16 bg-[#F1F5F9] rounded-full flex items-center justify-center mb-4">
-                <BookOpen size={28} className="text-[#94A3B8]" />
+                <Layout size={28} className="text-[#94A3B8]" />
               </div>
               <p className="text-[14px] font-bold text-[#64748B]">
-                Belum ada data mata kuliah.
+                Belum ada data kelas.
               </p>
               <p className="text-[13px] text-[#94A3B8] mt-1">
                 Data akan muncul setelah ditambahkan ke sistem.
@@ -205,12 +185,11 @@ export default function DaftarMataKuliah() {
               <thead>
                 <tr className="border-b border-[#E2E8F0]">
                   {[
-                    "Kode MK",
-                    "Nama Mata Kuliah",
+                    "Kode Kelas",
+                    "Nama Kelas",
                     "Fakultas",
                     "Program Studi",
-                    "Semester",
-                    "SKS",
+                    "Tahun Angkatan",
                     "Aksi",
                   ].map((h) => (
                     <th
@@ -226,60 +205,55 @@ export default function DaftarMataKuliah() {
                 {filtered.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={6}
                       className="py-10 text-center text-[#94A3B8] text-[13px]"
                     >
                       Data tidak ditemukan.
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((mk, i) => (
+                  filtered.map((k, i) => (
                     <tr
-                      key={mk.id_mk || i}
+                      key={k.id_kelas || i}
                       className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group"
                     >
                       <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                        {val(mk.kode_mk)}
+                        <span className="bg-[#F1F5F9] px-3 py-1 rounded-lg text-[13px]">
+                          {val(k.kode_kelas)}
+                        </span>
                       </td>
                       <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                        {val(mk.nama_mk)}
+                        {val(k.nama_kelas)}
                       </td>
                       <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                        {val(mk.fakultas)}
+                        {val(k.fakultas)}
                       </td>
                       <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                        {val(mk.prodi)}
-                      </td>
-                      <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                        {mk.semester ? `Semester ${mk.semester}` : "-"}
+                        {val(k.prodi)}
                       </td>
                       <td className="py-4 px-4 whitespace-nowrap">
-                        {mk.sks ? (
-                          <span className="bg-[#DCFCE7] text-[#008B5E] px-3 py-1.5 rounded-full text-[12px] font-black uppercase">
-                            {mk.sks} SKS
-                          </span>
-                        ) : (
-                          "-"
-                        )}
+                        <span className="bg-[#DCFCE7] text-[#008B5E] px-3 py-1.5 rounded-full text-[12px] font-black uppercase">
+                          {val(k.tahun_angkatan)}
+                        </span>
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => setDetailTarget(mk)}
+                            onClick={() => setDetailTarget(k)}
                             className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/20 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold"
                           >
                             <Eye size={14} />
                             <span>Lihat</span>
                           </button>
                           <button
-                            onClick={() => setEditTarget(mk)}
+                            onClick={() => setEditTarget(k)}
                             className="flex items-center gap-2 px-3 py-1.5 text-[#167A61] border border-[#167A61]/20 rounded-lg hover:bg-[#167A61] hover:text-white transition-all text-[13px] font-bold"
                           >
                             <Edit2 size={14} />
                             <span>Ubah</span>
                           </button>
                           <button
-                            onClick={() => setDeleteTarget(mk)}
+                            onClick={() => setDeleteTarget(k)}
                             className="flex items-center gap-2 px-3 py-1.5 text-red-600 border border-red-100 rounded-lg hover:bg-red-50 transition-all text-[13px] font-bold"
                           >
                             <Trash2 size={14} />

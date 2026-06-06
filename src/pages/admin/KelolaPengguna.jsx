@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Search,
   Download,
@@ -16,6 +16,7 @@ import DeleteConfirmModal from "../../components/admin/DeleteConfirmModal";
 import TambahMahasiswaModal from "../../components/admin/TambahMahasiswaModal";
 import UbahMahasiswaModal from "../../components/admin/UbahMahasiswaModal";
 import UbahDosenModal from "../../components/admin/UbahDosenModal";
+import Pagination from "../../components/common/Pagination";
 
 const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
 
@@ -24,7 +25,7 @@ const TABS = [
   { key: "dosen", label: "Dosen", icon: BookOpen },
 ];
 
-function EmptyState({ message }) {
+function EmptyState({ message, hasFilter }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <div className="w-16 h-16 bg-[#F1F5F9] rounded-full flex items-center justify-center mb-4">
@@ -32,7 +33,9 @@ function EmptyState({ message }) {
       </div>
       <p className="text-[14px] font-bold text-[#64748B]">{message}</p>
       <p className="text-[13px] text-[#94A3B8] mt-1">
-        Data akan muncul setelah ditambahkan ke sistem.
+        {hasFilter
+          ? "Coba ubah kata kunci atau filter pencarian."
+          : "Data akan muncul setelah ditambahkan ke sistem."}
       </p>
     </div>
   );
@@ -63,36 +66,21 @@ function UserTable({
   loading,
   error,
   emptyMessage,
-  onEdit, // ✅ tambah
+  onEdit,
   onDelete,
+  pagination,
+  onPageChange,
+  onSearchChange,
+  onStatusChange,
+  onTahunChange,
+  search,
+  statusFilter,
+  tahunFilter,
 }) {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatus] = useState("");
-  const [tahunFilter, setTahun] = useState("");
-
   const getTahun = (r) => {
     if (identifierLabel === "NPM") return val(r.angkatan);
     return r.created_at ? new Date(r.created_at).getFullYear().toString() : "-";
   };
-
-  const tahunOptions = [
-    ...new Set(data.map((r) => getTahun(r)).filter((t) => t !== "-")),
-  ].sort((a, b) => b - a);
-
-  const filtered = data.filter((r) => {
-    const q = search.toLowerCase();
-    const id = val(r[identifierKey]);
-    const matchQ =
-      !q ||
-      [r.nama_lengkap, r.email, id].some((v) => v?.toLowerCase().includes(q));
-    const matchStatus =
-      !statusFilter ||
-      (statusFilter === "AKTIF"
-        ? r.status_aktif === true
-        : r.status_aktif === false);
-    const matchTahun = !tahunFilter || getTahun(r) === tahunFilter;
-    return matchQ && matchStatus && matchTahun;
-  });
 
   if (loading) return <LoadingState />;
   if (error) return <ErrorState message={error} />;
@@ -109,20 +97,20 @@ function UserTable({
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={onSearchChange}
             placeholder={`Cari nama, email, atau ${identifierLabel}...`}
             className="w-full pl-9 pr-4 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] placeholder:text-[#94A3B8] outline-none focus:border-[#167A61] transition-all"
           />
         </div>
 
-        {tahunOptions.length > 0 && (
+        {identifierLabel === "NPM" && (
           <select
             value={tahunFilter}
-            onChange={(e) => setTahun(e.target.value)}
+            onChange={onTahunChange}
             className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
           >
             <option value="">Semua {tahunLabel}</option>
-            {tahunOptions.map((t) => (
+            {[2020, 2021, 2022, 2023, 2024, 2025, 2026].map((t) => (
               <option key={t} value={t}>
                 {t}
               </option>
@@ -132,7 +120,7 @@ function UserTable({
 
         <select
           value={statusFilter}
-          onChange={(e) => setStatus(e.target.value)}
+          onChange={onStatusChange}
           className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
         >
           <option value="">Semua Status</option>
@@ -143,7 +131,14 @@ function UserTable({
 
       <div className="px-7 overflow-x-auto">
         {data.length === 0 ? (
-          <EmptyState message={emptyMessage} />
+          <EmptyState
+            message={
+              search || statusFilter || tahunFilter
+                ? "Data tidak ditemukan."
+                : emptyMessage
+            }
+            hasFilter={!!(search || statusFilter || tahunFilter)}
+          />
         ) : (
           <table className="w-full text-left">
             <thead>
@@ -168,79 +163,78 @@ function UserTable({
               </tr>
             </thead>
             <tbody className="text-[14px] text-[#1E293B]">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="py-10 text-center text-[#94A3B8] text-[13px]"
+              {data.map((r, i) => {
+                const isAktif = r.status_aktif === true;
+                return (
+                  <tr
+                    key={r.id_user || i}
+                    className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group"
                   >
-                    Data tidak ditemukan.
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((r, i) => {
-                  const isAktif = r.status_aktif === true;
-                  return (
-                    <tr
-                      key={r.id_user || i}
-                      className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group"
-                    >
-                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
-                        {val(r.nama_lengkap)}
-                      </td>
-                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
-                        {val(r[identifierKey])}
-                      </td>
-                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
-                        {val(r.email)}
-                      </td>
-                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
-                        {val(r.fakultas)}
-                      </td>
-                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
-                        {val(r.prodi)}
-                      </td>
-                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
-                        {getTahun(r)}
-                      </td>
-                      <td className="py-4 px-4">
-                        {isAktif ? (
-                          <span className="bg-[#DCFCE7] text-[#008B5E] px-3 py-1.5 rounded-full text-[12px] font-black uppercase">
-                            Aktif
-                          </span>
-                        ) : (
-                          <span className="bg-[#FFF9E6] text-[#D97706] px-3 py-1.5 rounded-full text-[12px] font-black uppercase">
-                            Nonaktif
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-2">
-                          {/* ✅ onClick terhubung ke onEdit */}
-                          <button
-                            onClick={() => onEdit(r)}
-                            className="flex items-center gap-2 px-3 py-1.5 text-[#167A61] border border-[#167A61]/20 rounded-lg hover:bg-[#167A61] hover:text-white transition-all text-[13px] font-bold"
-                          >
-                            <Edit2 size={14} />
-                            <span>Ubah</span>
-                          </button>
-                          <button
-                            onClick={() => onDelete(r)}
-                            className="flex items-center gap-2 px-3 py-1.5 text-red-600 border border-red-100 rounded-lg hover:bg-red-50 transition-all text-[13px] font-bold"
-                          >
-                            <Trash2 size={14} />
-                            <span>Hapus</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
+                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
+                      {val(r.nama_lengkap)}
+                    </td>
+                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
+                      {val(r[identifierKey])}
+                    </td>
+                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
+                      {val(r.email)}
+                    </td>
+                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
+                      {val(r.fakultas)}
+                    </td>
+                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
+                      {val(r.prodi)}
+                    </td>
+                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
+                      {getTahun(r)}
+                    </td>
+                    <td className="py-4 px-4">
+                      {isAktif ? (
+                        <span className="bg-[#DCFCE7] text-[#008B5E] px-3 py-1.5 rounded-full text-[12px] font-black uppercase">
+                          Aktif
+                        </span>
+                      ) : (
+                        <span className="bg-[#FFF9E6] text-[#D97706] px-3 py-1.5 rounded-full text-[12px] font-black uppercase">
+                          Nonaktif
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => onEdit(r)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-[#167A61] border border-[#167A61]/20 rounded-lg hover:bg-[#167A61] hover:text-white transition-all text-[13px] font-bold"
+                        >
+                          <Edit2 size={14} />
+                          <span>Ubah</span>
+                        </button>
+                        <button
+                          onClick={() => onDelete(r)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-red-600 border border-red-100 rounded-lg hover:bg-red-50 transition-all text-[13px] font-bold"
+                        >
+                          <Trash2 size={14} />
+                          <span>Hapus</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
       </div>
+
+      {/* Pagination */}
+      {!loading && data.length > 0 && (
+        <Pagination
+          currentPage={pagination.current_page}
+          lastPage={pagination.last_page}
+          total={pagination.total}
+          perPage={pagination.per_page}
+          onPageChange={onPageChange}
+        />
+      )}
     </>
   );
 }
@@ -253,11 +247,25 @@ export default function KelolaPengguna() {
     dosen,
     loading,
     error,
+    paginationMhs,
+    paginationDosen,
+    fetchMahasiswa,
+    fetchDosen,
+    debouncedFetchMahasiswa,
+    debouncedFetchDosen,
     tambahMahasiswa,
     updateMahasiswa,
     updateDosen,
     deleteDosen,
   } = usePengguna(activeTab);
+
+  // Search & filter state per tab
+  const [searchMhs, setSearchMhs] = useState("");
+  const [statusMhs, setStatusMhs] = useState("");
+  const [tahunMhs, setTahunMhs] = useState("");
+
+  const [searchDosen, setSearchDosen] = useState("");
+  const [statusDosen, setStatusDosen] = useState("");
 
   const [showTambah, setShowTambah] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -265,13 +273,107 @@ export default function KelolaPengguna() {
   const [deleteDosenTarget, setDeleteDosenTarget] = useState(null);
   const [deleteDosenLoading, setDeleteDosenLoading] = useState(false);
 
-  // ✅ edit target dibedakan per role agar modal yang terbuka tepat
   const [editMahasiswaTarget, setEditMahasiswaTarget] = useState(null);
   const [editDosenTarget, setEditDosenTarget] = useState(null);
 
   const isMahasiswa = activeTab === "mahasiswa";
 
-  // ─── Handlers ────────────────────────────────────────────────
+  // Build params helpers
+  const buildMhsParams = useCallback(
+    (page = 1) => {
+      const params = { page };
+      if (searchMhs) params.search = searchMhs;
+      if (statusMhs)
+        params.status_aktif = statusMhs === "AKTIF" ? "true" : "false";
+      if (tahunMhs) params.angkatan = tahunMhs;
+      return params;
+    },
+    [searchMhs, statusMhs, tahunMhs],
+  );
+
+  const buildDosenParams = useCallback(
+    (page = 1) => {
+      const params = { page };
+      if (searchDosen) params.search = searchDosen;
+      if (statusDosen) {
+        // Untuk dosen, kita filter berdasarkan status_aktif juga
+        // tapi getDosen sudah default status=Disetujui
+      }
+      return params;
+    },
+    [searchDosen, statusDosen],
+  );
+
+  // Fetch awal per tab
+  useEffect(() => {
+    if (isMahasiswa) {
+      fetchMahasiswa(buildMhsParams(1));
+    } else {
+      fetchDosen(buildDosenParams(1));
+    }
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Handlers Mahasiswa ─────────────────────────────────────────
+
+  const handleSearchMhsChange = (e) => {
+    const value = e.target.value;
+    setSearchMhs(value);
+    const params = { page: 1 };
+    if (value) params.search = value;
+    if (statusMhs)
+      params.status_aktif = statusMhs === "AKTIF" ? "true" : "false";
+    if (tahunMhs) params.angkatan = tahunMhs;
+    debouncedFetchMahasiswa(params);
+  };
+
+  const handleStatusMhsChange = (e) => {
+    const value = e.target.value;
+    setStatusMhs(value);
+    const params = { page: 1 };
+    if (searchMhs) params.search = searchMhs;
+    if (value) params.status_aktif = value === "AKTIF" ? "true" : "false";
+    if (tahunMhs) params.angkatan = tahunMhs;
+    fetchMahasiswa(params);
+  };
+
+  const handleTahunMhsChange = (e) => {
+    const value = e.target.value;
+    setTahunMhs(value);
+    const params = { page: 1 };
+    if (searchMhs) params.search = searchMhs;
+    if (statusMhs)
+      params.status_aktif = statusMhs === "AKTIF" ? "true" : "false";
+    if (value) params.angkatan = value;
+    fetchMahasiswa(params);
+  };
+
+  const handleMhsPageChange = (page) => {
+    fetchMahasiswa(buildMhsParams(page));
+  };
+
+  // ─── Handlers Dosen ─────────────────────────────────────────────
+
+  const handleSearchDosenChange = (e) => {
+    const value = e.target.value;
+    setSearchDosen(value);
+    const params = { page: 1 };
+    if (value) params.search = value;
+    debouncedFetchDosen(params);
+  };
+
+  const handleStatusDosenChange = (e) => {
+    const value = e.target.value;
+    setStatusDosen(value);
+    const params = { page: 1 };
+    if (searchDosen) params.search = searchDosen;
+    fetchDosen(params);
+  };
+
+  const handleDosenPageChange = (page) => {
+    fetchDosen(buildDosenParams(page));
+  };
+
+  // ─── CRUD Handlers ────────────────────────────────────────────
 
   const handleTambahSuccess = async (values) => {
     await tambahMahasiswa(values);
@@ -299,18 +401,15 @@ export default function KelolaPengguna() {
     setEditMahasiswaTarget(null);
   };
 
-  // ✅ Siap dipanggil saat UbahDosenModal nanti selesai dibuat
   const handleEditDosenSuccess = async (id, values) => {
     try {
       await updateDosen(id, values);
       setEditDosenTarget(null);
     } catch (err) {
-      // Lempar ulang agar modal bisa tangkap dan tidak tutup
       throw err;
     }
   };
 
-  // ─── onEdit router: arahkan ke state yang benar ──────────────
   const handleEdit = (row) => {
     if (isMahasiswa) setEditMahasiswaTarget(row);
     else setEditDosenTarget(row);
@@ -329,8 +428,6 @@ export default function KelolaPengguna() {
     }
   };
 
-  // ─────────────────────────────────────────────────────────────
-
   return (
     <>
       {/* Modal Tambah Mahasiswa */}
@@ -348,7 +445,7 @@ export default function KelolaPengguna() {
         onSuccess={handleEditMahasiswaSuccess}
       />
 
-      {/* Modal Ubah Dosen — siap, tinggal buat komponen-nya */}
+      {/* Modal Ubah Dosen */}
       <UbahDosenModal
         isOpen={!!editDosenTarget}
         data={editDosenTarget}
@@ -356,7 +453,7 @@ export default function KelolaPengguna() {
         onSuccess={handleEditDosenSuccess}
       />
 
-      {/* Modal Hapus */}
+      {/* Modal Hapus Mahasiswa */}
       <DeleteConfirmModal
         data={deleteTarget}
         title="Hapus Data Mahasiswa"
@@ -370,6 +467,7 @@ export default function KelolaPengguna() {
         loading={deleteLoading}
       />
 
+      {/* Modal Hapus Dosen */}
       <DeleteConfirmModal
         data={deleteDosenTarget}
         title="Hapus Data Dosen"
@@ -426,7 +524,9 @@ export default function KelolaPengguna() {
                       : "bg-[#E2E8F0] text-[#94A3B8]"
                   }`}
                 >
-                  {key === "mahasiswa" ? mahasiswa.length : dosen.length}
+                  {key === "mahasiswa"
+                    ? paginationMhs.total
+                    : paginationDosen.total}
                 </span>
               </button>
             ))}
@@ -442,8 +542,16 @@ export default function KelolaPengguna() {
             loading={loading}
             error={error}
             emptyMessage="Belum ada data mahasiswa."
-            onEdit={handleEdit} // ✅
+            onEdit={handleEdit}
             onDelete={setDeleteTarget}
+            pagination={paginationMhs}
+            onPageChange={handleMhsPageChange}
+            onSearchChange={handleSearchMhsChange}
+            onStatusChange={handleStatusMhsChange}
+            onTahunChange={handleTahunMhsChange}
+            search={searchMhs}
+            statusFilter={statusMhs}
+            tahunFilter={tahunMhs}
           />
         ) : (
           <UserTable
@@ -455,7 +563,15 @@ export default function KelolaPengguna() {
             error={error}
             emptyMessage="Belum ada data dosen aktif."
             onEdit={handleEdit}
-            onDelete={setDeleteDosenTarget} // ✅ sekarang terhubung
+            onDelete={setDeleteDosenTarget}
+            pagination={paginationDosen}
+            onPageChange={handleDosenPageChange}
+            onSearchChange={handleSearchDosenChange}
+            onStatusChange={handleStatusDosenChange}
+            onTahunChange={() => {}}
+            search={searchDosen}
+            statusFilter={statusDosen}
+            tahunFilter=""
           />
         )}
       </div>

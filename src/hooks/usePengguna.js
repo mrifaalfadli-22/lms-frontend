@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { penggunaService } from "../services/penggunaService";
+
+const DEBOUNCE_MS = 400;
 
 export const usePengguna = (activeTab) => {
   const [mahasiswa, setMahasiswa] = useState([]);
@@ -7,12 +9,37 @@ export const usePengguna = (activeTab) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchMahasiswa = useCallback(async () => {
+  const [paginationMhs, setPaginationMhs] = useState({
+    current_page: 1,
+    last_page: 1,
+    total: 0,
+    per_page: 20,
+  });
+
+  const [paginationDosen, setPaginationDosen] = useState({
+    current_page: 1,
+    last_page: 1,
+    total: 0,
+    per_page: 20,
+  });
+
+  const lastMhsParamsRef = useRef({});
+  const lastDosenParamsRef = useRef({});
+  const debounceRef = useRef(null);
+
+  const fetchMahasiswa = useCallback(async (params = {}) => {
     setLoading(true);
     setError(null);
+    lastMhsParamsRef.current = params;
     try {
-      const data = await penggunaService.getMahasiswa();
-      setMahasiswa(data);
+      const result = await penggunaService.getMahasiswa(params);
+      setMahasiswa(result.data);
+      setPaginationMhs({
+        current_page: result.current_page,
+        last_page: result.last_page,
+        total: result.total,
+        per_page: result.per_page,
+      });
     } catch {
       setError("Gagal memuat data mahasiswa.");
     } finally {
@@ -20,12 +47,19 @@ export const usePengguna = (activeTab) => {
     }
   }, []);
 
-  const fetchDosen = useCallback(async () => {
+  const fetchDosen = useCallback(async (params = {}) => {
     setLoading(true);
     setError(null);
+    lastDosenParamsRef.current = params;
     try {
-      const data = await penggunaService.getDosen();
-      setDosen(data);
+      const result = await penggunaService.getDosen(params);
+      setDosen(result.data);
+      setPaginationDosen({
+        current_page: result.current_page,
+        last_page: result.last_page,
+        total: result.total,
+        per_page: result.per_page,
+      });
     } catch {
       setError("Gagal memuat data dosen.");
     } finally {
@@ -33,40 +67,64 @@ export const usePengguna = (activeTab) => {
     }
   }, []);
 
+  const refetchMahasiswa = useCallback(() => {
+    fetchMahasiswa(lastMhsParamsRef.current);
+  }, [fetchMahasiswa]);
+
+  const refetchDosen = useCallback(() => {
+    fetchDosen(lastDosenParamsRef.current);
+  }, [fetchDosen]);
+
+  const debouncedFetchMahasiswa = useCallback(
+    (params) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(
+        () => fetchMahasiswa(params),
+        DEBOUNCE_MS,
+      );
+    },
+    [fetchMahasiswa],
+  );
+
+  const debouncedFetchDosen = useCallback(
+    (params) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => fetchDosen(params), DEBOUNCE_MS);
+    },
+    [fetchDosen],
+  );
+
   const tambahMahasiswa = useCallback(
     async (values) => {
       await penggunaService.tambahMahasiswa(values);
-      await fetchMahasiswa();
+      refetchMahasiswa();
     },
-    [fetchMahasiswa],
+    [refetchMahasiswa],
   );
 
   const updateMahasiswa = useCallback(
     async (id, values) => {
       await penggunaService.updateMahasiswa(id, values);
-      await fetchMahasiswa();
+      refetchMahasiswa();
     },
-    [fetchMahasiswa],
+    [refetchMahasiswa],
   );
 
   const updateDosen = useCallback(
     async (id, values) => {
       await penggunaService.updateDosen(id, values);
-      await fetchDosen();
+      refetchDosen();
     },
-    [fetchDosen],
+    [refetchDosen],
   );
 
-  // ✅ Baru — update state lokal langsung tanpa fetch ulang
-  const deleteDosen = useCallback(async (id) => {
-    await penggunaService.deleteDosen(id);
-    setDosen((prev) => prev.filter((d) => d.id_user !== id));
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === "mahasiswa") fetchMahasiswa();
-    else fetchDosen();
-  }, [activeTab, fetchMahasiswa, fetchDosen]);
+  const deleteDosen = useCallback(
+    async (id) => {
+      await penggunaService.deleteDosen(id);
+      refetchDosen();
+    },
+    [refetchDosen],
+  );
 
   return {
     mahasiswa,
@@ -75,11 +133,15 @@ export const usePengguna = (activeTab) => {
     setDosen,
     loading,
     error,
+    paginationMhs,
+    paginationDosen,
     fetchMahasiswa,
     fetchDosen,
+    debouncedFetchMahasiswa,
+    debouncedFetchDosen,
     tambahMahasiswa,
     updateMahasiswa,
     updateDosen,
-    deleteDosen, // ✅
+    deleteDosen,
   };
 };

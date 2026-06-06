@@ -1,5 +1,5 @@
 // src/pages/admin/DaftarJadwalKuliah.jsx
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Search,
   Download,
@@ -15,6 +15,7 @@ import DeleteConfirmModal from "../../components/admin/DeleteConfirmModal";
 import TambahJadwalModal from "../../components/admin/TambahJadwalModal";
 import UbahJadwalModal from "../../components/admin/UbahJadwalModal";
 import DetailJadwalModal from "../../components/admin/DetailJadwalModal";
+import Pagination from "../../components/common/Pagination";
 import { TAHUN_AJARAN_OPTIONS } from "../../schemas/jadwalSchema";
 
 const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
@@ -23,7 +24,8 @@ const HARI_OPTIONS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 const SEMESTER_OPTIONS = Array.from({ length: 8 }, (_, i) => i + 1);
 
 export default function DaftarJadwalKuliah() {
-  const { jadwal, loading, error, tambah, update, hapus } = useJadwalKuliah();
+  const { jadwal, loading, error, pagination, fetchPage, debouncedFetch, tambah, update, hapus } =
+    useJadwalKuliah();
 
   const [search, setSearch] = useState("");
   const [semesterFilter, setSemesterFilter] = useState("");
@@ -36,28 +38,50 @@ export default function DaftarJadwalKuliah() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const tahunFromData = [
-    ...new Set(jadwal.map((j) => j.tahun).filter((t) => t && t !== "-")),
-  ].sort((a, b) => b.localeCompare(a));
-  const tahunOptions =
-    tahunFromData.length > 0
-      ? tahunFromData
-      : TAHUN_AJARAN_OPTIONS.map((o) => o.value);
+  const buildParams = useCallback(
+    (page = 1) => {
+      const params = { page };
+      if (search) params.search = search;
+      if (semesterFilter) params.semester = semesterFilter;
+      if (tahunFilter) params.tahun = tahunFilter;
+      if (hariFilter) params.hari = hariFilter;
+      return params;
+    },
+    [search, semesterFilter, tahunFilter, hariFilter],
+  );
 
-  const filtered = jadwal.filter((j) => {
-    const q = search.toLowerCase();
-    const matchQ =
-      !q ||
-      [j.nama_mk, j.kelas, j.nama_dosen, j.nidn, j.fakultas, j.prodi].some(
-        (v) => v?.toLowerCase().includes(q),
-      );
-    const matchSemester =
-      !semesterFilter || String(j.semester) === semesterFilter;
-    const matchTahun = !tahunFilter || j.tahun === tahunFilter;
-    const matchHari =
-      !hariFilter || j.hari?.toLowerCase() === hariFilter.toLowerCase();
-    return matchQ && matchSemester && matchTahun && matchHari;
-  });
+  // Fetch awal
+  useEffect(() => {
+    fetchPage(buildParams(1));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearch(value);
+    const params = { page: 1 };
+    if (value) params.search = value;
+    if (semesterFilter) params.semester = semesterFilter;
+    if (tahunFilter) params.tahun = tahunFilter;
+    if (hariFilter) params.hari = hariFilter;
+    debouncedFetch(params);
+  };
+
+  const handleFilterChange = (setter, key) => (e) => {
+    const value = e.target.value;
+    setter(value);
+    const params = { page: 1 };
+    if (search) params.search = search;
+    if (semesterFilter) params.semester = semesterFilter;
+    if (tahunFilter) params.tahun = tahunFilter;
+    if (hariFilter) params.hari = hariFilter;
+    if (value) params[key] = value;
+    else delete params[key];
+    fetchPage(params);
+  };
+
+  const handlePageChange = (page) => {
+    fetchPage(buildParams(page));
+  };
 
   const handleTambahSuccess = async (values) => {
     try {
@@ -154,7 +178,7 @@ export default function DaftarJadwalKuliah() {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={handleSearchChange}
               placeholder="Cari mata kuliah, dosen, kelas..."
               className="w-full pl-9 pr-4 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] placeholder:text-[#94A3B8] outline-none focus:border-[#167A61] transition-all"
             />
@@ -162,7 +186,7 @@ export default function DaftarJadwalKuliah() {
 
           <select
             value={semesterFilter}
-            onChange={(e) => setSemesterFilter(e.target.value)}
+            onChange={handleFilterChange(setSemesterFilter, "semester")}
             className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
           >
             <option value="">Semua Semester</option>
@@ -175,20 +199,20 @@ export default function DaftarJadwalKuliah() {
 
           <select
             value={tahunFilter}
-            onChange={(e) => setTahunFilter(e.target.value)}
+            onChange={handleFilterChange(setTahunFilter, "tahun")}
             className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
           >
             <option value="">Semua Tahun Ajaran</option>
-            {tahunOptions.map((t) => (
-              <option key={t} value={t}>
-                {t}
+            {TAHUN_AJARAN_OPTIONS.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
               </option>
             ))}
           </select>
 
           <select
             value={hariFilter}
-            onChange={(e) => setHariFilter(e.target.value)}
+            onChange={handleFilterChange(setHariFilter, "hari")}
             className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
           >
             <option value="">Semua Hari</option>
@@ -223,10 +247,14 @@ export default function DaftarJadwalKuliah() {
                 <CalendarDays size={28} className="text-[#94A3B8]" />
               </div>
               <p className="text-[14px] font-bold text-[#64748B]">
-                Belum ada data jadwal kuliah.
+                {search || semesterFilter || tahunFilter || hariFilter
+                  ? "Data tidak ditemukan."
+                  : "Belum ada data jadwal kuliah."}
               </p>
               <p className="text-[13px] text-[#94A3B8] mt-1">
-                Data akan muncul setelah ditambahkan ke sistem.
+                {search || semesterFilter || tahunFilter || hariFilter
+                  ? "Coba ubah kata kunci atau filter pencarian."
+                  : "Data akan muncul setelah ditambahkan ke sistem."}
               </p>
             </div>
           ) : (
@@ -254,91 +282,91 @@ export default function DaftarJadwalKuliah() {
                 </tr>
               </thead>
               <tbody className="text-[14px] text-[#1E293B]">
-                {filtered.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={9}
-                      className="py-10 text-center text-[#94A3B8] text-[13px]"
-                    >
-                      Data tidak ditemukan.
+                {jadwal.map((j, i) => (
+                  <tr
+                    key={j.id_jadwal || i}
+                    className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group"
+                  >
+                    <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                      {val(j.nama_mk)}
+                    </td>
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      {val(j.kelas)}
+                    </td>
+                    <td className="py-4 px-4 whitespace-nowrap text-[13px]">
+                      {val(j.fakultas)}
+                    </td>
+                    <td className="py-4 px-4 whitespace-nowrap text-[13px]">
+                      {val(j.prodi)}
+                    </td>
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      {val(j.nama_dosen)}
+                    </td>
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      {j.hari ? (
+                        <span className="bg-[#FFF7ED] text-[#C2410C] px-3 py-1.5 rounded-full text-[12px] font-black uppercase">
+                          {j.hari}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="py-4 px-4 whitespace-nowrap text-[13px]">
+                      {j.waktu_mulai && j.waktu_berakhir
+                        ? `${j.waktu_mulai.substring(0, 5)} - ${j.waktu_berakhir.substring(0, 5)}`
+                        : "-"}
+                    </td>
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      {j.semester !== null && j.semester !== undefined ? (
+                        <span className="bg-[#DCFCE7] text-[#008B5E] px-3 py-1.5 rounded-full text-[12px] font-black">
+                          Semester {j.semester}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setDetailTarget(j)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/20 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold"
+                        >
+                          <Eye size={14} />
+                          <span>Lihat</span>
+                        </button>
+                        <button
+                          onClick={() => setEditTarget(j)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-[#167A61] border border-[#167A61]/20 rounded-lg hover:bg-[#167A61] hover:text-white transition-all text-[13px] font-bold"
+                        >
+                          <Edit2 size={14} />
+                          <span>Ubah</span>
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(j)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-red-600 border border-red-100 rounded-lg hover:bg-red-50 transition-all text-[13px] font-bold"
+                        >
+                          <Trash2 size={14} />
+                          <span>Hapus</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ) : (
-                  filtered.map((j, i) => (
-                    <tr
-                      key={j.id_jadwal || i}
-                      className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group"
-                    >
-                      <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                        {val(j.nama_mk)}
-                      </td>
-                      <td className="py-4 px-4 whitespace-nowrap">
-                        {val(j.kelas)}
-                      </td>
-                      <td className="py-4 px-4 whitespace-nowrap text-[13px]">
-                        {val(j.fakultas)}
-                      </td>
-                      <td className="py-4 px-4 whitespace-nowrap text-[13px]">
-                        {val(j.prodi)}
-                      </td>
-                      <td className="py-4 px-4 whitespace-nowrap">
-                        {val(j.nama_dosen)}
-                      </td>
-                      <td className="py-4 px-4 whitespace-nowrap">
-                        {j.hari ? (
-                          <span className="bg-[#FFF7ED] text-[#C2410C] px-3 py-1.5 rounded-full text-[12px] font-black uppercase">
-                            {j.hari}
-                          </span>
-                        ) : (
-                          "-"
-                        )}
-                      </td>
-                      <td className="py-4 px-4 whitespace-nowrap text-[13px]">
-                        {j.waktu_mulai && j.waktu_berakhir
-                          ? `${j.waktu_mulai.substring(0, 5)} - ${j.waktu_berakhir.substring(0, 5)}`
-                          : "-"}
-                      </td>
-                      <td className="py-4 px-4 whitespace-nowrap">
-                        {j.semester !== null && j.semester !== undefined ? (
-                          <span className="bg-[#DCFCE7] text-[#008B5E] px-3 py-1.5 rounded-full text-[12px] font-black">
-                            Semester {j.semester}
-                          </span>
-                        ) : (
-                          "-"
-                        )}
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setDetailTarget(j)}
-                            className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/20 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold"
-                          >
-                            <Eye size={14} />
-                            <span>Lihat</span>
-                          </button>
-                          <button
-                            onClick={() => setEditTarget(j)}
-                            className="flex items-center gap-2 px-3 py-1.5 text-[#167A61] border border-[#167A61]/20 rounded-lg hover:bg-[#167A61] hover:text-white transition-all text-[13px] font-bold"
-                          >
-                            <Edit2 size={14} />
-                            <span>Ubah</span>
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget(j)}
-                            className="flex items-center gap-2 px-3 py-1.5 text-red-600 border border-red-100 rounded-lg hover:bg-red-50 transition-all text-[13px] font-bold"
-                          >
-                            <Trash2 size={14} />
-                            <span>Hapus</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
           )}
         </div>
+
+        {/* Pagination */}
+        {!loading && !error && jadwal.length > 0 && (
+          <Pagination
+            currentPage={pagination.current_page}
+            lastPage={pagination.last_page}
+            total={pagination.total}
+            perPage={pagination.per_page}
+            onPageChange={handlePageChange}
+          />
+        )}
       </div>
     </>
   );

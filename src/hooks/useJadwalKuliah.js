@@ -1,18 +1,36 @@
 // src/hooks/useJadwalKuliah.js
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import jadwalService from "../services/jadwalService";
+
+const DEBOUNCE_MS = 400;
 
 export function useJadwalKuliah() {
   const [jadwal, setJadwal] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    total: 0,
+    per_page: 20,
+  });
 
-  const fetchJadwal = useCallback(async () => {
+  const lastParamsRef = useRef({});
+  const debounceRef = useRef(null);
+
+  const fetchPage = useCallback(async (params = {}) => {
     setLoading(true);
     setError(null);
+    lastParamsRef.current = params;
     try {
-      const data = await jadwalService.getAll();
-      setJadwal(data);
+      const result = await jadwalService.getPage(params);
+      setJadwal(result.data);
+      setPagination({
+        current_page: result.current_page,
+        last_page: result.last_page,
+        total: result.total,
+        per_page: result.per_page,
+      });
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
@@ -23,55 +41,57 @@ export function useJadwalKuliah() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchJadwal();
-  }, [fetchJadwal]);
+  const refetch = useCallback(() => {
+    fetchPage(lastParamsRef.current);
+  }, [fetchPage]);
+
+  const debouncedFetch = useCallback(
+    (params) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => fetchPage(params), DEBOUNCE_MS);
+    },
+    [fetchPage],
+  );
 
   /** Tambah jadwal — lempar error agar modal bisa tangkap pesan validasi BE. */
   const tambah = useCallback(
     async (values) => {
       const res = await jadwalService.create(values);
-      await fetchJadwal();
+      refetch();
       return res;
     },
-    [fetchJadwal],
+    [refetch],
   );
 
   /** Update jadwal. */
   const update = useCallback(
     async (id, values) => {
       const res = await jadwalService.update(id, values);
-      await fetchJadwal();
+      refetch();
       return res;
     },
-    [fetchJadwal],
+    [refetch],
   );
 
-  /**
-   * Hapus jadwal.
-   * Optimistic update lokal dulu, lalu re-fetch untuk sinkronisasi.
-   */
+  /** Hapus jadwal. */
   const hapus = useCallback(
     async (id) => {
-      setJadwal((prev) => prev.filter((j) => j.id_jadwal !== id));
-      try {
-        await jadwalService.delete(id);
-      } catch (err) {
-        // Rollback: fetch ulang kalau delete gagal di server
-        await fetchJadwal();
-        throw err;
-      }
+      await jadwalService.delete(id);
+      refetch();
     },
-    [fetchJadwal],
+    [refetch],
   );
 
   return {
     jadwal,
     loading,
     error,
+    pagination,
+    fetchPage,
+    debouncedFetch,
     tambah,
     update,
     hapus,
-    refresh: fetchJadwal,
+    refresh: refetch,
   };
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Search,
   Download,
@@ -14,11 +14,16 @@ import DeleteConfirmModal from "../../components/admin/DeleteConfirmModal";
 import TambahMataKuliahModal from "../../components/admin/TambahMataKuliahModal";
 import UbahMataKuliahModal from "../../components/admin/UbahMataKuliahModal";
 import DetailMataKuliahModal from "../../components/admin/DetailMataKuliahModal";
+import Pagination from "../../components/common/Pagination";
 
 const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
 
+const SEMESTER_OPTIONS = Array.from({ length: 8 }, (_, i) => i + 1);
+const SKS_OPTIONS = [1, 2, 3, 4, 5, 6];
+
 export default function DaftarMataKuliah() {
-  const { mataKuliah, loading, error, tambah, update, hapus } = useMataKuliah();
+  const { mataKuliah, loading, error, pagination, fetchPage, debouncedFetch, tambah, update, hapus } =
+    useMataKuliah();
 
   const [search, setSearch] = useState("");
   const [sksFilter, setSksFilter] = useState("");
@@ -30,25 +35,55 @@ export default function DaftarMataKuliah() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const semesterOptions = [
-    ...new Set(mataKuliah.map((mk) => mk.semester).filter(Boolean)),
-  ].sort((a, b) => a - b);
-  const sksOptions = [
-    ...new Set(mataKuliah.map((mk) => mk.sks).filter(Boolean)),
-  ].sort((a, b) => a - b);
+  const buildParams = useCallback(
+    (page = 1) => {
+      const params = { page };
+      if (search) params.search = search;
+      if (semesterFilter) params.semester = semesterFilter;
+      if (sksFilter) params.sks = sksFilter;
+      return params;
+    },
+    [search, semesterFilter, sksFilter],
+  );
 
-  const filtered = mataKuliah.filter((mk) => {
-    const q = search.toLowerCase();
-    const matchQ =
-      !q ||
-      [mk.kode_mk, mk.nama_mk, mk.fakultas, mk.prodi].some((v) =>
-        v?.toLowerCase().includes(q),
-      );
-    const matchSks = !sksFilter || mk.sks === parseInt(sksFilter);
-    const matchSemester =
-      !semesterFilter || String(mk.semester) === semesterFilter;
-    return matchQ && matchSks && matchSemester;
-  });
+  // Fetch awal
+  useEffect(() => {
+    fetchPage(buildParams(1));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearch(value);
+    const params = { page: 1 };
+    if (value) params.search = value;
+    if (semesterFilter) params.semester = semesterFilter;
+    if (sksFilter) params.sks = sksFilter;
+    debouncedFetch(params);
+  };
+
+  const handleSemesterChange = (e) => {
+    const value = e.target.value;
+    setSemesterFilter(value);
+    const params = { page: 1 };
+    if (search) params.search = search;
+    if (value) params.semester = value;
+    if (sksFilter) params.sks = sksFilter;
+    fetchPage(params);
+  };
+
+  const handleSksChange = (e) => {
+    const value = e.target.value;
+    setSksFilter(value);
+    const params = { page: 1 };
+    if (search) params.search = search;
+    if (semesterFilter) params.semester = semesterFilter;
+    if (value) params.sks = value;
+    fetchPage(params);
+  };
+
+  const handlePageChange = (page) => {
+    fetchPage(buildParams(page));
+  };
 
   const handleTambahSuccess = async (values) => {
     await tambah(values);
@@ -142,39 +177,35 @@ export default function DaftarMataKuliah() {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={handleSearchChange}
               placeholder="Cari kode, nama, fakultas, atau prodi..."
               className="w-full pl-9 pr-4 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] placeholder:text-[#94A3B8] outline-none focus:border-[#167A61] transition-all"
             />
           </div>
-          {semesterOptions.length > 0 && (
-            <select
-              value={semesterFilter}
-              onChange={(e) => setSemesterFilter(e.target.value)}
-              className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
-            >
-              <option value="">Semua Semester</option>
-              {semesterOptions.map((s) => (
-                <option key={s} value={String(s)}>
-                  Semester {s}
-                </option>
-              ))}
-            </select>
-          )}
-          {sksOptions.length > 0 && (
-            <select
-              value={sksFilter}
-              onChange={(e) => setSksFilter(e.target.value)}
-              className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
-            >
-              <option value="">Semua SKS</option>
-              {sksOptions.map((s) => (
-                <option key={s} value={s}>
-                  {s} SKS
-                </option>
-              ))}
-            </select>
-          )}
+          <select
+            value={semesterFilter}
+            onChange={handleSemesterChange}
+            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
+          >
+            <option value="">Semua Semester</option>
+            {SEMESTER_OPTIONS.map((s) => (
+              <option key={s} value={String(s)}>
+                Semester {s}
+              </option>
+            ))}
+          </select>
+          <select
+            value={sksFilter}
+            onChange={handleSksChange}
+            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
+          >
+            <option value="">Semua SKS</option>
+            {SKS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s} SKS
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Table */}
@@ -194,10 +225,14 @@ export default function DaftarMataKuliah() {
                 <BookOpen size={28} className="text-[#94A3B8]" />
               </div>
               <p className="text-[14px] font-bold text-[#64748B]">
-                Belum ada data mata kuliah.
+                {search || semesterFilter || sksFilter
+                  ? "Data tidak ditemukan."
+                  : "Belum ada data mata kuliah."}
               </p>
               <p className="text-[13px] text-[#94A3B8] mt-1">
-                Data akan muncul setelah ditambahkan ke sistem.
+                {search || semesterFilter || sksFilter
+                  ? "Coba ubah kata kunci atau filter pencarian."
+                  : "Data akan muncul setelah ditambahkan ke sistem."}
               </p>
             </div>
           ) : (
@@ -223,77 +258,77 @@ export default function DaftarMataKuliah() {
                 </tr>
               </thead>
               <tbody className="text-[14px] text-[#1E293B]">
-                {filtered.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="py-10 text-center text-[#94A3B8] text-[13px]"
-                    >
-                      Data tidak ditemukan.
+                {mataKuliah.map((mk, i) => (
+                  <tr
+                    key={mk.id_mk || i}
+                    className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group"
+                  >
+                    <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                      {val(mk.kode_mk)}
+                    </td>
+                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                      {val(mk.nama_mk)}
+                    </td>
+                    <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                      {val(mk.fakultas)}
+                    </td>
+                    <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                      {val(mk.prodi)}
+                    </td>
+                    <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                      {mk.semester ? `Semester ${mk.semester}` : "-"}
+                    </td>
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      {mk.sks ? (
+                        <span className="bg-[#DCFCE7] text-[#008B5E] px-3 py-1.5 rounded-full text-[12px] font-black uppercase">
+                          {mk.sks} SKS
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setDetailTarget(mk)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/20 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold"
+                        >
+                          <Eye size={14} />
+                          <span>Lihat</span>
+                        </button>
+                        <button
+                          onClick={() => setEditTarget(mk)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-[#167A61] border border-[#167A61]/20 rounded-lg hover:bg-[#167A61] hover:text-white transition-all text-[13px] font-bold"
+                        >
+                          <Edit2 size={14} />
+                          <span>Ubah</span>
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(mk)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-red-600 border border-red-100 rounded-lg hover:bg-red-50 transition-all text-[13px] font-bold"
+                        >
+                          <Trash2 size={14} />
+                          <span>Hapus</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ) : (
-                  filtered.map((mk, i) => (
-                    <tr
-                      key={mk.id_mk || i}
-                      className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group"
-                    >
-                      <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                        {val(mk.kode_mk)}
-                      </td>
-                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                        {val(mk.nama_mk)}
-                      </td>
-                      <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                        {val(mk.fakultas)}
-                      </td>
-                      <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                        {val(mk.prodi)}
-                      </td>
-                      <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                        {mk.semester ? `Semester ${mk.semester}` : "-"}
-                      </td>
-                      <td className="py-4 px-4 whitespace-nowrap">
-                        {mk.sks ? (
-                          <span className="bg-[#DCFCE7] text-[#008B5E] px-3 py-1.5 rounded-full text-[12px] font-black uppercase">
-                            {mk.sks} SKS
-                          </span>
-                        ) : (
-                          "-"
-                        )}
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setDetailTarget(mk)}
-                            className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/20 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold"
-                          >
-                            <Eye size={14} />
-                            <span>Lihat</span>
-                          </button>
-                          <button
-                            onClick={() => setEditTarget(mk)}
-                            className="flex items-center gap-2 px-3 py-1.5 text-[#167A61] border border-[#167A61]/20 rounded-lg hover:bg-[#167A61] hover:text-white transition-all text-[13px] font-bold"
-                          >
-                            <Edit2 size={14} />
-                            <span>Ubah</span>
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget(mk)}
-                            className="flex items-center gap-2 px-3 py-1.5 text-red-600 border border-red-100 rounded-lg hover:bg-red-50 transition-all text-[13px] font-bold"
-                          >
-                            <Trash2 size={14} />
-                            <span>Hapus</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
           )}
         </div>
+
+        {/* Pagination */}
+        {!loading && !error && mataKuliah.length > 0 && (
+          <Pagination
+            currentPage={pagination.current_page}
+            lastPage={pagination.last_page}
+            total={pagination.total}
+            perPage={pagination.per_page}
+            onPageChange={handlePageChange}
+          />
+        )}
       </div>
     </>
   );

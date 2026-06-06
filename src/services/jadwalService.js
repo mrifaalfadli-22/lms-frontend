@@ -4,30 +4,6 @@ import api from "../config/api";
 const BASE = "/jadwal-perkuliahan";
 
 /**
- * Helper: Ambil semua halaman dari endpoint paginated.
- */
-const fetchAllPages = async (endpoint, params = {}) => {
-  const firstRes = await api.get(endpoint, { params: { ...params, page: 1 } });
-  const { data: firstData, total, per_page } = firstRes.data;
-
-  let allItems = [...firstData];
-
-  const totalPages = Math.ceil(total / per_page);
-  if (totalPages > 1) {
-    const promises = [];
-    for (let page = 2; page <= totalPages; page++) {
-      promises.push(api.get(endpoint, { params: { ...params, page } }));
-    }
-    const results = await Promise.all(promises);
-    results.forEach((res) => {
-      allItems = allItems.concat(res.data.data);
-    });
-  }
-
-  return allItems;
-};
-
-/**
  * Memetakan satu item jadwal dari response API ke shape yang dipakai FE.
  */
 const mapJadwal = (item) => ({
@@ -65,18 +41,18 @@ const mapJadwal = (item) => ({
 });
 
 const jadwalService = {
-  getAll: async () => {
-    const allData = await fetchAllPages(BASE);
-    return allData.map(mapJadwal);
-  },
-
-  getPage: async (page = 1) => {
-    const res = await api.get(BASE, { params: { page } });
+  /**
+   * Ambil data jadwal dengan server-side pagination, search, dan filter.
+   * @param {Object} params - { page, search, semester, tahun, hari, per_page }
+   */
+  getPage: async (params = {}) => {
+    const res = await api.get(BASE, { params });
     return {
-      data: res.data.data.map(mapJadwal),
-      total: res.data.total,
-      per_page: res.data.per_page,
-      current_page: res.data.current_page,
+      data: (res.data.data || []).map(mapJadwal),
+      total: res.data.total || 0,
+      per_page: res.data.per_page || 20,
+      current_page: res.data.current_page || 1,
+      last_page: res.data.last_page || 1,
     };
   },
 
@@ -111,15 +87,16 @@ const jadwalService = {
 
   // ============================================================
   // DROPDOWN OPTIONS UNTUK FORM
+  // Menggunakan per_page=100 agar cukup untuk dropdown
   // ============================================================
 
   getMataKuliahOptions: async () => {
     try {
-      const allItems = await fetchAllPages("/mata-kuliah");
+      const res = await api.get("/mata-kuliah", { params: { per_page: 100 } });
+      const allItems = res.data.data || [];
       return allItems.map((mk) => ({
         value: mk.id_mk,
         label: `${mk.kode_mk} - ${mk.nama_mk} (${mk.sks} SKS)`,
-        // Bawa sks & semester supaya form bisa auto-fill
         sks: mk.sks,
         semester: mk.semester,
         fakultas: mk.fakultas,
@@ -133,7 +110,8 @@ const jadwalService = {
 
   getKelasOptions: async () => {
     try {
-      const allItems = await fetchAllPages("/kelas");
+      const res = await api.get("/kelas", { params: { per_page: 100 } });
+      const allItems = res.data.data || [];
       return allItems.map((k) => ({
         value: k.id_kelas,
         label: `${k.kode_kelas} - ${k.nama_kelas} (Angkatan ${k.tahun_angkatan})`,
@@ -146,9 +124,10 @@ const jadwalService = {
 
   getDosenOptions: async () => {
     try {
-      const allItems = await fetchAllPages("/verifikasi-dosen", {
-        status: "Disetujui",
+      const res = await api.get("/verifikasi-dosen", {
+        params: { status: "Disetujui", per_page: 100 },
       });
+      const allItems = res.data.data || [];
       const dosenAktif = allItems.filter(
         (d) => d.status_aktif === true || d.status_aktif === 1,
       );
@@ -159,24 +138,7 @@ const jadwalService = {
       }));
     } catch (error) {
       console.error("Gagal memuat data dosen:", error.message);
-      // Fallback dari data jadwal
-      try {
-        const allJadwal = await jadwalService.getAll();
-        const seen = new Set();
-        return allJadwal.reduce((acc, j) => {
-          if (j.id_dosen && j.nama_dosen !== "-" && !seen.has(j.id_dosen)) {
-            seen.add(j.id_dosen);
-            acc.push({
-              value: j.id_dosen,
-              label: `${j.nama_dosen} (${j.nidn !== "-" ? j.nidn : "-"})`,
-            });
-          }
-          return acc;
-        }, []);
-      } catch (fallbackError) {
-        console.error("Gagal memuat data dosen fallback:", fallbackError);
-        return [];
-      }
+      return [];
     }
   },
 };

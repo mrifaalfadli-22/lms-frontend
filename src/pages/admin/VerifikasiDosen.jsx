@@ -21,25 +21,7 @@ const formatTanggal = (dateStr) => {
   });
 };
 
-function StatusBadge({ status }) {
-  if (status === "Disetujui")
-    return (
-      <span className="bg-[#DCFCE7] text-[#008B5E] px-3 py-1.5 rounded-full text-[12px] font-black uppercase">
-        Disetujui
-      </span>
-    );
-  if (status === "Ditolak")
-    return (
-      <span className="bg-[#FEF2F2] text-[#991B1B] px-3 py-1.5 rounded-full text-[12px] font-black uppercase">
-        Ditolak
-      </span>
-    );
-  return (
-    <span className="bg-[#FFF9E6] text-[#D97706] px-3 py-1.5 rounded-full text-[12px] font-black uppercase">
-      Menunggu
-    </span>
-  );
-}
+
 
 function EmptyState({ hasFilter }) {
   return (
@@ -86,14 +68,16 @@ export default function VerifikasiDosen() {
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
 
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   const buildParams = useCallback(
-    (page = 1) => {
-      const params = { page };
+    (page = 1, limit = itemsPerPage) => {
+      const params = { page, per_page: limit };
       if (search) params.search = search;
       if (statusFilter) params.status = statusFilter;
       return params;
     },
-    [search, statusFilter],
+    [search, statusFilter, itemsPerPage],
   );
 
   // Fetch awal
@@ -121,6 +105,11 @@ export default function VerifikasiDosen() {
 
   const handlePageChange = (page) => {
     fetchDosen(buildParams(page));
+  };
+
+  const handlePerPageChange = (newPerPage) => {
+    setItemsPerPage(newPerPage);
+    fetchDosen(buildParams(1, newPerPage));
   };
 
   const handleConfirm = async () => {
@@ -203,6 +192,7 @@ export default function VerifikasiDosen() {
               <thead>
                 <tr className="border-b border-[#E2E8F0]">
                   {[
+                    "No",
                     "Nama",
                     "NIDN",
                     "Email",
@@ -210,7 +200,6 @@ export default function VerifikasiDosen() {
                     "Program Studi",
                     "Tanggal Pengajuan",
                     "Status",
-                    "Aksi",
                   ].map((h) => (
                     <th
                       key={h}
@@ -222,13 +211,15 @@ export default function VerifikasiDosen() {
                 </tr>
               </thead>
               <tbody className="text-[14px] text-[#1E293B]">
-                {dosen.map((d) => {
-                  const sudahDiproses = d.status_persetujuan !== "Menunggu";
+                {dosen.map((d, i) => {
                   return (
                     <tr
                       key={d.id_user}
                       className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 group"
                     >
+                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                        {(pagination?.current_page - 1) * pagination?.per_page + i + 1 || i + 1}
+                      </td>
                       <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                         {val(d.nama_lengkap)}
                       </td>
@@ -248,39 +239,40 @@ export default function VerifikasiDosen() {
                         {formatTanggal(d.created_at)}
                       </td>
                       <td className="py-4 px-4">
-                        <StatusBadge status={d.status_persetujuan} />
-                      </td>
-                      <td className="py-4 px-4">
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() =>
                               setConfirmTarget({ data: d, aksi: "Disetujui" })
                             }
-                            disabled={sudahDiproses || confirmLoading}
+                            disabled={confirmLoading}
                             className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[13px] font-bold transition-all
                               ${
-                                sudahDiproses || confirmLoading
-                                  ? "text-[#CBD5E1] border-[#E2E8F0] bg-[#F8FAFC] cursor-not-allowed"
+                                d.status_persetujuan === "Disetujui"
+                                  ? "bg-[#167A61] text-white border-[#167A61]"
+                                  : d.status_persetujuan === "Ditolak"
+                                  ? "text-[#94A3B8] border-[#E2E8F0] hover:bg-[#F1F5F9] hover:text-[#1E293B]"
                                   : "text-[#167A61] border-[#167A61]/20 hover:bg-[#167A61] hover:text-white cursor-pointer"
                               }`}
                           >
                             <CheckCircle size={14} />
-                            <span>Setujui</span>
+                            <span>Disetujui</span>
                           </button>
                           <button
                             onClick={() =>
                               setConfirmTarget({ data: d, aksi: "Ditolak" })
                             }
-                            disabled={sudahDiproses || confirmLoading}
+                            disabled={confirmLoading}
                             className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[13px] font-bold transition-all
                               ${
-                                sudahDiproses || confirmLoading
-                                  ? "text-[#CBD5E1] border-[#E2E8F0] bg-[#F8FAFC] cursor-not-allowed"
-                                  : "text-red-600 border-red-100 hover:bg-red-50 cursor-pointer"
+                                d.status_persetujuan === "Ditolak"
+                                  ? "bg-red-600 text-white border-red-600"
+                                  : d.status_persetujuan === "Disetujui"
+                                  ? "text-[#94A3B8] border-[#E2E8F0] hover:bg-[#F1F5F9] hover:text-[#1E293B]"
+                                  : "text-red-600 border-red-100 hover:bg-red-50 hover:border-red-600 cursor-pointer"
                               }`}
                           >
                             <XCircle size={14} />
-                            <span>Tolak</span>
+                            <span>Ditolak</span>
                           </button>
                         </div>
                       </td>
@@ -300,6 +292,7 @@ export default function VerifikasiDosen() {
             total={pagination.total}
             perPage={pagination.per_page}
             onPageChange={handlePageChange}
+            onPerPageChange={handlePerPageChange}
           />
         )}
       </div>

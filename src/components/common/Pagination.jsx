@@ -15,8 +15,9 @@ export default function Pagination({
   total,
   perPage,
   onPageChange,
+  onPerPageChange,
 }) {
-  if (lastPage <= 1) return null;
+  if (total === 0) return null;
 
   const from = (currentPage - 1) * perPage + 1;
   const to = Math.min(currentPage * perPage, total);
@@ -52,16 +53,33 @@ export default function Pagination({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-5 px-7">
-      <p className="text-[13px] text-[#64748B]">
-        Menampilkan{" "}
-        <span className="font-bold text-[#1E293B]">{from}</span>
-        {" - "}
-        <span className="font-bold text-[#1E293B]">{to}</span>
-        {" dari "}
-        <span className="font-bold text-[#1E293B]">{total}</span>
-        {" data"}
-      </p>
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 px-7">
+      <div className="flex items-center gap-3">
+        {onPerPageChange && (
+          <div className="flex items-center gap-2 border-r border-[#E2E8F0] pr-3">
+            <span className="text-[13px] text-[#64748B] hidden sm:inline">Tampilkan</span>
+            <select
+              value={perPage}
+              onChange={(e) => onPerPageChange(Number(e.target.value))}
+              className="border border-[#E2E8F0] rounded-lg px-2 py-1 text-[13px] font-semibold text-[#1E293B] outline-none focus:border-[#167A61] cursor-pointer bg-white"
+            >
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={20}>20</option>
+              <option value={25}>25</option>
+            </select>
+          </div>
+        )}
+        <p className="text-[13px] text-[#64748B]">
+          Menampilkan{" "}
+          <span className="font-bold text-[#1E293B]">{from}</span>
+          {" - "}
+          <span className="font-bold text-[#1E293B]">{to}</span>
+          {" dari "}
+          <span className="font-bold text-[#1E293B]">{total}</span>
+          {" data"}
+        </p>
+      </div>
 
       <div className="flex items-center gap-1">
         {/* Tombol Previous */}

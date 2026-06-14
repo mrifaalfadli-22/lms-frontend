@@ -1,3 +1,10 @@
+import DaftarJadwalGrid from "../../components/admin/DaftarJadwalGrid";
+
 export default function ForumDiskusi() {
-  return <div>ini halaman forum diskusi</div>;
+  return (
+    <DaftarJadwalGrid 
+      title="Forum Diskusi" 
+      basePath="/admin/forum-diskusi" 
+    />
+  );
 }

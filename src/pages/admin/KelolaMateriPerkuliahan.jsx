@@ -1,3 +1,10 @@
+import DaftarJadwalGrid from "../../components/admin/DaftarJadwalGrid";
+
 export default function KelolaMateriPerkuliahan() {
-  return <div>ini halaman kelola materi</div>;
+  return (
+    <DaftarJadwalGrid 
+      title="Kelola Materi Perkuliahan" 
+      basePath="/admin/kelola-materi-perkuliahan" 
+    />
+  );
 }

@@ -32,7 +32,10 @@ export default function Header() {
         .toUpperCase()
     : "--";
 
-  const currentTitle = pageTitles[location.pathname] || "Dashboard";
+  const currentTitle =
+    pageTitles[location.pathname] ||
+    Object.entries(pageTitles).find(([key]) => location.pathname.startsWith(key + "/"))?.[1] ||
+    "Dashboard";
 
   return (
     <header className="flex justify-between items-center">

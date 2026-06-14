@@ -27,6 +27,9 @@ import KelolaMateriPerkuliahan from "./pages/admin/KelolaMateriPerkuliahan";
 import ForumDiskusi from "./pages/admin/ForumDiskusi";
 import KelolaSertifikat from "./pages/admin/KelolaSertifikat";
 import VerifikasiDosen from "./pages/admin/VerifikasiDosen";
+import DetailKelasDummy from "./components/admin/DetailKelasDummy";
+import DetailForumDiskusiDummy from "./components/admin/DetailForumDiskusiDummy";
+import DetailMateriDummy from "./components/admin/DetailMateriDummy";
 
 function App() {
   return (
@@ -85,7 +88,23 @@ function App() {
             path="kelola-materi-perkuliahan"
             element={<KelolaMateriPerkuliahan />}
           />
+          <Route
+            path="kelola-materi-perkuliahan/:id"
+            element={<DetailKelasDummy title="Kelola Materi Perkuliahan" backTo="/admin/kelola-materi-perkuliahan" />}
+          />
+          <Route
+            path="kelola-materi-perkuliahan/:id/kelas/:kelasId"
+            element={<DetailMateriDummy />}
+          />
           <Route path="forum-diskusi" element={<ForumDiskusi />} />
+          <Route 
+            path="forum-diskusi/:id" 
+            element={<DetailKelasDummy title="Forum Diskusi" backTo="/admin/forum-diskusi" />} 
+          />
+          <Route
+            path="forum-diskusi/:id/kelas/:kelasId"
+            element={<DetailForumDiskusiDummy />}
+          />
           <Route path="kelola-sertifikat" element={<KelolaSertifikat />} />
           <Route path="verifikasi-dosen" element={<VerifikasiDosen />} />
         </Route>

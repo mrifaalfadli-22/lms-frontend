@@ -35,15 +35,17 @@ export default function DaftarMataKuliah() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   const buildParams = useCallback(
-    (page = 1) => {
-      const params = { page };
+    (page = 1, limit = itemsPerPage) => {
+      const params = { page, per_page: limit };
       if (search) params.search = search;
       if (semesterFilter) params.semester = semesterFilter;
       if (sksFilter) params.sks = sksFilter;
       return params;
     },
-    [search, semesterFilter, sksFilter],
+    [search, semesterFilter, sksFilter, itemsPerPage],
   );
 
   // Fetch awal
@@ -83,6 +85,11 @@ export default function DaftarMataKuliah() {
 
   const handlePageChange = (page) => {
     fetchPage(buildParams(page));
+  };
+
+  const handlePerPageChange = (newPerPage) => {
+    setItemsPerPage(newPerPage);
+    fetchPage(buildParams(1, newPerPage));
   };
 
   const handleTambahSuccess = async (values) => {
@@ -240,6 +247,7 @@ export default function DaftarMataKuliah() {
               <thead>
                 <tr className="border-b border-[#E2E8F0]">
                   {[
+                    "No",
                     "Kode MK",
                     "Nama Mata Kuliah",
                     "Fakultas",
@@ -263,6 +271,9 @@ export default function DaftarMataKuliah() {
                     key={mk.id_mk || i}
                     className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group"
                   >
+                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                      {(pagination?.current_page - 1) * pagination?.per_page + i + 1 || i + 1}
+                    </td>
                     <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                       {val(mk.kode_mk)}
                     </td>
@@ -327,6 +338,7 @@ export default function DaftarMataKuliah() {
             total={pagination.total}
             perPage={pagination.per_page}
             onPageChange={handlePageChange}
+            onPerPageChange={handlePerPageChange}
           />
         )}
       </div>

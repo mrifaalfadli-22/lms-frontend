@@ -70,6 +70,7 @@ function UserTable({
   onDelete,
   pagination,
   onPageChange,
+  onPerPageChange,
   onSearchChange,
   onStatusChange,
   onTahunChange,
@@ -144,6 +145,7 @@ function UserTable({
             <thead>
               <tr className="border-b border-[#E2E8F0]">
                 {[
+                  "No",
                   "Nama",
                   identifierLabel,
                   "Email",
@@ -170,6 +172,9 @@ function UserTable({
                     key={r.id_user || i}
                     className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group"
                   >
+                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
+                      {(pagination?.current_page - 1) * pagination?.per_page + i + 1 || i + 1}
+                    </td>
                     <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
                       {val(r.nama_lengkap)}
                     </td>
@@ -233,6 +238,7 @@ function UserTable({
           total={pagination.total}
           perPage={pagination.per_page}
           onPageChange={onPageChange}
+          onPerPageChange={onPerPageChange}
         />
       )}
     </>
@@ -278,22 +284,25 @@ export default function KelolaPengguna() {
 
   const isMahasiswa = activeTab === "mahasiswa";
 
+  const [itemsPerPageMhs, setItemsPerPageMhs] = useState(10);
+  const [itemsPerPageDosen, setItemsPerPageDosen] = useState(10);
+
   // Build params helpers
   const buildMhsParams = useCallback(
-    (page = 1) => {
-      const params = { page };
+    (page = 1, limit = itemsPerPageMhs) => {
+      const params = { page, per_page: limit };
       if (searchMhs) params.search = searchMhs;
       if (statusMhs)
         params.status_aktif = statusMhs === "AKTIF" ? "true" : "false";
       if (tahunMhs) params.angkatan = tahunMhs;
       return params;
     },
-    [searchMhs, statusMhs, tahunMhs],
+    [searchMhs, statusMhs, tahunMhs, itemsPerPageMhs],
   );
 
   const buildDosenParams = useCallback(
-    (page = 1) => {
-      const params = { page };
+    (page = 1, limit = itemsPerPageDosen) => {
+      const params = { page, per_page: limit };
       if (searchDosen) params.search = searchDosen;
       if (statusDosen) {
         // Untuk dosen, kita filter berdasarkan status_aktif juga
@@ -301,7 +310,7 @@ export default function KelolaPengguna() {
       }
       return params;
     },
-    [searchDosen, statusDosen],
+    [searchDosen, statusDosen, itemsPerPageDosen],
   );
 
   // Fetch awal per tab
@@ -351,6 +360,11 @@ export default function KelolaPengguna() {
     fetchMahasiswa(buildMhsParams(page));
   };
 
+  const handleMhsPerPageChange = (newPerPage) => {
+    setItemsPerPageMhs(newPerPage);
+    fetchMahasiswa(buildMhsParams(1, newPerPage));
+  };
+
   // ─── Handlers Dosen ─────────────────────────────────────────────
 
   const handleSearchDosenChange = (e) => {
@@ -371,6 +385,11 @@ export default function KelolaPengguna() {
 
   const handleDosenPageChange = (page) => {
     fetchDosen(buildDosenParams(page));
+  };
+
+  const handleDosenPerPageChange = (newPerPage) => {
+    setItemsPerPageDosen(newPerPage);
+    fetchDosen(buildDosenParams(1, newPerPage));
   };
 
   // ─── CRUD Handlers ────────────────────────────────────────────
@@ -546,6 +565,7 @@ export default function KelolaPengguna() {
             onDelete={setDeleteTarget}
             pagination={paginationMhs}
             onPageChange={handleMhsPageChange}
+            onPerPageChange={handleMhsPerPageChange}
             onSearchChange={handleSearchMhsChange}
             onStatusChange={handleStatusMhsChange}
             onTahunChange={handleTahunMhsChange}
@@ -566,6 +586,7 @@ export default function KelolaPengguna() {
             onDelete={setDeleteDosenTarget}
             pagination={paginationDosen}
             onPageChange={handleDosenPageChange}
+            onPerPageChange={handleDosenPerPageChange}
             onSearchChange={handleSearchDosenChange}
             onStatusChange={handleStatusDosenChange}
             onTahunChange={() => {}}

@@ -31,15 +31,17 @@ export default function KelolaKelas() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   // Bangun params dari state lokal
   const buildParams = useCallback(
-    (page = 1) => {
-      const params = { page };
+    (page = 1, limit = itemsPerPage) => {
+      const params = { page, per_page: limit };
       if (search) params.search = search;
       if (tahunFilter) params.tahun_angkatan = tahunFilter;
       return params;
     },
-    [search, tahunFilter],
+    [search, tahunFilter, itemsPerPage],
   );
 
   // Fetch awal saat mount
@@ -68,6 +70,11 @@ export default function KelolaKelas() {
 
   const handlePageChange = (page) => {
     fetchPage(buildParams(page));
+  };
+
+  const handlePerPageChange = (newPerPage) => {
+    setItemsPerPage(newPerPage);
+    fetchPage(buildParams(1, newPerPage));
   };
 
   const handleTambahSuccess = async (values) => {
@@ -213,6 +220,7 @@ export default function KelolaKelas() {
               <thead>
                 <tr className="border-b border-[#E2E8F0]">
                   {[
+                    "No",
                     "Kode Kelas",
                     "Nama Kelas",
                     "Fakultas",
@@ -235,6 +243,9 @@ export default function KelolaKelas() {
                     key={k.id_kelas || i}
                     className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group"
                   >
+                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                      {(pagination?.current_page - 1) * pagination?.per_page + i + 1 || i + 1}
+                    </td>
                     <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                       <span className="bg-[#F1F5F9] px-3 py-1 rounded-lg text-[13px]">
                         {val(k.kode_kelas)}
@@ -294,6 +305,7 @@ export default function KelolaKelas() {
             total={pagination.total}
             perPage={pagination.per_page}
             onPageChange={handlePageChange}
+            onPerPageChange={handlePerPageChange}
           />
         )}
       </div>

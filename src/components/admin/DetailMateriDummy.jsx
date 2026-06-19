@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { ChevronRight, ArrowLeft, Trash2, Eye, Download, Search, X, FileText } from "lucide-react";
 import jadwalService from "../../services/jadwalService";
 import DeleteConfirmModal from "../../components/admin/DeleteConfirmModal";
@@ -17,7 +17,11 @@ const DUMMY_MATERI = [
 
 export default function DetailMateriDummy() {
   const { id, kelasId } = useParams();
-  const [jadwal, setJadwal] = useState(null);
+  const location = useLocation();
+  const [jadwal, setJadwal] = useState(location.state?.groupData || null);
+  const classDataState = location.state?.classData || null;
+  const [classData, setClassData] = useState(classDataState);
+  
   const [materi, setMateri] = useState(DUMMY_MATERI);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [viewTarget, setViewTarget] = useState(null);
@@ -27,14 +31,23 @@ export default function DetailMateriDummy() {
   const [perPage, setPerPage] = useState(10);
 
   useEffect(() => {
-    jadwalService.getById(id).then((res) => {
-      setJadwal(res);
-    }).catch((err) => {
-      console.error("Gagal memuat jadwal", err);
-    });
-  }, [id]);
+    if (!jadwal) {
+      jadwalService.getGroupedByJadwalId(id).then((res) => {
+        setJadwal(res);
+        if (res && res.kelas_list) {
+          const foundClass = res.kelas_list.find(k => k.id_jadwal === kelasId);
+          if (foundClass) setClassData(foundClass);
+        }
+      }).catch(err => {
+        console.error("Gagal memuat jadwal", err);
+      });
+    } else if (!classData && jadwal.kelas_list) {
+      const foundClass = jadwal.kelas_list.find(k => k.id_jadwal === kelasId);
+      if (foundClass) setClassData(foundClass);
+    }
+  }, [id, kelasId, jadwal, classData]);
 
-  const namaKelas = kelasId === "1" ? "Kelas A" : kelasId === "2" ? "Kelas B" : "Kelas C";
+  const namaKelas = classData?.nama_kelas || "Memuat Kelas...";
 
   const PERTEMUAN_OPTIONS = [...new Set(DUMMY_MATERI.map((m) => m.pertemuan))];
 
@@ -90,9 +103,9 @@ export default function DetailMateriDummy() {
             </div>
 
             {/* File list dummy */}
-            <div className="border border-[#E2E8F0] rounded-xl p-4 mb-5 space-y-3">
+            <div className="mb-5 space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
               {Array.from({ length: viewTarget.jumlah_file }).map((_, i) => (
-                <div key={i} className="flex flex-col items-center justify-center py-5 gap-2">
+                <div key={i} className="border border-[#E2E8F0] rounded-xl p-5 flex flex-col items-center justify-center gap-2">
                   <div className="w-14 h-14 flex items-center justify-center">
                     <FileText size={48} className="text-[#94A3B8]" strokeWidth={1.2} />
                   </div>
@@ -121,8 +134,12 @@ export default function DetailMateriDummy() {
           <ArrowLeft size={14} strokeWidth={2.5} />
           <span>Kembali ke Daftar Kelas</span>
         </Link>
-        <ChevronRight size={14} />
-        <span className="text-[#1E293B] font-semibold">{jadwal?.nama_mk || "Memuat..."}</span>
+        <Link
+          to={`/admin/kelola-materi-perkuliahan/${id}`}
+          className="hover:text-[#167A61] transition-colors font-semibold"
+        >
+          {jadwal?.nama_mk || "Memuat..."}
+        </Link>
         <ChevronRight size={14} />
         <span className="text-[#1E293B] font-semibold">{namaKelas}</span>
       </div>
@@ -176,7 +193,7 @@ export default function DetailMateriDummy() {
                 {["No", "Pertemuan", "Judul Materi", "Jumlah File", "Tanggal Diunggah", "Aksi"].map((h) => (
                   <th
                     key={h}
-                    className="py-4 px-4 text-[12px] font-bold text-[#64748B] uppercase whitespace-nowrap tracking-wide"
+                    className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase"
                   >
                     {h}
                   </th>
@@ -187,38 +204,41 @@ export default function DetailMateriDummy() {
               {paginated.map((m, index) => (
                 <tr
                   key={m.id}
-                  className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors"
+                  className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group"
                 >
-                  <td className="py-4 px-4 text-[#64748B] font-bold whitespace-nowrap">
+                  <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                     {(currentPage - 1) * perPage + index + 1}
                   </td>
-                  <td className="py-4 px-4 font-bold text-[#167A61] whitespace-nowrap">
-                    {m.pertemuan}
+                  <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                    <span className="bg-[#F1F5F9] px-3 py-1 rounded-lg text-[13px]">
+                      {m.pertemuan}
+                    </span>
                   </td>
-                  <td className="py-4 px-4 text-[#1E293B]">
+                  <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
                     {m.judul}
                   </td>
                   <td className="py-4 px-4">
-                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] text-[13px] font-bold">
+                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#F1F5F9] text-[#64748B] text-[13px] font-bold group-hover:bg-[#0E5C46]/10 group-hover:text-[#0E5C46] transition-colors">
                       {m.jumlah_file}
                     </span>
                   </td>
-                  <td className="py-4 px-4 text-[#64748B] whitespace-nowrap">
+                  <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                     {m.tanggal}
                   </td>
                   <td className="py-4 px-4">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setViewTarget(m)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-all text-[13px] font-bold">
-                        <Eye size={13} />
+                        className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/20 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold"
+                      >
+                        <Eye size={14} />
                         <span>Lihat</span>
                       </button>
                       <button
                         onClick={() => setDeleteTarget(m)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 border border-red-100 text-red-600 rounded-lg hover:bg-red-50 transition-all text-[13px] font-bold"
+                        className="flex items-center gap-2 px-3 py-1.5 text-red-600 border border-red-100 rounded-lg hover:bg-red-50 transition-all text-[13px] font-bold"
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={14} />
                         <span>Hapus</span>
                       </button>
                     </div>

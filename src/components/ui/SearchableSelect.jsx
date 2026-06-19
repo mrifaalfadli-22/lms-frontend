@@ -16,7 +16,7 @@ export default function SearchableSelect({
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, rectTop: 0, left: 0, width: 0, isUpward: false });
   const containerRef = useRef(null);
   const triggerRef = useRef(null); // ✅ ref khusus trigger
   const searchRef = useRef(null);
@@ -28,11 +28,18 @@ export default function SearchableSelect({
 
   useEffect(() => {
     if (open && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect(); // ✅ ukur dari trigger
+      const rect = triggerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      
+      const isUpward = spaceBelow < 250 && spaceAbove > spaceBelow;
+
       setDropdownPos({
         top: rect.bottom,
+        rectTop: rect.top,
         left: rect.left,
         width: rect.width,
+        isUpward,
       });
     }
   }, [open]);
@@ -110,15 +117,16 @@ export default function SearchableSelect({
           <div
             style={{
               position: "fixed",
-              top: dropdownPos.top + 4,
+              top: dropdownPos.isUpward ? "auto" : dropdownPos.top + 4,
+              bottom: dropdownPos.isUpward ? window.innerHeight - dropdownPos.rectTop + 4 : "auto",
               left: dropdownPos.left,
               width: dropdownPos.width,
               zIndex: 9999,
             }}
-            className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
+            className={`bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden flex flex-col ${dropdownPos.isUpward ? 'flex-col-reverse' : ''}`}
           >
             {searchable && (
-              <div className="p-2 border-b border-gray-100">
+              <div className={`p-2 border-gray-100 ${dropdownPos.isUpward ? 'border-t' : 'border-b'}`}>
                 <input
                   ref={searchRef}
                   type="text"

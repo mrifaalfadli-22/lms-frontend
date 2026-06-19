@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search,
   Download,
@@ -252,6 +252,8 @@ export default function KelolaPengguna() {
     setMahasiswa,
     dosen,
     loading,
+    loadingMhs,
+    loadingDosen,
     error,
     paginationMhs,
     paginationDosen,
@@ -313,12 +315,21 @@ export default function KelolaPengguna() {
     [searchDosen, statusDosen, itemsPerPageDosen],
   );
 
+  const isInitialMount = useRef(true);
+
   // Fetch awal per tab
   useEffect(() => {
-    if (isMahasiswa) {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
       fetchMahasiswa(buildMhsParams(1));
-    } else {
       fetchDosen(buildDosenParams(1));
+      return;
+    }
+
+    if (isMahasiswa) {
+      fetchMahasiswa(buildMhsParams(paginationMhs.current_page || 1));
+    } else {
+      fetchDosen(buildDosenParams(paginationDosen.current_page || 1));
     }
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -544,8 +555,8 @@ export default function KelolaPengguna() {
                   }`}
                 >
                   {key === "mahasiswa"
-                    ? paginationMhs.total
-                    : paginationDosen.total}
+                    ? (loadingMhs && paginationMhs.total === 0 ? "..." : paginationMhs.total)
+                    : (loadingDosen && paginationDosen.total === 0 ? "..." : paginationDosen.total)}
                 </span>
               </button>
             ))}

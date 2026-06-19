@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useProfile } from "../../hooks/useProfile";
 import { usePrayerTimes } from "../../hooks/usePrayerTimes";
 
@@ -8,14 +8,17 @@ const pageTitles = {
   "/dosen/monitoring-progres": "Monitoring Progres",
   "/dosen/forum-diskusi": "Berinteraksi dalam Forum",
   "/dosen/verifikasi-sertifikat": "Verifikasi Kelayakan Sertifikat",
+  "/dosen/profil": "Profil Dosen",
 };
 
 export default function Header() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useProfile();
   const { currentPrayer, loading } = usePrayerTimes();
 
-  const fullName = user?.nama_lengkap || "";
+  // Defensive Check: Coba ambil nama_lengkap, jika tidak ada cari field 'name'
+  const fullName = user?.nama_lengkap || user?.name || "";
 
   const initials = fullName
     ? fullName
@@ -27,7 +30,10 @@ export default function Header() {
         .toUpperCase()
     : "--";
 
-  const currentTitle = pageTitles[location.pathname] || "Dashboard";
+  const currentTitle =
+    pageTitles[location.pathname] ||
+    Object.entries(pageTitles).find(([key]) => location.pathname.startsWith(key + "/"))?.[1] ||
+    "Dashboard";
 
   return (
     <header className="flex justify-between items-center">
@@ -53,7 +59,10 @@ export default function Header() {
         </div>
 
         {/* Profil Dosen */}
-        <div className="flex items-center gap-2.5 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
+        <div
+          onClick={() => navigate("/dosen/profil")}
+          className="flex items-center gap-2.5 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
+        >
           <div className="text-right">
             <p className="text-sm font-bold text-[#1E293B] leading-none">
               Dosen

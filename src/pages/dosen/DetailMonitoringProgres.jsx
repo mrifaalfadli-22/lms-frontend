@@ -1,0 +1,178 @@
+import { useState } from "react";
+import { Link, useParams, useLocation } from "react-router-dom";
+import { ArrowLeft, ChevronRight, Eye } from "lucide-react";
+import Pagination from "../../components/common/Pagination";
+import DetailProgressModal from "../../components/dosen/DetailProgressModal";
+
+export default function DetailMonitoringProgres() {
+  const { id, kelasId } = useParams();
+  const location = useLocation();
+  const jadwal = location.state?.groupData || { nama_mk: "Mata Kuliah" };
+  const classData = location.state?.classData || { nama_kelas: "Kelas" };
+
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const [detailModalData, setDetailModalData] = useState(null);
+
+  const dummyMahasiswa = [
+    {
+      id: 1,
+      nim: "065120114",
+      nama: "Adam R.",
+      log: "Hadir Sesi Terakhir",
+      rataRata: "85.00",
+      progres: 75,
+    },
+    {
+      id: 2,
+      nim: "065120115",
+      nama: "Nurhayati M.",
+      log: "Bolos 1 Sesi",
+      rataRata: "60.50",
+      progres: 30,
+    },
+    {
+      id: 3,
+      nim: "065120116",
+      nama: "Dinda P.",
+      log: "Hadir Sesi Terakhir",
+      rataRata: "92.50",
+      progres: 100,
+    },
+    {
+      id: 4,
+      nim: "065120117",
+      nama: "Farhan S.",
+      log: "Hadir Sesi Terakhir",
+      rataRata: "78.00",
+      progres: 60,
+    },
+    {
+      id: 5,
+      nim: "065120118",
+      nama: "Siti Aisyah",
+      log: "Hadir Sesi Terakhir",
+      rataRata: "88.00",
+      progres: 90,
+    },
+  ];
+
+  const startIndex = (page - 1) * perPage;
+  const endIndex = startIndex + perPage;
+  const paginatedMahasiswa = dummyMahasiswa.slice(startIndex, endIndex);
+
+  const getProgressColor = (value) => {
+    if (value < 50) return "bg-orange-500";
+    return "bg-[#008B5E]";
+  };
+
+  return (
+    <>
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2.5 text-[13px] font-bold text-[#64748B] mb-5">
+        <Link
+          to={`/dosen/monitoring-progres/${id}`}
+          state={{ groupData: jadwal }}
+          className="flex items-center gap-2 px-3 py-1.5 border border-[#167A61] text-[#167A61] rounded-xl bg-transparent hover:bg-[#F0FAF6] transition-all font-bold text-[13px] mr-2"
+        >
+          <ArrowLeft size={14} strokeWidth={2.5} />
+          <span>Kembali ke Daftar Kelas</span>
+        </Link>
+        <Link
+          to={`/dosen/monitoring-progres/${id}`}
+          state={{ groupData: jadwal }}
+          className="hover:text-[#167A61] transition-colors"
+        >
+          {jadwal.nama_mk}
+        </Link>
+        <ChevronRight size={14} />
+        <span className="text-[#1E293B] font-semibold">{classData.nama_kelas}</span>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 py-7 px-8">
+        <h3 className="text-[17px] font-extrabold text-[#1E293B] mb-6">
+          Aktivitas dan Nilai Mahasiswa - {classData.nama_kelas}
+        </h3>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-[#E2E8F0]">
+                <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">No</th>
+                <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">NPM</th>
+                <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Nama Mahasiswa</th>
+                <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Aktivitas Log</th>
+                <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Nilai Kuis Rata-Rata</th>
+                <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Progres Belajar</th>
+                <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Aksi Pantau</th>
+              </tr>
+            </thead>
+            <tbody className="text-[14px] text-[#1E293B]">
+              {paginatedMahasiswa.map((m, idx) => (
+                <tr key={m.id} className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 group">
+                  <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                    {startIndex + idx + 1}
+                  </td>
+                  <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                    {m.nim}
+                  </td>
+                  <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                    {m.nama}
+                  </td>
+                  <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                    {m.log}
+                  </td>
+                  <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                    {m.rataRata}
+                  </td>
+                  <td className="py-4 px-4 whitespace-nowrap min-w-[200px]">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[13px] font-bold text-[#64748B]">{m.progres}% Selesai</span>
+                      <div className="w-full bg-[#E2E8F0] h-2.5 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-1000 ${getProgressColor(m.progres)}`}
+                          style={{ width: `${m.progres}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-4 px-4">
+                    <button 
+                      onClick={() => setDetailModalData(m)}
+                      className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/20 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold"
+                    >
+                      <Eye size={14} />
+                      <span>Detail Progress</span>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-6 border-t border-[#E2E8F0] pt-6">
+          <Pagination
+            currentPage={page}
+            lastPage={Math.ceil(dummyMahasiswa.length / perPage)}
+            total={dummyMahasiswa.length}
+            perPage={perPage}
+            onPageChange={(p) => setPage(p)}
+            onPerPageChange={(l) => {
+              setPerPage(l);
+              setPage(1);
+            }}
+          />
+        </div>
+      </div>
+
+      <DetailProgressModal
+        isOpen={!!detailModalData}
+        onClose={() => setDetailModalData(null)}
+        data={detailModalData}
+        mataKuliah={jadwal.nama_mk}
+        kelas={classData.nama_kelas}
+      />
+    </>
+  );
+}

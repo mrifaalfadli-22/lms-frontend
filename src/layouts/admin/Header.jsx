@@ -1,4 +1,4 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useProfile } from "../../hooks/useProfile";
 import { usePrayerTimes } from "../../hooks/usePrayerTimes";
 
@@ -12,10 +12,12 @@ const pageTitles = {
   "/admin/forum-diskusi": "Kelola Forum Diskusi",
   "/admin/kelola-sertifikat": "Kelola Sertifikat",
   "/admin/verifikasi-dosen": "Verifikasi Dosen",
+  "/admin/profil": "Profil Admin",
 };
 
 export default function Header() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useProfile();
   const { currentPrayer, loading } = usePrayerTimes();
 
@@ -60,7 +62,10 @@ export default function Header() {
               : "Tidak tersedia"}
         </div>
 
-        <div className="flex items-center gap-2.5 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
+        <div
+          onClick={() => navigate("/admin/profil")}
+          className="flex items-center gap-2.5 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
+        >
           <div className="text-right">
             <p className="text-sm font-bold text-[#1E293B] leading-none">
               Admin System

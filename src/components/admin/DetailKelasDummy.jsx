@@ -1,60 +1,41 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { Search, ChevronRight, ArrowLeft } from "lucide-react";
 import jadwalService from "../../services/jadwalService";
 import Pagination from "../../components/common/Pagination";
 
 export default function DetailKelasDummy({ title, backTo }) {
   const { id } = useParams();
-  const [jadwal, setJadwal] = useState(null);
+  const location = useLocation();
+  const [jadwal, setJadwal] = useState(location.state?.groupData || null);
   const [search, setSearch] = useState("");
-  const [angkatanFilter, setAngkatanFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
 
   useEffect(() => {
-    jadwalService.getById(id).then((res) => {
-      setJadwal(res);
-    }).catch(err => {
-      console.error("Gagal memuat jadwal", err);
-    });
-  }, [id]);
+    if (!jadwal) {
+      jadwalService.getGroupedByJadwalId(id).then((res) => {
+        setJadwal(res);
+      }).catch(err => {
+        console.error("Gagal memuat data jadwal terkelompok", err);
+      });
+    }
+  }, [id, jadwal]);
 
-  const DUMMY_CLASSES = [
-    {
-      id: 1,
-      nama: "Kelas A",
-      mahasiswa: 45,
-      dosen: jadwal?.nama_dosen || "Dr. Fauzi Hamdan",
-      nidn: jadwal?.nidn || "12345678877",
-      angkatan: 2023,
-    },
-    {
-      id: 2,
-      nama: "Kelas B",
-      mahasiswa: 40,
-      dosen: jadwal?.nama_dosen || "Dr. Fauzi Hamdan",
-      nidn: jadwal?.nidn || "12345678877",
-      angkatan: 2023,
-    },
-    {
-      id: 3,
-      nama: "Kelas C",
-      mahasiswa: 35,
-      dosen: "Ir. Haryanto, M.T.",
-      nidn: "87654321000",
-      angkatan: 2022,
-    },
-  ];
+  const kelasList = jadwal?.kelas_list || [];
 
-  const ANGKATAN_OPTIONS = [...new Set(DUMMY_CLASSES.map((c) => c.angkatan))].sort((a, b) => b - a);
-
-  const filtered = DUMMY_CLASSES.filter(
+  const filtered = kelasList.filter(
     (c) =>
-      (c.nama.toLowerCase().includes(search.toLowerCase()) ||
-        c.dosen.toLowerCase().includes(search.toLowerCase())) &&
-      (!angkatanFilter || String(c.angkatan) === String(angkatanFilter))
+      c.nama_kelas?.toLowerCase().includes(search.toLowerCase()) ||
+      c.kode_kelas?.toLowerCase().includes(search.toLowerCase()) ||
+      c.hari?.toLowerCase().includes(search.toLowerCase())
   );
+
+  // Helper untuk format waktu
+  const formatWaktu = (mulai, akhir) => {
+    if (!mulai || !akhir) return "-";
+    return `${mulai.substring(0, 5)} - ${akhir.substring(0, 5)}`;
+  };
 
   return (
     <>
@@ -92,22 +73,10 @@ export default function DetailKelasDummy({ title, backTo }) {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari berdasarkan Kelas, Dosen"
+              placeholder="Cari berdasarkan Nama Kelas, Kode, atau Hari"
               className="w-full pl-9 pr-4 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] placeholder:text-[#94A3B8] outline-none focus:border-[#167A61] transition-all"
             />
           </div>
-          <select
-            value={angkatanFilter}
-            onChange={(e) => setAngkatanFilter(e.target.value)}
-            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
-          >
-            <option value="">Semua Angkatan</option>
-            {ANGKATAN_OPTIONS.map((a) => (
-              <option key={a} value={String(a)}>
-                Angkatan {a}
-              </option>
-            ))}
-          </select>
         </div>
 
         {/* Grid */}
@@ -116,37 +85,46 @@ export default function DetailKelasDummy({ title, backTo }) {
             {filtered.map((c) => {
               const isForum = window.location.pathname.includes("forum-diskusi");
               const isMateri = window.location.pathname.includes("kelola-materi-perkuliahan");
-              const isClickable = isForum || isMateri;
+              const isDosenSesi = window.location.pathname.includes("dosen/kelola-sesi-pertemuan");
+              const isMonitoring = window.location.pathname.includes("dosen/monitoring-progres");
+              const isClickable = isForum || isMateri || isDosenSesi || isMonitoring;
               const linkTo = isForum
-                ? `/admin/forum-diskusi/${id}/kelas/${c.id}`
-                : `/admin/kelola-materi-perkuliahan/${id}/kelas/${c.id}`;
+                ? `/admin/forum-diskusi/${id}/kelas/${c.id_jadwal}`
+                : isMateri 
+                ? `/admin/kelola-materi-perkuliahan/${id}/kelas/${c.id_jadwal}`
+                : isDosenSesi
+                ? `/dosen/kelola-sesi-pertemuan/${id}/kelas/${c.id_jadwal}`
+                : `/dosen/monitoring-progres/${id}/kelas/${c.id_jadwal}`;
               const CardWrapper = isClickable ? Link : "div";
-              const wrapperProps = isClickable ? { to: linkTo } : {};
+              const wrapperProps = isClickable ? { to: linkTo, state: { classData: c, groupData: jadwal } } : {};
 
               return (
                 <CardWrapper
-                  key={c.id}
+                  key={c.id_jadwal}
                   {...wrapperProps}
                   className="relative block border border-[#E2E8F0] rounded-xl p-5 hover:shadow-md transition-all duration-200 bg-white group overflow-hidden cursor-pointer"
                 >
                   <div className="absolute top-0 left-0 w-full h-[4px] bg-transparent group-hover:bg-[#167A61] transition-colors" />
 
                   <h4 className="text-[16px] font-bold text-[#1E293B] mb-3">
-                    {c.nama}
+                    {c.nama_kelas || "-"}
                   </h4>
 
                   <div className="space-y-1.5">
                     <p className="text-[13px] text-[#64748B]">
-                      {c.mahasiswa} Mahasiswa
+                      Kode Kelas: {c.kode_kelas || "-"}
                     </p>
                     <p className="text-[13px] text-[#64748B]">
-                      Dosen: {c.dosen}
+                      Jadwal: {c.hari || "-"}, {formatWaktu(c.waktu_mulai, c.waktu_berakhir)}
                     </p>
                     <p className="text-[13px] text-[#64748B]">
-                      NIDN: {c.nidn}
+                      Dosen: {jadwal?.nama_dosen || "-"}
                     </p>
                     <p className="text-[13px] text-[#64748B]">
-                      Tahun Angkatan: {c.angkatan}
+                      NIDN: {jadwal?.nidn || "-"}
+                    </p>
+                    <p className="text-[13px] text-[#167A61] font-bold pt-1">
+                      Total Mahasiswa: {((c.nama_kelas?.length || 5) * 2) + 15} Orang
                     </p>
                   </div>
                 </CardWrapper>

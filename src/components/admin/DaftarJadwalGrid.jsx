@@ -34,13 +34,21 @@ const PRODI_OPTIONS = [
 
 const SEMESTER_OPTIONS = Array.from({ length: 8 }, (_, i) => i + 1);
 
-export default function DaftarJadwalGrid({ title, basePath }) {
+// Generate tahun ajaran: dari 3 tahun lalu hingga 2 tahun ke depan
+const currentYear = new Date().getFullYear();
+const TAHUN_OPTIONS = Array.from({ length: 6 }, (_, i) => {
+  const y = currentYear - 3 + i;
+  return `${y}/${y + 1}`;
+});
+
+export default function DaftarJadwalGrid({ title, basePath, dosenNidn, isDosenView }) {
   const {
     jadwal,
     loading,
     error,
     pagination,
     fetchPage,
+    fetchGrouped,
     debouncedFetch,
   } = useJadwalKuliah();
 
@@ -48,6 +56,7 @@ export default function DaftarJadwalGrid({ title, basePath }) {
   const [fakultasFilter, setFakultasFilter] = useState("");
   const [prodiFilter, setProdiFilter] = useState("");
   const [semesterFilter, setSemesterFilter] = useState("");
+  const [tahunFilter, setTahunFilter] = useState("");
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
@@ -58,15 +67,20 @@ export default function DaftarJadwalGrid({ title, basePath }) {
       if (fakultasFilter) params.fakultas = fakultasFilter;
       if (prodiFilter) params.prodi = prodiFilter;
       if (semesterFilter) params.semester = semesterFilter;
+      if (tahunFilter) params.tahun = tahunFilter;
+      if (dosenNidn) params.nidn = dosenNidn;
       return params;
     },
-    [search, fakultasFilter, prodiFilter, semesterFilter, itemsPerPage],
+    [search, fakultasFilter, prodiFilter, semesterFilter, tahunFilter, itemsPerPage, dosenNidn],
   );
 
-  // Fetch awal
+  // Fetch awal — pakai endpoint grouped
   useEffect(() => {
-    fetchPage(buildParams(1));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Jika halaman ini khusus dosen, tunggu sampai data NIDN benar-benar tersedia
+    if (isDosenView && !dosenNidn) return;
+    
+    fetchGrouped(buildParams(1));
+  }, [dosenNidn, isDosenView]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearchChange = (e) => {
     const value = e.target.value;
@@ -76,6 +90,8 @@ export default function DaftarJadwalGrid({ title, basePath }) {
     if (fakultasFilter) params.fakultas = fakultasFilter;
     if (prodiFilter) params.prodi = prodiFilter;
     if (semesterFilter) params.semester = semesterFilter;
+    if (tahunFilter) params.tahun = tahunFilter;
+    if (dosenNidn) params.nidn = dosenNidn;
     debouncedFetch(params);
   };
 
@@ -87,19 +103,21 @@ export default function DaftarJadwalGrid({ title, basePath }) {
     if (fakultasFilter) params.fakultas = fakultasFilter;
     if (prodiFilter) params.prodi = prodiFilter;
     if (semesterFilter) params.semester = semesterFilter;
-    
+    if (tahunFilter) params.tahun = tahunFilter;
+    if (dosenNidn) params.nidn = dosenNidn;
+
     if (value) params[key] = value;
     else delete params[key];
-    fetchPage(params);
+    fetchGrouped(params);
   };
 
   const handlePageChange = (page) => {
-    fetchPage(buildParams(page));
+    fetchGrouped(buildParams(page));
   };
 
   const handlePerPageChange = (newPerPage) => {
     setItemsPerPage(newPerPage);
-    fetchPage(buildParams(1, newPerPage));
+    fetchGrouped(buildParams(1, newPerPage));
   };
 
   const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
@@ -107,10 +125,12 @@ export default function DaftarJadwalGrid({ title, basePath }) {
   const filteredJadwal = jadwal.filter((j) => {
     if (fakultasFilter && j.fakultas !== fakultasFilter) return false;
     if (prodiFilter && j.prodi !== prodiFilter) return false;
-    // semesterFilter is already sent to the backend, but we can also double-filter locally just in case
     if (semesterFilter && String(j.semester) !== String(semesterFilter)) return false;
+    if (tahunFilter && j.tahun !== tahunFilter) return false;
+    if (dosenNidn && j.nidn !== dosenNidn) return false; // Antisipasi jika BE belum memfilter dengan parameter nidn
     return true;
   });
+  // Grouping sudah dilakukan di BE, tidak perlu dedup manual
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 py-7">
@@ -174,6 +194,19 @@ export default function DaftarJadwalGrid({ title, basePath }) {
             </option>
           ))}
         </select>
+
+        <select
+          value={tahunFilter}
+          onChange={handleFilterChange(setTahunFilter, "tahun")}
+          className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
+        >
+          <option value="">Semua Tahun Ajaran</option>
+          {TAHUN_OPTIONS.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Content Grid */}
@@ -215,6 +248,7 @@ export default function DaftarJadwalGrid({ title, basePath }) {
               <Link
                 key={j.id_jadwal}
                 to={`${basePath}/${j.id_jadwal}`}
+                state={{ groupData: j }}
                 className="relative block border border-[#E2E8F0] rounded-xl p-5 hover:shadow-md transition-all duration-200 bg-white group overflow-hidden"
               >
                 {/* Top border highlight - visible on hover */}
@@ -225,17 +259,17 @@ export default function DaftarJadwalGrid({ title, basePath }) {
                 </h4>
 
                 <div className="space-y-1.5 mb-4">
-                  <p className="text-[13px] text-[#64748B] truncate" title={val(j.kelas)}>
-                    Kelas: {val(j.kelas)}
-                  </p>
                   <p className="text-[13px] text-[#64748B] truncate" title={val(j.nama_dosen)}>
                     Dosen: {val(j.nama_dosen)}
                   </p>
                   <p className="text-[13px] text-[#64748B] truncate">
                     NIDN: {j.nidn ? j.nidn : "-"}
                   </p>
+                  <p className="text-[13px] text-[#64748B] truncate">
+                    T.A: {val(j.tahun)}
+                  </p>
                   <p className="text-[13px] font-bold text-[#167A61] pt-1">
-                    {Math.floor(Math.random() * 3) + 2} Kelas
+                    {j.jumlah_kelas} Kelas
                   </p>
                 </div>
 

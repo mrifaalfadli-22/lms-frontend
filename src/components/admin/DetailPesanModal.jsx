@@ -2,26 +2,17 @@ import { X } from "lucide-react";
 
 const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
 
-export default function DetailKelasModal({ isOpen, onClose, data }) {
+export default function DetailPesanModal({ isOpen, onClose, data }) {
   if (!isOpen || !data) return null;
 
-  const formatDate = (d) =>
-    d
-      ? new Date(d).toLocaleDateString("id-ID", {
-          day: "2-digit",
-          month: "long",
-          year: "numeric",
-        })
-      : "-";
-
   const rows = [
-    { label: "Nama Kelas", value: val(data.nama_kelas) },
-    { label: "Kode Kelas", value: val(data.kode_kelas) },
-    { label: "Tahun Angkatan", value: val(data.tahun_angkatan) },
-    { label: "Fakultas", value: val(data.fakultas) },
-    { label: "Program Studi", value: val(data.prodi) },
-    { label: "Dibuat Pada", value: formatDate(data.created_at) },
-    { label: "Diperbarui Pada", value: formatDate(data.updated_at) },
+    { label: "Pertemuan", value: val(data.pertemuan) },
+    { label: "Pembuat", value: val(data.pembuat) },
+    { label: "NIDN/NPM", value: val(data.nidn) },
+    { label: "Role", value: val(data.role) },
+    { label: "Judul", value: val(data.judul) },
+    { label: "Isi Diskusi", value: val(data.isi) },
+    { label: "Waktu Kirim", value: val(data.waktu) },
   ];
 
   return (
@@ -29,15 +20,15 @@ export default function DetailKelasModal({ isOpen, onClose, data }) {
       className="fixed inset-0 z-[998] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-white rounded-2xl w-full max-w-[480px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-2xl w-full max-w-[500px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-6 pt-6 pb-2 flex items-start justify-between">
           <div>
             <h3 className="text-[18px] font-bold text-[#008B5E] leading-tight">
-              Detail Kelas
+              Detail Pesan Diskusi
             </h3>
             <p className="text-[13px] text-[#64748B] mt-1">
-              Informasi lengkap mengenai kelas ini.
+              Informasi lengkap mengenai diskusi atau komentar.
             </p>
           </div>
           <button
@@ -54,10 +45,10 @@ export default function DetailKelasModal({ isOpen, onClose, data }) {
             <tbody>
               {rows.map((row, i) => (
                 <tr key={i} className="border-b border-gray-100 last:border-0">
-                  <td className="py-3 pr-4 text-[13px] text-[#64748B]">
+                  <td className="py-3 pr-4 text-[13px] text-[#64748B] align-top whitespace-nowrap">
                     {row.label}
                   </td>
-                  <td className="py-3 text-[14px] font-medium text-[#1E293B]">
+                  <td className="py-3 text-[14px] font-medium text-[#1E293B] align-top">
                     {row.value}
                   </td>
                 </tr>

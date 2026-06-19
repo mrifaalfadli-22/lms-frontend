@@ -77,8 +77,8 @@ export default function Sidebar(role = "dosen") {
           <button
             onClick={() => setShowLogoutModal(true)} // Tampilkan modal saat diklik
             className="relative z-10 w-full bg-red-500/10 border border-red-500/30 py-3
-          rounded-lg text-[15px] text-[#FECDD3] hover:bg-red-500/20 
-          hover:border-red-500/40 transition-all"
+            rounded-lg text-[15px] text-[#FECDD3] hover:bg-red-500/20 
+            hover:border-red-500/40 transition-all"
           >
             Logout
           </button>

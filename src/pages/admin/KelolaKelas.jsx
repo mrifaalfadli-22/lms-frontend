@@ -24,6 +24,8 @@ export default function KelolaKelas() {
 
   const [search, setSearch] = useState("");
   const [tahunFilter, setTahunFilter] = useState("");
+  const [fakultasFilter, setFakultasFilter] = useState("");
+  const [prodiFilter, setProdiFilter] = useState("");
 
   const [showTambah, setShowTambah] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -39,9 +41,11 @@ export default function KelolaKelas() {
       const params = { page, per_page: limit };
       if (search) params.search = search;
       if (tahunFilter) params.tahun_angkatan = tahunFilter;
+      if (fakultasFilter) params.fakultas = fakultasFilter;
+      if (prodiFilter) params.prodi = prodiFilter;
       return params;
     },
-    [search, tahunFilter, itemsPerPage],
+    [search, tahunFilter, fakultasFilter, prodiFilter, itemsPerPage],
   );
 
   // Fetch awal saat mount
@@ -56,6 +60,8 @@ export default function KelolaKelas() {
     const params = { page: 1 };
     if (value) params.search = value;
     if (tahunFilter) params.tahun_angkatan = tahunFilter;
+    if (fakultasFilter) params.fakultas = fakultasFilter;
+    if (prodiFilter) params.prodi = prodiFilter;
     debouncedFetch(params);
   };
 
@@ -65,6 +71,31 @@ export default function KelolaKelas() {
     const params = { page: 1 };
     if (search) params.search = search;
     if (value) params.tahun_angkatan = value;
+    if (fakultasFilter) params.fakultas = fakultasFilter;
+    if (prodiFilter) params.prodi = prodiFilter;
+    fetchPage(params);
+  };
+
+  const handleFakultasChange = (e) => {
+    const value = e.target.value;
+    setFakultasFilter(value);
+    // Reset prodi saat fakultas berubah
+    setProdiFilter("");
+    const params = { page: 1 };
+    if (search) params.search = search;
+    if (tahunFilter) params.tahun_angkatan = tahunFilter;
+    if (value) params.fakultas = value;
+    fetchPage(params);
+  };
+
+  const handleProdiChange = (e) => {
+    const value = e.target.value;
+    setProdiFilter(value);
+    const params = { page: 1 };
+    if (search) params.search = search;
+    if (tahunFilter) params.tahun_angkatan = tahunFilter;
+    if (fakultasFilter) params.fakultas = fakultasFilter;
+    if (value) params.prodi = value;
     fetchPage(params);
   };
 
@@ -174,10 +205,12 @@ export default function KelolaKelas() {
               className="w-full pl-9 pr-4 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] placeholder:text-[#94A3B8] outline-none focus:border-[#167A61] transition-all"
             />
           </div>
+
+          {/* Filter Tahun Angkatan */}
           <select
             value={tahunFilter}
             onChange={handleTahunChange}
-            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
+            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
           >
             <option value="">Semua Tahun Angkatan</option>
             {[2020, 2021, 2022, 2023, 2024, 2025, 2026].map((t) => (
@@ -186,6 +219,107 @@ export default function KelolaKelas() {
               </option>
             ))}
           </select>
+
+          {/* Filter Fakultas */}
+          <select
+            value={fakultasFilter}
+            onChange={handleFakultasChange}
+            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
+          >
+            <option value="">Semua Fakultas</option>
+            <option value="Teknik">Teknik</option>
+            <option value="Ekonomi">Ekonomi</option>
+            <option value="Hukum">Hukum</option>
+            <option value="FKIP">FKIP</option>
+            <option value="Pertanian">Pertanian</option>
+            <option value="Agama Islam">Agama Islam</option>
+            <option value="Ilmu Sosial">Ilmu Sosial</option>
+          </select>
+
+          {/* Filter Program Studi */}
+          <select
+            value={prodiFilter}
+            onChange={handleProdiChange}
+            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
+          >
+            <option value="">Semua Program Studi</option>
+            {fakultasFilter === "Teknik" && (
+              <>
+                <option value="Informatika">Informatika</option>
+                <option value="Sistem Informasi">Sistem Informasi</option>
+                <option value="Teknik Sipil">Teknik Sipil</option>
+                <option value="Teknik Elektro">Teknik Elektro</option>
+                <option value="Teknik Mesin">Teknik Mesin</option>
+              </>
+            )}
+            {fakultasFilter === "Ekonomi" && (
+              <>
+                <option value="Manajemen">Manajemen</option>
+                <option value="Akuntansi">Akuntansi</option>
+                <option value="Ekonomi Pembangunan">Ekonomi Pembangunan</option>
+              </>
+            )}
+            {fakultasFilter === "Hukum" && (
+              <option value="Ilmu Hukum">Ilmu Hukum</option>
+            )}
+            {fakultasFilter === "FKIP" && (
+              <>
+                <option value="Pendidikan Matematika">Pendidikan Matematika</option>
+                <option value="Pendidikan Bahasa Indonesia">Pendidikan Bahasa Indonesia</option>
+                <option value="Pendidikan Bahasa Inggris">Pendidikan Bahasa Inggris</option>
+                <option value="PGSD">PGSD</option>
+              </>
+            )}
+            {fakultasFilter === "Pertanian" && (
+              <>
+                <option value="Agroteknologi">Agroteknologi</option>
+                <option value="Agribisnis">Agribisnis</option>
+              </>
+            )}
+            {fakultasFilter === "Agama Islam" && (
+              <>
+                <option value="Pendidikan Agama Islam">Pendidikan Agama Islam</option>
+                <option value="Hukum Ekonomi Syariah">Hukum Ekonomi Syariah</option>
+                <option value="Komunikasi Penyiaran Islam">Komunikasi Penyiaran Islam</option>
+              </>
+            )}
+            {fakultasFilter === "Ilmu Sosial" && (
+              <>
+                <option value="Ilmu Komunikasi">Ilmu Komunikasi</option>
+                <option value="Administrasi Publik">Administrasi Publik</option>
+              </>
+            )}
+            {/* Jika belum pilih fakultas, tampilkan semua prodi */}
+            {!fakultasFilter && (
+              <>
+                <option value="Informatika">Informatika</option>
+                <option value="Sistem Informasi">Sistem Informasi</option>
+                <option value="Manajemen">Manajemen</option>
+                <option value="Akuntansi">Akuntansi</option>
+                <option value="Ilmu Hukum">Ilmu Hukum</option>
+                <option value="Pendidikan Matematika">Pendidikan Matematika</option>
+                <option value="Agroteknologi">Agroteknologi</option>
+                <option value="Pendidikan Agama Islam">Pendidikan Agama Islam</option>
+                <option value="Ilmu Komunikasi">Ilmu Komunikasi</option>
+              </>
+            )}
+          </select>
+
+          {/* Tombol Reset Filter */}
+          {(fakultasFilter || prodiFilter || tahunFilter || search) && (
+            <button
+              onClick={() => {
+                setSearch("");
+                setTahunFilter("");
+                setFakultasFilter("");
+                setProdiFilter("");
+                fetchPage({ page: 1, per_page: itemsPerPage });
+              }}
+              className="flex items-center gap-1.5 text-[13px] font-semibold text-red-500 border border-red-200 px-3 py-2 rounded-lg hover:bg-red-50 transition-all whitespace-nowrap"
+            >
+              ✕ Reset Filter
+            </button>
+          )}
         </div>
 
         {/* Table / State */}
@@ -205,12 +339,12 @@ export default function KelolaKelas() {
                 <Layout size={28} className="text-[#94A3B8]" />
               </div>
               <p className="text-[14px] font-bold text-[#64748B]">
-                {search || tahunFilter
+                {search || tahunFilter || fakultasFilter || prodiFilter
                   ? "Data tidak ditemukan."
                   : "Belum ada data kelas."}
               </p>
               <p className="text-[13px] text-[#94A3B8] mt-1">
-                {search || tahunFilter
+                {search || tahunFilter || fakultasFilter || prodiFilter
                   ? "Coba ubah kata kunci atau filter pencarian."
                   : "Data akan muncul setelah ditambahkan ke sistem."}
               </p>

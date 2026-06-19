@@ -56,6 +56,73 @@ const jadwalService = {
     };
   },
 
+  /**
+   * Ambil jadwal yang sudah dikelompokkan per dosen + MK dari endpoint BE.
+   * Response sudah berisi jumlah_kelas dan kelas_list yang akurat.
+   */
+  getGrouped: async (params = {}) => {
+    const res = await api.get(`${BASE}/grouped`, { params });
+    const items = res.data.data || [];
+    return {
+      data: items.map((item) => ({
+        id_jadwal:    item.id_jadwal,
+        id_mk:        item.id_mk,
+        id_dosen:     item.id_dosen,
+        kode_mk:      item.kode_mk ?? "-",
+        nama_mk:      item.nama_mk ?? "-",
+        sks:          item.sks ?? "-",
+        deskripsi:    item.deskripsi ?? "",
+        nama_dosen:   item.nama_dosen ?? "-",
+        nidn:         item.nidn ?? "-",
+        fakultas:     item.fakultas ?? "-",
+        prodi:        item.prodi ?? "-",
+        semester:     item.semester ?? null,
+        tahun:        item.tahun ?? "-",
+        jumlah_kelas: item.jumlah_kelas ?? 0,
+        kelas_list:   item.kelas_list ?? [],
+      })),
+      total:        res.data.total || 0,
+      per_page:     res.data.per_page || 20,
+      current_page: res.data.current_page || 1,
+      last_page:    res.data.last_page || 1,
+    };
+  },
+
+  /**
+   * Cari group berdasarkan id_jadwal (dipakai sebagai fallback saat user refresh halaman detail).
+   * Fetch semua grouped dengan per_page besar, lalu cari group yang mengandung id_jadwal tsb.
+   */
+  getGroupedByJadwalId: async (id_jadwal) => {
+    // Ambil dengan limit besar; karena sudah grouped, jumlahnya jauh lebih sedikit dari raw jadwal
+    const res = await api.get(`${BASE}/grouped`, { params: { per_page: 200 } });
+    const items = res.data.data || [];
+    // Cari group yang memiliki id_jadwal pertama (representative) ATAU yang ada di kelas_list
+    const found = items.find(
+      (item) =>
+        item.id_jadwal === id_jadwal ||
+        (item.kelas_list || []).some((k) => k.id_jadwal === id_jadwal)
+    );
+    if (!found) return null;
+    return {
+      id_jadwal:    found.id_jadwal,
+      id_mk:        found.id_mk,
+      id_dosen:     found.id_dosen,
+      kode_mk:      found.kode_mk ?? "-",
+      nama_mk:      found.nama_mk ?? "-",
+      sks:          found.sks ?? "-",
+      deskripsi:    found.deskripsi ?? "",
+      nama_dosen:   found.nama_dosen ?? "-",
+      nidn:         found.nidn ?? "-",
+      fakultas:     found.fakultas ?? "-",
+      prodi:        found.prodi ?? "-",
+      semester:     found.semester ?? null,
+      tahun:        found.tahun ?? "-",
+      jumlah_kelas: found.jumlah_kelas ?? 0,
+      kelas_list:   found.kelas_list ?? [],
+    };
+  },
+
+
   getById: async (id) => {
     const res = await api.get(`${BASE}/${id}`);
     return mapJadwal(res.data);

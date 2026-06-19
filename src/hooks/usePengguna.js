@@ -6,7 +6,9 @@ const DEBOUNCE_MS = 400;
 export const usePengguna = (activeTab) => {
   const [mahasiswa, setMahasiswa] = useState([]);
   const [dosen, setDosen] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingMhs, setLoadingMhs] = useState(false);
+  const [loadingDosen, setLoadingDosen] = useState(false);
+  const loading = loadingMhs || loadingDosen;
   const [error, setError] = useState(null);
 
   const [paginationMhs, setPaginationMhs] = useState({
@@ -28,7 +30,7 @@ export const usePengguna = (activeTab) => {
   const debounceRef = useRef(null);
 
   const fetchMahasiswa = useCallback(async (params = {}) => {
-    setLoading(true);
+    setLoadingMhs(true);
     setError(null);
     lastMhsParamsRef.current = params;
     try {
@@ -43,12 +45,12 @@ export const usePengguna = (activeTab) => {
     } catch {
       setError("Gagal memuat data mahasiswa.");
     } finally {
-      setLoading(false);
+      setLoadingMhs(false);
     }
   }, []);
 
   const fetchDosen = useCallback(async (params = {}) => {
-    setLoading(true);
+    setLoadingDosen(true);
     setError(null);
     lastDosenParamsRef.current = params;
     try {
@@ -63,7 +65,7 @@ export const usePengguna = (activeTab) => {
     } catch {
       setError("Gagal memuat data dosen.");
     } finally {
-      setLoading(false);
+      setLoadingDosen(false);
     }
   }, []);
 
@@ -132,6 +134,8 @@ export const usePengguna = (activeTab) => {
     dosen,
     setDosen,
     loading,
+    loadingMhs,
+    loadingDosen,
     error,
     paginationMhs,
     paginationDosen,

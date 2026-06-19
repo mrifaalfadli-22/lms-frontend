@@ -1,19 +1,23 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
-import { ChevronRight, ArrowLeft, Trash2, Search } from "lucide-react";
+import { ChevronRight, ArrowLeft, Trash2, Search, Eye } from "lucide-react";
 import jadwalService from "../../services/jadwalService";
 import DeleteConfirmModal from "../../components/admin/DeleteConfirmModal";
+import DetailPesanModal from "../../components/admin/DetailPesanModal";
 import Pagination from "../../components/common/Pagination";
 
 export default function DetailForumDiskusiDummy() {
   const { id, kelasId } = useParams();
-  const [jadwal, setJadwal] = useState(null);
-  
+  const location = useLocation();
+  const [jadwal, setJadwal] = useState(location.state?.groupData || null);
+  const classDataState = location.state?.classData || null;
+  const [classData, setClassData] = useState(classDataState);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [search, setSearch] = useState("");
   const [pertemuanFilter, setPertemuanFilter] = useState("");
-  
+
   // Dummy state for discussions
   const [discussions, setDiscussions] = useState([
     {
@@ -63,14 +67,24 @@ export default function DetailForumDiskusiDummy() {
   ]);
 
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [viewTarget, setViewTarget] = useState(null);
 
   useEffect(() => {
-    jadwalService.getById(id).then((res) => {
-      setJadwal(res);
-    }).catch(err => {
-      console.error("Gagal memuat jadwal", err);
-    });
-  }, [id]);
+    if (!jadwal) {
+      jadwalService.getGroupedByJadwalId(id).then((res) => {
+        setJadwal(res);
+        if (res && res.kelas_list) {
+          const foundClass = res.kelas_list.find(k => k.id_jadwal === kelasId);
+          if (foundClass) setClassData(foundClass);
+        }
+      }).catch(err => {
+        console.error("Gagal memuat jadwal", err);
+      });
+    } else if (!classData && jadwal.kelas_list) {
+      const foundClass = jadwal.kelas_list.find(k => k.id_jadwal === kelasId);
+      if (foundClass) setClassData(foundClass);
+    }
+  }, [id, kelasId, jadwal, classData]);
 
   const handleDeleteConfirm = () => {
     if (deleteTarget) {
@@ -79,7 +93,7 @@ export default function DetailForumDiskusiDummy() {
     }
   };
 
-  const namaKelas = kelasId === "1" ? "Kelas A" : kelasId === "2" ? "Kelas B" : "Kelas C";
+  const namaKelas = classData?.nama_kelas || "Memuat Kelas...";
   const PERTEMUAN_OPTIONS = [...new Set(discussions.map((d) => d.pertemuan))];
 
   const filtered = discussions.filter((d) => {
@@ -89,7 +103,7 @@ export default function DetailForumDiskusiDummy() {
       d.isi.toLowerCase().includes(search.toLowerCase());
     const matchPertemuan = !pertemuanFilter || d.pertemuan === pertemuanFilter;
     return matchSearch && matchPertemuan;
-  });
+  }).sort((a, b) => b.id - a.id);
 
   const paginated = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
   const lastPage = Math.max(1, Math.ceil(filtered.length / perPage));
@@ -109,6 +123,12 @@ export default function DetailForumDiskusiDummy() {
         loading={false}
       />
 
+      <DetailPesanModal
+        isOpen={!!viewTarget}
+        onClose={() => setViewTarget(null)}
+        data={viewTarget}
+      />
+
       {/* Breadcrumb */}
       <div className="flex items-center gap-3 text-[13px] font-bold text-[#64748B] mb-5">
         <Link
@@ -118,8 +138,12 @@ export default function DetailForumDiskusiDummy() {
           <ArrowLeft size={15} strokeWidth={2.5} />
           <span>Kembali ke Daftar Kelas</span>
         </Link>
-        <ChevronRight size={14} />
-        <span className="text-[#1E293B]">{jadwal?.nama_mk || "Memuat..."}</span>
+        <Link
+          to={`/admin/forum-diskusi/${id}`}
+          className="hover:text-[#167A61] transition-colors font-semibold"
+        >
+          {jadwal?.nama_mk || "Memuat..."}
+        </Link>
         <ChevronRight size={14} />
         <span className="text-[#1E293B]">{namaKelas}</span>
       </div>
@@ -179,28 +203,30 @@ export default function DetailForumDiskusiDummy() {
               {paginated.map((d, index) => (
                 <tr
                   key={d.id}
-                  className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors"
+                  className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group"
                 >
-                  <td className="py-4 px-4 text-[#64748B] font-bold whitespace-nowrap">
+                  <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                     {(currentPage - 1) * perPage + index + 1}
                   </td>
-                  <td className="py-4 px-4 font-bold text-[#167A61] whitespace-nowrap">
-                    {d.pertemuan}
+                  <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                    <span className="bg-[#F1F5F9] px-3 py-1 rounded-lg text-[13px]">
+                      {d.pertemuan}
+                    </span>
                   </td>
-                  <td className="py-4 px-4 text-[#1E293B] whitespace-nowrap">
+                  <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                     {d.pembuat}
                   </td>
-                  <td className="py-4 px-4 text-[#64748B] whitespace-nowrap">
+                  <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                     {d.nidn}
                   </td>
-                  <td className="py-4 px-4 text-[#64748B] whitespace-nowrap">
+                  <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                     {d.role}
                   </td>
-                  <td className="py-4 px-4 min-w-[300px]">
+                  <td className="py-4 px-4 min-w-[250px] max-w-[300px]">
                     <div className="mb-2">
                       <span className="font-bold text-[#1E293B] text-[13px]">{d.judul}</span>
                     </div>
-                    <div className="bg-[#F8FAFC] border border-[#F1F5F9] p-3 rounded-lg text-[#64748B] text-[13px]">
+                    <div className="bg-[#F8FAFC] border border-[#F1F5F9] p-3 rounded-lg text-[#64748B] text-[13px] line-clamp-2">
                       {d.isi}
                     </div>
                   </td>
@@ -216,13 +242,22 @@ export default function DetailForumDiskusiDummy() {
                     )}
                   </td>
                   <td className="py-4 px-4">
-                    <button
-                      onClick={() => setDeleteTarget(d)}
-                      className="flex items-center gap-2 px-3 py-1.5 text-red-600 border border-red-100 rounded-lg hover:bg-red-50 transition-all text-[13px] font-bold"
-                    >
-                      <Trash2 size={14} />
-                      <span>Hapus</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setViewTarget(d)}
+                        className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/20 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold"
+                      >
+                        <Eye size={14} />
+                        <span>Lihat</span>
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(d)}
+                        className="flex items-center gap-2 px-3 py-1.5 text-red-600 border border-red-100 rounded-lg hover:bg-red-50 transition-all text-[13px] font-bold"
+                      >
+                        <Trash2 size={14} />
+                        <span>Hapus</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

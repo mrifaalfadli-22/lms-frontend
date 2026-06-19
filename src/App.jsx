@@ -14,9 +14,13 @@ import LoginForm from "./components/auth/LoginForm";
 import RegisterForm from "./components/auth/RegistrasiForm";
 import DosenDashboard from "./pages/dosen/Dashboard";
 import KelolaSesiPertemuan from "./pages/dosen/KelolaSesiPertemuan";
+import DetailSesiKelas from "./pages/dosen/DetailSesiKelas";
+import DetailPertemuanTabs from "./pages/dosen/DetailPertemuanTabs";
 import MonitoringProgres from "./pages/dosen/MonitoringProgres";
+import DetailMonitoringProgres from "./pages/dosen/DetailMonitoringProgres";
 import ForumDiskusiMahasiswa from "./pages/dosen/ForumDiskusi";
 import VerifikasiSertifikat from "./pages/dosen/VerifikasiSertifikat";
+import ProfilDosen from "./pages/dosen/ProfilDosen";
 
 import AdminDashboard from "./pages/admin/Dashboard";
 import KelolaPengguna from "./pages/admin/KelolaPengguna";
@@ -27,6 +31,7 @@ import KelolaMateriPerkuliahan from "./pages/admin/KelolaMateriPerkuliahan";
 import ForumDiskusi from "./pages/admin/ForumDiskusi";
 import KelolaSertifikat from "./pages/admin/KelolaSertifikat";
 import VerifikasiDosen from "./pages/admin/VerifikasiDosen";
+import ProfilAdmin from "./pages/admin/ProfilAdmin";
 import DetailKelasDummy from "./components/admin/DetailKelasDummy";
 import DetailForumDiskusiDummy from "./components/admin/DetailForumDiskusiDummy";
 import DetailMateriDummy from "./components/admin/DetailMateriDummy";
@@ -59,12 +64,33 @@ function App() {
             path="kelola-sesi-pertemuan"
             element={<KelolaSesiPertemuan />}
           />
+          <Route
+            path="kelola-sesi-pertemuan/:id"
+            element={<DetailKelasDummy title="Detail Kelas Mata Kuliah" backTo="/dosen/kelola-sesi-pertemuan" />}
+          />
+          <Route
+            path="kelola-sesi-pertemuan/:id/kelas/:kelasId"
+            element={<DetailSesiKelas />}
+          />
+          <Route
+            path="kelola-sesi-pertemuan/:id/kelas/:kelasId/pertemuan/:pertemuanId"
+            element={<DetailPertemuanTabs />}
+          />
           <Route path="monitoring-progres" element={<MonitoringProgres />} />
+          <Route
+            path="monitoring-progres/:id"
+            element={<DetailKelasDummy title="Detail Kelas Mata Kuliah" backTo="/dosen/monitoring-progres" />}
+          />
+          <Route
+            path="monitoring-progres/:id/kelas/:kelasId"
+            element={<DetailMonitoringProgres />}
+          />
           <Route path="forum-diskusi" element={<ForumDiskusiMahasiswa />} />
           <Route
             path="verifikasi-sertifikat"
             element={<VerifikasiSertifikat />}
           />
+          <Route path="profil" element={<ProfilDosen />} />
         </Route>
 
         {/* 4. Grouping Halaman Admin (Protected) */}
@@ -107,6 +133,7 @@ function App() {
           />
           <Route path="kelola-sertifikat" element={<KelolaSertifikat />} />
           <Route path="verifikasi-dosen" element={<VerifikasiDosen />} />
+          <Route path="profil" element={<ProfilAdmin />} />
         </Route>
 
         {/* Catch All - Jika user nyasar ke URL yang tidak ada */}

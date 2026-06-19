@@ -41,6 +41,29 @@ export function useJadwalKuliah() {
     }
   }, []);
 
+  const fetchGrouped = useCallback(async (params = {}) => {
+    setLoading(true);
+    setError(null);
+    lastParamsRef.current = params;
+    try {
+      const result = await jadwalService.getGrouped(params);
+      setJadwal(result.data);
+      setPagination({
+        current_page: result.current_page,
+        last_page: result.last_page,
+        total: result.total,
+        per_page: result.per_page,
+      });
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        "Gagal memuat data jadwal. Periksa koneksi atau coba lagi.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const refetch = useCallback(() => {
     fetchPage(lastParamsRef.current);
   }, [fetchPage]);
@@ -48,9 +71,9 @@ export function useJadwalKuliah() {
   const debouncedFetch = useCallback(
     (params) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => fetchPage(params), DEBOUNCE_MS);
+      debounceRef.current = setTimeout(() => fetchGrouped(params), DEBOUNCE_MS);
     },
-    [fetchPage],
+    [fetchGrouped],
   );
 
   /** Tambah jadwal — lempar error agar modal bisa tangkap pesan validasi BE. */
@@ -88,6 +111,7 @@ export function useJadwalKuliah() {
     error,
     pagination,
     fetchPage,
+    fetchGrouped,
     debouncedFetch,
     tambah,
     update,

@@ -1,29 +1,59 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useParams, useLocation } from "react-router-dom";
-import { ArrowLeft, ChevronRight, Download, Edit2, Trash2, Plus, MoreVertical, Reply, Eye, Save, Send, X } from "lucide-react";
+import { ArrowLeft, ChevronRight, Download, Edit2, Trash2, Plus, MoreVertical, Reply, Eye, Save, Send, X, Edit3 } from "lucide-react";
 import Pagination from "../../components/common/Pagination";
 import ConfirmSaveModal from "../../components/admin/ConfirmSaveModal";
 import DeleteConfirmModal from "../../components/admin/DeleteConfirmModal";
 import UploadMateriModal from "../../components/dosen/UploadMateriModal";
 import TugasModal from "../../components/dosen/TugasModal";
+import UbahSesiModal from "../../components/dosen/UbahSesiModal";
+import presensiService from "../../services/presensiService";
+import materiService from "../../services/materiService";
+import tugasService from "../../services/tugasService";
+import forumDiskusiService from "../../services/forumDiskusiService";
+import { useProfile } from "../../hooks/useProfile";
 
 export default function DetailPertemuanTabs() {
   const { id, kelasId, pertemuanId } = useParams();
   const location = useLocation();
+  const { user: currentUser } = useProfile();
   const jadwal = location.state?.groupData || { nama_mk: "Pemrograman Web" };
   const classData = location.state?.classData || { nama_kelas: "Kelas A" };
   const pertemuanName = location.state?.pertemuanName || `Pertemuan ke-${pertemuanId}`;
-  const pertemuanData = location.state?.pertemuanData || { metode: "Synchronous" };
+  const [localPertemuanData, setLocalPertemuanData] = useState(location.state?.pertemuanData || { metode: "Synchronous" });
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [sendingChat, setSendingChat] = useState(false);
+  const [pesertaCount, setPesertaCount] = useState(0);
+
+  const formatTanggal = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    if (isNaN(date)) return dateString;
+    return new Intl.DateTimeFormat("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric"
+    }).format(date);
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    if (isNaN(date)) return dateString;
+    return new Intl.DateTimeFormat("id-ID", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(date);
+  };
 
   const [activeTab, setActiveTab] = useState("presensi");
 
-  const [presensi, setPresensi] = useState([
-    { id: 1, nim: "2023001", nama: "Adam Ramadhan", status: "Hadir" },
-    { id: 2, nim: "2023002", nama: "Nurhayati Mulyani", status: "Hadir" },
-    { id: 3, nim: "2023003", nama: "Dinda Permatasari", status: "Izin" },
-    { id: 4, nim: "2023004", nama: "Farhan Santoso", status: "Hadir" },
-    { id: 5, nim: "2023005", nama: "Siti Aisyah", status: "Alpha" },
-  ]);
+  const [presensi, setPresensi] = useState([]);
+  const [materiList, setMateriList] = useState([]);
+  const [tugasList, setTugasList] = useState([]);
 
   const [presensiPage, setPresensiPage] = useState(1);
   const [presensiPerPage, setPresensiPerPage] = useState(10);
@@ -36,39 +66,7 @@ export default function DetailPertemuanTabs() {
   const [deleteTugasTarget, setDeleteTugasTarget] = useState(null);
   const [chatMessage, setChatMessage] = useState("");
 
-  const [chats, setChats] = useState([
-    {
-      id: 1,
-      sender: "Dosen",
-      name: "Dosen",
-      time: "10:00",
-      message: "Halo mahasiswa Kelas A, silakan tanyakan di thread ini jika ada materi kontrak kuliah atau pengenalan yang masih belum jelas.",
-      isMe: true,
-      replyTo: null
-    },
-    {
-      id: 2,
-      sender: "Mahasiswa",
-      name: "Adam Ramadhan - 065120114",
-      time: "10:15",
-      message: "Pak, apakah ada toleransi keterlambatan untuk pengumpulan tugas mingguan?",
-      isMe: false,
-      replyTo: null
-    },
-    {
-      id: 3,
-      sender: "Dosen",
-      name: "Dosen",
-      time: "10:20",
-      message: "Sesuai kontrak kuliah, keterlambatan 1 hari akan dikurangi 10 poin ya Adam. Lebih dari itu tidak diterima.",
-      isMe: true,
-      replyTo: {
-        id: 2,
-        name: "Adam Ramadhan - 065120114",
-        message: "Pak, apakah ada toleransi keterlambatan untuk pengumpulan tugas mingguan?"
-      }
-    }
-  ]);
+  const [chats, setChats] = useState([]);
 
   const [replyingTo, setReplyingTo] = useState(null);
   const [editingChatId, setEditingChatId] = useState(null);
@@ -77,6 +75,82 @@ export default function DetailPertemuanTabs() {
 
   const chatInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+
+  const fetchPresensi = async () => {
+    try {
+      const res = await presensiService.getBySesi(pertemuanId);
+      if (res && res.data) {
+        const mapped = res.data.map((p) => ({
+          ...p,
+          id: p.id_peserta,
+          status: p.status_kehadiran
+            ? p.status_kehadiran.charAt(0).toUpperCase() + p.status_kehadiran.slice(1)
+            : null
+        }));
+        setPresensi(mapped);
+      }
+    } catch (err) {
+      console.error("Gagal memuat presensi:", err);
+    }
+  };
+
+  const fetchTugas = async () => {
+    try {
+      const res = await tugasService.getBySesi(pertemuanId);
+      setTugasList(res);
+    } catch (err) {
+      console.error("Gagal memuat tugas:", err);
+    }
+  };
+
+  const fetchForum = async () => {
+    try {
+      const res = await forumDiskusiService.getBySesi(pertemuanId, { per_page: 100 });
+      const mapped = res.data.map(item => ({
+        id: item.id_pesan,
+        name: item.nama_pengirim,
+        senderId: item.id_pengirim,
+        message: item.isi_pesan,
+        time: item.created_at ? new Date(item.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : "",
+        isMe: currentUser?.id_user === item.id_pengirim,
+        replyTo: item.id_parent_pesan ? {
+          id: item.id_parent_pesan,
+          name: item.replies?.length > 0 ? item.replies[0]?.nama_pengirim : (res.data.find(p => p.id_pesan === item.id_parent_pesan)?.nama_pengirim || ""),
+          message: res.data.find(p => p.id_pesan === item.id_parent_pesan)?.isi_pesan || "",
+        } : null,
+      }));
+      setChats(mapped);
+    } catch (err) {
+      console.error("Gagal memuat forum:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPresensi();
+    fetchMateri();
+    fetchTugas();
+  }, [pertemuanId]);
+
+  useEffect(() => {
+    if (currentUser) {
+      fetchForum();
+    }
+  }, [pertemuanId, currentUser]);
+
+  useEffect(() => {
+    if (presensi.length > 0) {
+      setPesertaCount(presensi.length);
+    }
+  }, [presensi]);
+
+  const fetchMateri = async () => {
+    try {
+      const res = await materiService.getBySesi(pertemuanId);
+      setMateriList(res);
+    } catch (err) {
+      console.error("Gagal memuat materi:", err);
+    }
+  };
 
   useEffect(() => {
     if (activeTab === "forum") {
@@ -97,28 +171,33 @@ export default function DetailPertemuanTabs() {
     }
   }, [chatMessage]);
 
-  const handleSendChat = () => {
-    if (!chatMessage.trim()) return;
+  const handleSendChat = async () => {
+    if (!chatMessage.trim() || sendingChat) return;
+    setSendingChat(true);
 
-    if (editingChatId) {
-      setChats(prev => prev.map(c => c.id === editingChatId ? { ...c, message: chatMessage } : c));
-      setEditingChatId(null);
-    } else {
-      const newChat = {
-        id: Date.now(),
-        sender: "Dosen",
-        name: "Dosen",
-        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
-        message: chatMessage,
-        isMe: true,
-        replyTo: replyingTo
-      };
-      setChats(prev => [...prev, newChat]);
+    try {
+      if (editingChatId) {
+        await forumDiskusiService.update(editingChatId, chatMessage);
+        setEditingChatId(null);
+      } else {
+        const payload = {
+          id_sesi: pertemuanId,
+          isi_pesan: chatMessage,
+        };
+        if (replyingTo) {
+          payload.id_parent_pesan = replyingTo.id;
+        }
+        await forumDiskusiService.create(payload);
+      }
+      setChatMessage("");
+      setReplyingTo(null);
+      await fetchForum();
+    } catch (err) {
+      console.error("Gagal mengirim pesan:", err);
+      alert(err.response?.data?.message || "Gagal mengirim pesan");
+    } finally {
+      setSendingChat(false);
     }
-
-    // Reset message and reply state
-    setChatMessage("");
-    setReplyingTo(null);
   };
 
   const handleStatusChange = (id, newStatus) => {
@@ -135,78 +214,78 @@ export default function DetailPertemuanTabs() {
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="flex justify-between items-center mb-6">
         <h4 className="text-[16px] font-bold text-[#1E293B]">Input Presensi Mahasiswa</h4>
-        <button
-          onClick={() => setIsConfirmModalOpen(true)}
-          className="flex items-center gap-1.5 text-sm font-bold text-white bg-[#167A61] border border-[#167A61] px-4 py-2 rounded-lg hover:bg-[#0E5C46] transition-all"
-        >
-          <Save size={14} />
-          Simpan Presensi
-        </button>
+        {presensi.length > 0 && (
+          <button
+            onClick={() => setIsConfirmModalOpen(true)}
+            className="flex items-center gap-1.5 text-sm font-bold text-white bg-[#167A61] border border-[#167A61] px-4 py-2 rounded-lg hover:bg-[#0E5C46] transition-all"
+          >
+            <Save size={14} />
+            Simpan Presensi
+          </button>
+        )}
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="border-b border-[#E2E8F0]">
-              <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">No</th>
-              <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">NPM</th>
-              <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Nama Mahasiswa</th>
-              <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Status Kehadiran</th>
-            </tr>
-          </thead>normal
-          <tbody className="text-[14px]">
-            {currentPresensi.map((p, i) => (
-              <tr key={p.id} className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group">
-                <td className="py-4 px-4 font- text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">{startIndex + i + 1}</td>
-                <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">{p.nim}</td>
-                <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">{p.nama}</td>
-                <td className="py-4 px-4">
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleStatusChange(p.id, "Hadir")}
-                      className={`px-4 py-1.5 rounded-full text-[13px] font-black border transition-all ${p.status === "Hadir"
-                        ? "bg-[#DCFCE7] text-[#008B5E] border-[#008B5E]/40"
-                        : "bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0] hover:bg-[#F1F5F9] hover:text-[#64748B] hover:border-[#CBD5E1]"
-                        }`}
-                    >
-                      Hadir
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange(p.id, "Izin")}
-                      className={`px-4 py-1.5 rounded-full text-[13px] font-black border transition-all ${p.status === "Izin"
-                        ? "bg-[#FFF9E6] text-[#D97706] border-[#D97706]/40"
-                        : "bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0] hover:bg-[#F1F5F9] hover:text-[#64748B] hover:border-[#CBD5E1]"
-                        }`}
-                    >
-                      Izin
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange(p.id, "Alpha")}
-                      className={`px-4 py-1.5 rounded-full text-[13px] font-black border transition-all ${p.status === "Alpha"
-                        ? "bg-[#FEE2E2] text-[#EF4444] border-[#EF4444]/40"
-                        : "bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0] hover:bg-[#F1F5F9] hover:text-[#64748B] hover:border-[#CBD5E1]"
-                        }`}
-                    >
-                      Alpha
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="mt-4 border-t border-[#E2E8F0]">
-        <Pagination
-          currentPage={presensiPage}
-          lastPage={presensiLastPage}
-          total={presensi.length}
-          perPage={presensiPerPage}
-          onPageChange={setPresensiPage}
-          onPerPageChange={setPresensiPerPage}
-        />
-      </div>
+      {presensi.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 bg-[#F8FAFC]/50 rounded-2xl border border-dashed border-[#E2E8F0]">
+          <p className="text-[15px] font-bold text-[#64748B]">Tidak ada Data</p>
+          <p className="text-[13px] text-[#94A3B8] mt-1">Data presensi mahasiswa belum tersedia.</p>
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-[#E2E8F0]">
+                  <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">No</th>
+                  <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">NPM</th>
+                  <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Nama Mahasiswa</th>
+                  <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Status Kehadiran</th>
+                </tr>
+              </thead>
+              <tbody className="text-[14px]">
+                {currentPresensi.map((p, i) => (
+                  <tr key={p.id} className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group">
+                    <td className="py-4 px-4 font- text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">{startIndex + i + 1}</td>
+                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">{p.nim}</td>
+                    <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">{p.nama}</td>
+                    <td className="py-4 px-4">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleStatusChange(p.id, "Hadir")}
+                          className={`px-4 py-1.5 rounded-full text-[13px] font-black border transition-all ${p.status === "Hadir"
+                            ? "bg-[#DCFCE7] text-[#008B5E] border-[#008B5E]/40"
+                            : "bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0] hover:bg-[#F1F5F9] hover:text-[#64748B] hover:border-[#CBD5E1]"
+                            }`}
+                        >
+                          Hadir
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange(p.id, "Izin")}
+                          className={`px-4 py-1.5 rounded-full text-[13px] font-black border transition-all ${p.status === "Izin"
+                            ? "bg-[#FFF9E6] text-[#D97706] border-[#D97706]/40"
+                            : "bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0] hover:bg-[#F1F5F9] hover:text-[#64748B] hover:border-[#CBD5E1]"
+                            }`}
+                        >
+                          Izin
+                        </button>
+                        <button
+                          onClick={() => handleStatusChange(p.id, "Alpha")}
+                          className={`px-4 py-1.5 rounded-full text-[13px] font-black border transition-all ${p.status === "Alpha"
+                            ? "bg-[#FEE2E2] text-[#EF4444] border-[#EF4444]/40"
+                            : "bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0] hover:bg-[#F1F5F9] hover:text-[#64748B] hover:border-[#CBD5E1]"
+                            }`}
+                        >
+                          Alpha
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 
@@ -224,56 +303,127 @@ export default function DetailPertemuanTabs() {
       </div>
 
       <div className="flex flex-col gap-4">
-        {[
-          {
-            title: "Slide: Kontrak Kuliah & Pengenalan Mata Kuliah",
-            size: "2.4 MB",
-            date: "01 Maret 2026",
-          },
-          {
-            title: "RPS Pemrograman Web Semester Genap 2026",
-            size: "1.1 MB",
-            date: "01 Maret 2026",
-          },
-        ].map((m, i) => (
-          <div key={i} className="flex flex-wrap items-center justify-between gap-4 border border-[#E2E8F0] p-5 rounded-2xl bg-[#F8FAFC]/40 hover:bg-white hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
-            <div className="flex items-center gap-4">
-              <div className="bg-red-50 text-red-500 font-black text-[13px] px-4 py-1 rounded-full border border-red-100">
-                PDF
-              </div>
-              <div>
-                <h5 className="text-[15px] font-bold text-[#1E293B] mb-1">{m.title}</h5>
-                <p className="text-[13px] text-[#64748B]">{m.size} - Diunggah {m.date}</p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2.5">
-              <button className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/20 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold">
-                <Download size={14} />
-                <span>Download</span>
-              </button>
-              <button
-                onClick={() => {
-                  setEditMateriTarget(m);
-                  setIsUploadMateriOpen(true);
-                }}
-                className="flex items-center gap-2 px-3 py-1.5 text-[#167A61] border border-[#167A61]/20 rounded-lg hover:bg-[#167A61] hover:text-white transition-all text-[13px] font-bold"
-              >
-                <Edit2 size={14} />
-                <span>Ubah</span>
-              </button>
-              <button
-                onClick={() => setDeleteMateriTarget(m)}
-                className="flex items-center gap-2 px-3 py-1.5 text-red-600 border border-red-100 rounded-lg hover:bg-red-50 transition-all text-[13px] font-bold"
-              >
-                <Trash2 size={14} />
-                <span>Hapus</span>
-              </button>
-            </div>
+        {materiList.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 bg-[#F8FAFC]/50 rounded-2xl border border-dashed border-[#E2E8F0]">
+            <p className="text-[15px] font-bold text-[#64748B]">Tidak ada Data</p>
+            <p className="text-[13px] text-[#94A3B8] mt-1">Belum ada materi yang diunggah untuk pertemuan ini.</p>
           </div>
-        ))}
+        ) : (
+          materiList.map((materi) => (
+            <div key={materi.id} className="bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-sm">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h5 className="text-[15px] font-bold text-[#1E293B] mb-1">{materi.judul_materi}</h5>
+                  {materi.deskripsi && (
+                    <p className="text-[13px] text-gray-500">{materi.deskripsi}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => {
+                      setEditMateriTarget({
+                        id: materi.id,
+                        title: materi.judul_materi,
+                        deskripsi: materi.deskripsi,
+                        link: materi.link_video_pembelajaran,
+                        file_materi: materi.file_materi || []
+                      });
+                      setIsUploadMateriOpen(true);
+                    }}
+                    className="px-4 py-1.5 border border-[#167A61] text-[#167A61] rounded-md text-[12px] font-bold hover:bg-[#167A61] hover:text-white transition-colors"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setDeleteMateriTarget(materi)}
+                    className="px-4 py-1.5 bg-red-50 text-red-500 rounded-md text-[12px] font-bold hover:bg-red-100 transition-colors"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              </div>
+
+              {materi.link_video_pembelajaran && (
+                <div className="mb-4">
+                  <p className="text-[13px] font-semibold text-[#64748B] mb-2 uppercase tracking-wide">Video Pembelajaran</p>
+                  <div className="aspect-w-16 aspect-h-9 max-w-2xl rounded-lg overflow-hidden border border-gray-200">
+                    <iframe
+                      src={(() => {
+                        const url = materi.link_video_pembelajaran;
+                        if (!url) return "";
+                        try {
+                          let videoId = "";
+                          if (url.includes("youtube.com/watch")) {
+                            videoId = new URL(url).searchParams.get("v");
+                          } else if (url.includes("youtu.be/")) {
+                            videoId = url.split("youtu.be/")[1]?.split("?")[0];
+                          } else if (url.includes("youtube.com/embed/")) {
+                            return url;
+                          }
+                          if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+                        } catch (e) {
+                          // Ignore parse error
+                        }
+                        // Fallback replacement if parsing fails
+                        return url.replace("watch?v=", "embed/");
+                      })()}
+                      title="Video Pembelajaran"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-[300px]"
+                    ></iframe>
+                  </div>
+                </div>
+              )}
+
+              {materi.file_materi && materi.file_materi.length > 0 && (
+                <div>
+                  <p className="text-[13px] font-semibold text-[#64748B] mb-2 uppercase tracking-wide">File Materi</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {materi.file_materi.map((file, idx) => {
+                      const fileName = file.split('_').pop();
+                      return (
+                        <button
+                          key={idx}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            materiService.forceDownload(file, fileName);
+                          }}
+                          className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-[#167A61] hover:bg-[#F0FAF6]/30 transition-all group text-left w-full"
+                        >
+                          <div className="w-10 h-10 min-w-[40px] rounded-lg bg-[#F0FAF6] flex items-center justify-center text-[#167A61]">
+                            <Download size={18} />
+                          </div>
+                          <div className="flex-1 overflow-hidden">
+                            <p className="text-[13px] font-bold text-[#1E293B] truncate group-hover:text-[#167A61]">{fileName}</p>
+                            <p className="text-[11px] text-gray-500">Unduh File</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
+
+  const formatTugasDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    if (isNaN(date)) return dateString;
+    const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${day} ${month} ${year}, ${hours}:${minutes}`;
+  };
 
   const renderTugas = () => (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -288,67 +438,83 @@ export default function DetailPertemuanTabs() {
         </button>
       </div>
 
-      <div className="border border-[#E2E8F0] p-7 rounded-2xl bg-[#F8FAFC]/40 hover:bg-white hover:shadow-md transition-all duration-300">
-        <div className="flex flex-wrap justify-between items-start gap-4 mb-6">
-          <div className="max-w-[70%]">
-            <h5 className="text-[16px] font-bold text-[#1E293B] mb-1.5">Tugas 1: Analisis Kebutuhan Sistem</h5>
-            <p className="text-[14px] text-[#64748B] leading-relaxed">Mahasiswa diminta membuat dokumen analisis kebutuhan berdasarkan studi kasus.</p>
+      <div className="flex flex-col gap-4">
+        {tugasList.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 bg-[#F8FAFC]/50 rounded-2xl border border-dashed border-[#E2E8F0]">
+            <p className="text-[15px] font-bold text-[#64748B]">Tidak ada Data</p>
+            <p className="text-[13px] text-[#94A3B8] mt-1">Belum ada tugas yang diberikan untuk pertemuan ini.</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2.5">
-            <button className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/20 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold">
-              <Eye size={14} />
-              <span>Lihat Pengumpulan</span>
-            </button>
-            <button
-              onClick={() => {
-                setEditTugasTarget({
-                  judul: "Tugas 1: Analisis Kebutuhan Sistem",
-                  tautan: "https://u-talent.uika-bogor.ac.id/cbt/",
-                  token: "123456",
-                  batasWaktu: "2026-03-05T23:59"
-                });
-                setIsTugasModalOpen(true);
-              }}
-              className="flex items-center gap-2 px-3 py-1.5 text-[#167A61] border border-[#167A61]/20 rounded-lg hover:bg-[#167A61] hover:text-white transition-all text-[13px] font-bold"
-            >
-              <Edit2 size={14} />
-              <span>Ubah</span>
-            </button>
-            <button
-              onClick={() => setDeleteTugasTarget({ title: "Tugas 1: Analisis Kebutuhan Sistem" })}
-              className="flex items-center gap-2 px-3 py-1.5 text-red-600 border border-red-100 rounded-lg hover:bg-red-50 transition-all text-[13px] font-bold"
-            >
-              <Trash2 size={14} />
-              <span>Hapus</span>
-            </button>
-          </div>
-        </div>
+        ) : (
+          tugasList.map((tugas) => {
+            const isAktif = !tugas.batas_waktu || new Date(tugas.batas_waktu) > new Date();
+            return (
+              <div key={tugas.id} className="bg-[#F8FAFC]/60 border border-gray-100 rounded-xl p-5 hover:border-gray-200 transition-all flex flex-col relative">
+                <div className="flex justify-between items-start w-full">
+                  <div className="flex-1 pr-6">
+                    <h5 className="text-[15px] font-bold text-[#1E293B]">{tugas.judul_tugas}</h5>
+                    <p className="text-[13px] text-gray-500 mt-1 leading-relaxed">
+                      {tugas.deskripsi_tugas || "Belum ada deskripsi untuk tugas ini."}
+                    </p>
 
-        <div className="flex flex-col gap-4 mt-2">
-          <div className="flex flex-wrap gap-24 border border-[#E2E8F0] px-6 py-4 rounded-xl bg-white">
-            <div>
-              <p className="text-[13px] font-bold text-[#64748B] uppercase mb-1.5">Batas Waktu</p>
-              <p className="text-[14px] font-normal text-[#1E293B]">05 Maret 2026, 23:59</p>
-            </div>
-            <div>
-              <p className="text-[13px] font-bold text-[#64748B] uppercase mb-1.5">Status</p>
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#167A61]"></div>
-                <p className="text-[14px] font-normal text-[#167A61]">Aktif</p>
+                    <div className="flex items-center gap-8 mt-5">
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Batas Waktu</p>
+                        <p className="text-[13px] font-bold text-[#1E293B]">{formatTugasDate(tugas.batas_waktu)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Status</p>
+                        <p className={`text-[13px] font-bold ${isAktif ? 'text-[#167A61]' : 'text-red-500'}`}>
+                          {isAktif ? 'Aktif' : 'Selesai'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => {
+                        setEditTugasTarget({
+                          id: tugas.id,
+                          judul: tugas.judul_tugas,
+                          tautan: tugas.link_cbt,
+                          token: tugas.token_cbt,
+                          batasWaktu: tugas.batas_waktu ? tugas.batas_waktu.slice(0, 16) : "",
+                        });
+                        setIsTugasModalOpen(true);
+                      }}
+                      className="px-4 py-1.5 border border-[#167A61] text-[#167A61] rounded-md text-[12px] font-bold hover:bg-[#167A61] hover:text-white transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => setDeleteTugasTarget(tugas)}
+                      className="px-4 py-1.5 bg-red-50 text-red-500 rounded-md text-[12px] font-bold hover:bg-red-100 transition-colors"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                </div>
+
+                {tugas.link_cbt && (
+                  <div className="mt-5 flex items-stretch bg-[#EAF5F0] rounded-lg overflow-hidden border border-[#D5EBE1]">
+                    <div className="flex-1 px-4 py-3 text-[13px] text-gray-600 flex items-center">
+                      <span className="mr-2">Tautan CBT :</span>
+                      <a href={tugas.link_cbt} target="_blank" rel="noopener noreferrer" className="text-[#167A61] font-bold hover:underline truncate max-w-[400px]">
+                        {tugas.link_cbt}
+                      </a>
+                    </div>
+                    {tugas.token_cbt && (
+                      <div className="bg-[#48C496] px-6 py-2 flex flex-col items-center justify-center min-w-[100px]">
+                        <span className="text-[10px] text-white/90 font-medium tracking-widest mb-0.5">TOKEN</span>
+                        <span className="text-[14px] text-white font-bold tracking-wider">{tugas.token_cbt}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between bg-[#F4FBF8] border border-[#E2E8F0] px-6 py-4 rounded-xl gap-4">
-            <p className="text-[14px] text-[#94A3B8] font-medium">
-              Tautan CBT : <a href="#" className="font-bold text-[#167A61] hover:underline hover:text-[#0E5C46] transition-colors ml-1">https://u-talent.uika-bogor.ac.id/cbt/</a>
-            </p>
-            <div className="bg-[#167A61] text-white px-6 py-2 rounded-xl flex flex-col items-center justify-center shadow-sm min-w-[120px]">
-              <span className="text-[12px] text-[#A7D7C5] uppercase font-semibold mb-0.5">Token</span>
-              <span className="text-[15px] font-bold tracking-widest">123456</span>
-            </div>
-          </div>
-        </div>
+            );
+          })
+        )}
       </div>
     </div>
   );
@@ -359,81 +525,88 @@ export default function DetailPertemuanTabs() {
         {/* Header Forum */}
         <div className="px-6 py-4 border-b border-[#E2E8F0] bg-[#F8FAFC]/50">
           <h4 className="text-[16px] font-bold text-[#1E293B]">Forum Diskusi: {pertemuanName}</h4>
-          <p className="text-[14px] font-medium text-[#64748B]">46 Peserta</p>
+          <p className="text-[14px] font-medium text-[#64748B]">{pesertaCount} Peserta</p>
         </div>
 
         {/* Chat Area */}
         <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-3 bg-[#F5F9F8]">
-          {chats.map(chat => (
-            <div key={chat.id} className={`flex ${chat.isMe ? 'justify-end' : 'justify-start'}`}>
-              <div className={`${chat.isMe ? 'bg-[#167A61] text-white rounded-tr-none' : 'bg-white border border-[#E2E8F0]/60 text-[#1E293B] rounded-tl-none'} py-2.5 px-3.5 rounded-2xl max-w-[75%] shadow-sm relative group flex flex-col`}>
-
-                {/* Name for other's message */}
-                {!chat.isMe && (
-                  <p className="text-[13px] font-bold text-[#167A61] mb-0.5 pr-6">{chat.name}</p>
-                )}
-
-                {/* Quoted Message */}
-                {chat.replyTo && (
-                  <div className={`border-l-4 p-2 mb-1.5 rounded-lg text-[13px] pr-8 relative ${chat.isMe ? 'bg-black/10 border-[#A7D7C5]' : 'bg-[#F1F5F9] border-[#167A61]'}`}>
-                    <p className={`font-bold mb-0.5 ${chat.isMe ? 'text-[#A7D7C5]' : 'text-[#167A61]'}`}>{chat.replyTo.name}</p>
-                    <p className={`line-clamp-2 ${chat.isMe ? 'text-white/90' : 'text-gray-600'}`}>{chat.replyTo.message}</p>
-                  </div>
-                )}
-
-                <p className="text-[14.5px] leading-relaxed pr-6">{chat.message}</p>
-                <p className={`text-[11px] self-end mt-1.5 mb-0 ${chat.isMe ? 'text-white/80' : 'text-[#94A3B8]'}`}>{chat.time}</p>
-
-                {/* Actions */}
-                {chat.isMe ? (
-                  <>
-                    <button
-                      onClick={() => setActiveDropdownId(activeDropdownId === chat.id ? null : chat.id)}
-                      className="absolute right-2 top-2.5 text-white/70 hover:text-white transition-opacity"
-                    >
-                      <MoreVertical size={16} />
-                    </button>
-                    {activeDropdownId === chat.id && (
-                      <div className="absolute top-10 right-0 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20 w-32 overflow-hidden">
-                        <button
-                          onClick={() => {
-                            setEditingChatId(chat.id);
-                            setChatMessage(chat.message);
-                            setActiveDropdownId(null);
-                            setReplyingTo(null);
-                            if (chatInputRef.current) chatInputRef.current.focus();
-                          }}
-                          className="w-full text-left px-4 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                        >
-                          <Edit2 size={14} /> Edit
-                        </button>
-                        <button
-                          onClick={() => {
-                            setDeleteChatTarget(chat);
-                            setActiveDropdownId(null);
-                          }}
-                          className="w-full text-left px-4 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50 flex items-center gap-2"
-                        >
-                          <Trash2 size={14} /> Hapus
-                        </button>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setReplyingTo({ id: chat.id, name: chat.name, message: chat.message });
-                      setEditingChatId(null);
-                      if (chatInputRef.current) chatInputRef.current.focus();
-                    }}
-                    className="absolute right-2 top-2.5 text-gray-400 hover:text-[#167A61] transition-opacity"
-                  >
-                    <Reply size={16} />
-                  </button>
-                )}
-              </div>
+          {chats.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center py-16">
+              <p className="text-[15px] font-bold text-[#64748B]">Tidak ada Data</p>
+              <p className="text-[13px] text-[#94A3B8] mt-1">Belum ada diskusi di forum ini. Jadilah yang pertama mengirim pesan!</p>
             </div>
-          ))}
+          ) : (
+            chats.map(chat => (
+              <div key={chat.id} className={`flex ${chat.isMe ? 'justify-end' : 'justify-start'}`}>
+                <div className={`${chat.isMe ? 'bg-[#167A61] text-white rounded-tr-none' : 'bg-white border border-[#E2E8F0]/60 text-[#1E293B] rounded-tl-none'} py-2.5 px-3.5 rounded-2xl max-w-[75%] shadow-sm relative group flex flex-col`}>
+
+                  {/* Name for other's message */}
+                  {!chat.isMe && (
+                    <p className="text-[13px] font-bold text-[#167A61] mb-0.5 pr-6">{chat.name}</p>
+                  )}
+
+                  {/* Quoted Message */}
+                  {chat.replyTo && (
+                    <div className={`border-l-4 p-2 mb-1.5 rounded-lg text-[13px] pr-8 relative ${chat.isMe ? 'bg-black/10 border-[#A7D7C5]' : 'bg-[#F1F5F9] border-[#167A61]'}`}>
+                      <p className={`font-bold mb-0.5 ${chat.isMe ? 'text-[#A7D7C5]' : 'text-[#167A61]'}`}>{chat.replyTo.name}</p>
+                      <p className={`line-clamp-2 ${chat.isMe ? 'text-white/90' : 'text-gray-600'}`}>{chat.replyTo.message}</p>
+                    </div>
+                  )}
+
+                  <p className="text-[14.5px] leading-relaxed pr-6">{chat.message}</p>
+                  <p className={`text-[11px] self-end mt-1.5 mb-0 ${chat.isMe ? 'text-white/80' : 'text-[#94A3B8]'}`}>{chat.time}</p>
+
+                  {/* Actions */}
+                  {chat.isMe ? (
+                    <>
+                      <button
+                        onClick={() => setActiveDropdownId(activeDropdownId === chat.id ? null : chat.id)}
+                        className="absolute right-2 top-2.5 text-white/70 hover:text-white transition-opacity"
+                      >
+                        <MoreVertical size={16} />
+                      </button>
+                      {activeDropdownId === chat.id && (
+                        <div className="absolute top-10 right-0 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20 w-32 overflow-hidden">
+                          <button
+                            onClick={() => {
+                              setEditingChatId(chat.id);
+                              setChatMessage(chat.message);
+                              setActiveDropdownId(null);
+                              setReplyingTo(null);
+                              if (chatInputRef.current) chatInputRef.current.focus();
+                            }}
+                            className="w-full text-left px-4 py-2 text-[13px] font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                          >
+                            <Edit2 size={14} /> Edit
+                          </button>
+                          <button
+                            onClick={() => {
+                              setDeleteChatTarget(chat);
+                              setActiveDropdownId(null);
+                            }}
+                            className="w-full text-left px-4 py-2 text-[13px] font-medium text-red-600 hover:bg-red-50 flex items-center gap-2"
+                          >
+                            <Trash2 size={14} /> Hapus
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setReplyingTo({ id: chat.id, name: chat.name, message: chat.message });
+                        setEditingChatId(null);
+                        if (chatInputRef.current) chatInputRef.current.focus();
+                      }}
+                      className="absolute right-2 top-2.5 text-gray-400 hover:text-[#167A61] transition-opacity"
+                    >
+                      <Reply size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
           <div ref={messagesEndRef} />
         </div>
 
@@ -591,34 +764,56 @@ export default function DetailPertemuanTabs() {
               <h2 className="text-[24px] font-extrabold text-[#1E293B] mb-1.5">{pertemuanName}</h2>
               <p className="text-[15px] font-semibold text-[#64748B]">{jadwal.nama_mk} - {classData.nama_kelas}</p>
             </div>
-            <span className="bg-[#DCFCE7] text-[#008B5E] px-6 py-2 rounded-full text-[13px] font-black tracking-wide uppercase">
-              Selesai
-            </span>
+            <div className="flex items-center gap-3">
+              <span className={`px-6 py-2 rounded-full text-[13px] font-black tracking-wide uppercase ${localPertemuanData.status === "SELESAI"
+                ? "bg-[#DCFCE7] text-[#008B5E]"
+                : localPertemuanData.status === "BERJALAN"
+                  ? "bg-blue-100 text-blue-700"
+                  : "bg-gray-100 text-gray-600"
+                }`}>
+                {localPertemuanData.status || "TERJADWAL"}
+              </span>
+              <button
+                onClick={() => setIsEditModalOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 text-[#167A61] border border-[#167A61]/20 rounded-lg hover:bg-[#167A61] hover:text-white transition-all text-[13px] font-bold"
+              >
+                <Edit2 size={14} />
+                <span>Edit</span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-4 gap-6 mb-8">
             <div>
               <p className="text-[13px] font-bold text-[#64748B] uppercase mb-1.5">Jadwal</p>
-              <p className="text-[15px] font-bold text-[#1E293B]">01 Maret 2026, 08:00 - 09:30</p>
+              <p className="text-[15px] font-bold text-[#1E293B]">
+                {formatTanggal(localPertemuanData.tanggal_pelaksanaan)}
+                {localPertemuanData.jam_mulai ? `, ${localPertemuanData.jam_mulai.substring(0, 5)}` : ""}
+                {localPertemuanData.jam_berakhir ? ` - ${localPertemuanData.jam_berakhir.substring(0, 5)}` : ""}
+              </p>
             </div>
             <div>
               <p className="text-[13px] font-bold text-[#64748B] uppercase  mb-1.5">Metode</p>
-              <p className="text-[15px] font-bold text-[#1E293B]">{pertemuanData.metode}</p>
+              <p className="text-[15px] font-bold text-[#1E293B]">
+                {localPertemuanData.metode_pertemuan === "synchronous" || localPertemuanData.metode_pertemuan === "Synchronous" ? "Synchronous" :
+                  localPertemuanData.metode_pertemuan === "asynchronous" || localPertemuanData.metode_pertemuan === "Asynchronous" ? "Asynchronous" :
+                    (localPertemuanData.metode_pertemuan || "-")}
+              </p>
             </div>
             <div>
               <p className="text-[13px] font-bold text-[#64748B] uppercase mb-1.5">Materi</p>
-              <p className="text-[15px] font-bold text-[#1E293B]">Kontrak Kuliah & Pengenalan</p>
+              <p className="text-[15px] font-bold text-[#1E293B]">{localPertemuanData.materi || "-"}</p>
             </div>
             <div>
               <p className="text-[13px] font-bold text-[#64748B] uppercase mb-1.5">Jumlah Mahasiswa</p>
-              <p className="text-[15px] font-bold text-[#1E293B]">45 Mahasiswa</p>
+              <p className="text-[15px] font-bold text-[#1E293B]">{presensi.length > 0 ? presensi.length : "-"}</p>
             </div>
           </div>
 
-          {pertemuanData.metode !== "Asynchronous" && (
+          {localPertemuanData.metode_pertemuan?.toLowerCase() !== "asynchronous" && localPertemuanData.link_kelas_daring && (
             <div className="bg-[#167A61]/10 rounded-xl px-5 py-3 mb-8">
               <p className="text-[14px] text-[#64748B]">
-                Tautan Zoom/GMeet : <a href="#" className="font-bold text-[#167A61] hover:underline ml-1">https://zoom.us/j/123456789</a>
+                Tautan Zoom/GMeet : <a href={localPertemuanData.link_kelas_daring} target="_blank" rel="noreferrer" className="font-bold text-[#167A61] hover:underline ml-1">{localPertemuanData.link_kelas_daring}</a>
               </p>
             </div>
           )}
@@ -660,12 +855,122 @@ export default function DetailPertemuanTabs() {
       <DeleteConfirmModal
         data={deleteChatTarget}
         title="Hapus Pesan"
-        onConfirm={() => {
-          setChats(prev => prev.filter(c => c.id !== deleteChatTarget.id));
-          setDeleteChatTarget(null);
+        fields={[{ label: "Isi Pesan", key: "message" }]}
+        onConfirm={async () => {
+          try {
+            await forumDiskusiService.delete(deleteChatTarget.id);
+            await fetchForum();
+            setDeleteChatTarget(null);
+          } catch (err) {
+            console.error('Gagal menghapus pesan', err);
+          }
         }}
         onCancel={() => setDeleteChatTarget(null)}
-        loading={false}
+      />
+
+      <UbahSesiModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        jadwalId={jadwal?.id_jadwal}
+        data={localPertemuanData}
+        onSaveSuccess={(updatedData) => {
+          if (updatedData) {
+            setLocalPertemuanData(prev => ({
+              ...prev,
+              ...updatedData,
+              // Ensure time format matches display if backend returns standard format
+              jam_mulai: updatedData.jam_mulai || prev.jam_mulai,
+              jam_berakhir: updatedData.jam_berakhir || prev.jam_berakhir,
+              link_kelas_daring: updatedData.link_kelas_daring !== undefined ? updatedData.link_kelas_daring : prev.link_kelas_daring,
+              url_cbt: updatedData.url_cbt !== undefined ? updatedData.url_cbt : prev.url_cbt,
+            }));
+          }
+          setIsEditModalOpen(false);
+        }}
+      />
+
+      <ConfirmSaveModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={async () => {
+          setIsConfirmModalOpen(false);
+          try {
+            const payload = {
+              id_sesi: pertemuanId,
+              presensi: presensi.map(p => ({
+                id_peserta: p.id,
+                status_kehadiran: (p.status || "alpha").toLowerCase()
+              }))
+            };
+            await presensiService.bulkSave(payload);
+            // Optionally refetch
+            fetchPresensi();
+          } catch (err) {
+            console.error("Gagal menyimpan presensi:", err);
+          }
+        }}
+        title="Simpan Presensi"
+        message="Apakah Anda yakin ingin menyimpan data presensi ini? Data kehadiran mahasiswa akan diperbarui di sistem."
+      />
+
+      {isUploadMateriOpen && (
+        <UploadMateriModal
+          isOpen={isUploadMateriOpen}
+          onClose={() => { setIsUploadMateriOpen(false); setEditMateriTarget(null); }}
+          pertemuanId={pertemuanId}
+          editData={editMateriTarget}
+          onSaveSuccess={() => {
+            fetchMateri();
+            setIsUploadMateriOpen(false);
+            setEditMateriTarget(null);
+          }}
+        />
+      )}
+
+      <DeleteConfirmModal
+        data={deleteMateriTarget}
+        fields={[{ label: "Judul Materi", key: "judul_materi" }]}
+        onCancel={() => setDeleteMateriTarget(null)}
+        onConfirm={async () => {
+          try {
+            await materiService.delete(deleteMateriTarget.id);
+            fetchMateri();
+            setDeleteMateriTarget(null);
+          } catch (err) {
+            console.error('Gagal menghapus materi', err);
+          }
+        }}
+        title="Hapus Materi"
+      />
+
+      {isTugasModalOpen && (
+        <TugasModal
+          isOpen={isTugasModalOpen}
+          onClose={() => { setIsTugasModalOpen(false); setEditTugasTarget(null); }}
+          pertemuanId={pertemuanId}
+          editData={editTugasTarget}
+          onSaveSuccess={() => {
+            fetchTugas();
+            setIsTugasModalOpen(false);
+            setEditTugasTarget(null);
+          }}
+        />
+      )}
+
+      <DeleteConfirmModal
+        data={deleteTugasTarget}
+        fields={[{ label: "Judul Tugas", key: "judul_tugas" }]}
+        onCancel={() => setDeleteTugasTarget(null)}
+        onConfirm={async () => {
+          try {
+            await tugasService.delete(deleteTugasTarget.id);
+            fetchTugas();
+            setDeleteTugasTarget(null);
+          } catch (err) {
+            console.error('Gagal menghapus tugas', err);
+          }
+        }}
+        title="Hapus Tugas"
       />
     </>
   );

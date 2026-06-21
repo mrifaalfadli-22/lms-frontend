@@ -83,4 +83,9 @@ export const jadwalSchema = yup.object({
         return waktu_berakhir > waktu_mulai;
       },
     ),
+
+  tanggal_mulai: yup
+    .date()
+    .typeError("Format tanggal mulai tidak valid.")
+    .required("Tanggal mulai wajib diisi."),
 });

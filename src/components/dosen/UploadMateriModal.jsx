@@ -1,18 +1,26 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useFormik } from "formik";
 import { materiSchema } from "../../schemas/materiSchema";
 import { UploadCloud, Link as LinkIcon } from "lucide-react";
 import Input from "../ui/Input";
 import ConfirmSaveModal from "../admin/ConfirmSaveModal";
+import materiService from "../../services/materiService";
 
-export default function UploadMateriModal({ isOpen, onClose, editData }) {
-  if (!isOpen) return null;
-
-  const [file, setFile] = useState(null);
+export default function UploadMateriModal({ isOpen, onClose, editData, pertemuanId, onSaveSuccess }) {
+  const [files, setFiles] = useState([]);
+  const [existingFiles, setExistingFiles] = useState([]);
   const [submitError, setSubmitError] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (editData && editData.file_materi) {
+      setExistingFiles(editData.file_materi);
+    } else {
+      setExistingFiles([]);
+    }
+  }, [editData]);
 
   const formik = useFormik({
     initialValues: {
@@ -24,8 +32,8 @@ export default function UploadMateriModal({ isOpen, onClose, editData }) {
     enableReinitialize: true,
     onSubmit: (values, { setSubmitting }) => {
       setSubmitError("");
-      if (!file && !values.link) {
-        setSubmitError("Anda harus menyertakan file materi atau embed link referensi.");
+      if (files.length === 0 && existingFiles.length === 0 && !values.link) {
+        setSubmitError("Anda harus menyertakan minimal 1 file materi atau embed link referensi.");
         setSubmitting(false);
         return;
       }
@@ -35,21 +43,30 @@ export default function UploadMateriModal({ isOpen, onClose, editData }) {
   });
 
   const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      setFiles(prev => [...prev, ...Array.from(e.target.files)]);
     }
   };
 
   const handleDrop = (e) => {
     e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)]);
     }
+  };
+
+  const removeFile = (index) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingFile = (index) => {
+    setExistingFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleClose = () => {
     formik.resetForm();
-    setFile(null);
+    setFiles([]);
+    setExistingFiles([]);
     setSubmitError("");
     setShowConfirm(false);
     onClose();
@@ -58,8 +75,34 @@ export default function UploadMateriModal({ isOpen, onClose, editData }) {
   const handleConfirmSave = async () => {
     setConfirmLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      // Implement API call logic here later
+      const formData = new FormData();
+      formData.append("id_sesi", pertemuanId);
+      formData.append("judul_materi", formik.values.judul);
+      if (formik.values.deskripsi) {
+        formData.append("deskripsi", formik.values.deskripsi);
+      } else {
+        formData.append("deskripsi", "");
+      }
+      if (formik.values.link) {
+        formData.append("link_video_pembelajaran", formik.values.link);
+      }
+      
+      formData.append("has_kept_files", "1");
+      existingFiles.forEach((file) => {
+        formData.append("kept_files[]", file);
+      });
+      
+      files.forEach((file) => {
+        formData.append("file_materi[]", file);
+      });
+      
+      if (editData) {
+        await materiService.update(editData.id, formData);
+      } else {
+        await materiService.upload(formData);
+      }
+      
+      if (onSaveSuccess) onSaveSuccess();
       handleClose();
     } catch (err) {
       console.error(err);
@@ -68,6 +111,8 @@ export default function UploadMateriModal({ isOpen, onClose, editData }) {
       setConfirmLoading(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <>
@@ -134,22 +179,55 @@ export default function UploadMateriModal({ isOpen, onClose, editData }) {
             >
               <input
                 type="file"
+                multiple
                 className="hidden"
                 ref={fileInputRef}
                 onChange={handleFileChange}
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
               />
               <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center mb-3 group-hover:-translate-y-1 transition-transform border border-[#167A61]/10">
                 <UploadCloud className="text-[#167A61]" size={24} />
               </div>
-              {file ? (
-                <div className="text-center">
-                  <p className="text-[14px] font-bold text-[#1E293B] mb-1">{file.name}</p>
-                  <p className="text-[12px] text-[#167A61] font-semibold">Klik untuk mengganti file</p>
+              
+              {(files.length > 0 || existingFiles.length > 0) ? (
+                <div className="w-full">
+                  <p className="text-[14px] font-bold text-[#1E293B] mb-2">{files.length + existingFiles.length} file dipilih</p>
+                  <p className="text-[11px] text-[#167A61] mb-3">Pilih file lagi untuk menambahkan</p>
+                  <div className="flex flex-col gap-2 items-center max-h-32 overflow-y-auto px-2">
+                    {existingFiles.map((f, i) => (
+                       <div key={`exist-${i}`} className="flex items-center justify-between w-full bg-white rounded-lg px-3 py-1.5 border border-gray-200">
+                         <span className="text-[12px] font-medium text-gray-600 truncate max-w-[200px]" title={f.split('_').pop()}>
+                           {f.split('_').pop()}
+                         </span>
+                         <button 
+                           type="button" 
+                           onClick={(e) => { e.stopPropagation(); removeExistingFile(i); }} 
+                           className="text-red-400 hover:text-red-500 p-1"
+                         >
+                           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                         </button>
+                       </div>
+                    ))}
+                    {files.map((f, i) => (
+                       <div key={`new-${i}`} className="flex items-center justify-between w-full bg-[#F0FAF6]/50 rounded-lg px-3 py-1.5 border border-[#167A61]/20">
+                         <span className="text-[12px] font-medium text-[#167A61] truncate max-w-[200px]" title={f.name}>
+                           {f.name} <span className="text-[10px] text-green-600 font-bold ml-1">(Baru)</span>
+                         </span>
+                         <button 
+                           type="button" 
+                           onClick={(e) => { e.stopPropagation(); removeFile(i); }} 
+                           className="text-red-400 hover:text-red-500 p-1"
+                         >
+                           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                         </button>
+                       </div>
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <>
                   <p className="text-[14px] font-bold text-[#1E293B] mb-1">Klik untuk memilih file</p>
-                  <p className="text-[12px] text-gray-500">PDF, PPT, DOC, MP4 (Maks. 50MB)</p>
+                  <p className="text-[12px] text-gray-500">PDF, DOC, PPT, XLS (Multiple, Maks. 50MB/file)</p>
                 </>
               )}
             </div>

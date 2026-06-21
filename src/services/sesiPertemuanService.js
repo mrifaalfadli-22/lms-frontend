@@ -18,7 +18,12 @@ const mapSesi = (item) => ({
     item.jam_mulai && item.jam_berakhir
       ? `${item.jam_mulai.substring(0, 5)} - ${item.jam_berakhir.substring(0, 5)}`
       : "-",
-  metode_pertemuan: item.metode_pertemuan ?? "-",
+  metode_pertemuan: item.metode_pertemuan
+    ? item.metode_pertemuan.charAt(0).toUpperCase() + item.metode_pertemuan.slice(1)
+    : "-",
+  materi: item.materi ?? "-",
+  url_cbt: item.url_cbt ?? null,
+  status: item.status ?? "-",
   link_kelas_daring: item.link_kelas_daring ?? null,
   // Relasi jadwal (jika di-load)
   jadwal_perkuliahan: item.jadwal_perkuliahan ?? null,

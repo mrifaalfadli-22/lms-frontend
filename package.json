@@ -12,9 +12,11 @@
   },
   "dependencies": {
     "axios": "^1.16.0",
+    "dayjs": "^1.11.21",
     "formik": "^2.4.9",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.14.0",
+    "puppeteer": "^25.1.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.2",

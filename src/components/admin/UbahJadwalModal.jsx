@@ -72,6 +72,7 @@ export default function UbahJadwalModal({ isOpen, onClose, onSuccess, data }) {
       // Manual
       tahun: data?.tahun !== "-" ? data?.tahun || "" : "",
       hari: data?.hari || "",
+      tanggal_mulai: data?.tanggal_mulai || "",
       waktu_mulai: cleanTime(data?.waktu_mulai),
       waktu_berakhir: cleanTime(data?.waktu_berakhir),
     },
@@ -95,6 +96,7 @@ export default function UbahJadwalModal({ isOpen, onClose, onSuccess, data }) {
         tahun: formik.values.tahun,
         semester: Number(formik.values.semester),
         hari: formik.values.hari,
+        tanggal_mulai: formik.values.tanggal_mulai,
         waktu_mulai: formik.values.waktu_mulai,
         waktu_berakhir: formik.values.waktu_berakhir,
         ...(formik.values.fakultas ? { fakultas: formik.values.fakultas } : {}),
@@ -262,20 +264,44 @@ export default function UbahJadwalModal({ isOpen, onClose, onSuccess, data }) {
                     searchable={false}
                   />
 
-                  {/* Hari */}
-                  <SearchableSelect
-                    label="Hari"
-                    name="hari"
-                    value={formik.values.hari}
-                    onChange={formik.handleChange}
-                    onBlur={() => formik.setFieldTouched("hari", true)}
-                    options={HARI_OPTIONS.map((h) => ({ value: h, label: h }))}
-                    placeholder="Pilih Hari"
-                    error={formik.errors.hari}
-                    touched={formik.touched.hari}
-                    disabled={formik.isSubmitting || confirmLoading}
-                    searchable={false}
-                  />
+                  {/* Hari & Tanggal Mulai */}
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <SearchableSelect
+                        label="Hari"
+                        name="hari"
+                        value={formik.values.hari}
+                        onChange={formik.handleChange}
+                        onBlur={() => formik.setFieldTouched("hari", true)}
+                        options={HARI_OPTIONS.map((h) => ({ value: h, label: h }))}
+                        placeholder="Pilih Hari"
+                        error={formik.errors.hari}
+                        touched={formik.touched.hari}
+                        disabled={formik.isSubmitting || confirmLoading}
+                        searchable={false}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-[13px] font-semibold text-[#1E293B] mb-1.5">
+                        Tanggal Mulai
+                      </label>
+                      <input
+                        type="date"
+                        name="tanggal_mulai"
+                        value={formik.values.tanggal_mulai}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        disabled={formik.isSubmitting || confirmLoading}
+                        className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all disabled:opacity-50"
+                      />
+                      {formik.touched.tanggal_mulai &&
+                        formik.errors.tanggal_mulai && (
+                          <p className="text-red-500 text-[11px] mt-1 leading-tight">
+                            {formik.errors.tanggal_mulai}
+                          </p>
+                        )}
+                    </div>
+                  </div>
 
                   {/* Waktu */}
                   <div className="flex gap-3">

@@ -5,7 +5,9 @@ import { X } from "lucide-react";
 import Input from "../ui/Input";
 import ConfirmSaveModal from "../admin/ConfirmSaveModal";
 
-export default function TugasModal({ isOpen, onClose, editData }) {
+import tugasService from "../../services/tugasService";
+
+export default function TugasModal({ isOpen, onClose, editData, pertemuanId, onSaveSuccess }) {
   if (!isOpen) return null;
 
   const [showConfirm, setShowConfirm] = useState(false);
@@ -35,11 +37,34 @@ export default function TugasModal({ isOpen, onClose, editData }) {
   const handleConfirmSave = async () => {
     setConfirmLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 600));
-      // Implement API call logic here
+      const payload = {
+        judul_tugas: formik.values.judul,
+        link_cbt: formik.values.tautan,
+        token_cbt: formik.values.token,
+        batas_waktu: formik.values.batasWaktu,
+      };
+
+      if (editData) {
+        await tugasService.update(editData.id, payload);
+      } else {
+        await tugasService.create(pertemuanId, payload);
+      }
+
+      if (onSaveSuccess) onSaveSuccess();
       handleClose();
     } catch (err) {
       console.error(err);
+      if (err.response?.status === 422 && err.response.data?.errors) {
+        const errors = err.response.data.errors;
+        const formikErrors = {};
+        if (errors.judul_tugas) formikErrors.judul = errors.judul_tugas[0];
+        if (errors.link_cbt) formikErrors.tautan = errors.link_cbt[0];
+        if (errors.token_cbt) formikErrors.token = errors.token_cbt[0];
+        if (errors.batas_waktu) formikErrors.batasWaktu = errors.batas_waktu[0];
+        formik.setErrors(formikErrors);
+      } else {
+        alert(err.response?.data?.message || err.message);
+      }
       setShowConfirm(false);
     } finally {
       setConfirmLoading(false);

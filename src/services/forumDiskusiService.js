@@ -13,6 +13,9 @@ const mapPesan = (item) => ({
   // Relasi pengirim
   nama_pengirim: item.pengirim?.nama_lengkap ?? item.user?.nama_lengkap ?? "-",
   role_pengirim: item.pengirim?.role ?? item.user?.role ?? "-",
+  // Sesi
+  pertemuan: item.sesi?.pertemuan_ke ? `Pertemuan ke-${item.sesi.pertemuan_ke}` : "-",
+  pertemuan_ke: item.sesi?.pertemuan_ke ?? 0,
   // Metadata
   jumlah_balasan: item.jumlah_balasan ?? 0,
   created_at: item.created_at,
@@ -29,6 +32,24 @@ const forumDiskusiService = {
    */
   getBySesi: async (id_sesi, params = {}) => {
     const res = await api.get(`/sesi/${id_sesi}/forum`, { params });
+    const payload = res.data.data ?? res.data;
+    const items = Array.isArray(payload) ? payload : payload.data ?? [];
+    return {
+      data: items.map(mapPesan),
+      total: payload.total ?? items.length,
+      per_page: payload.per_page ?? 20,
+      current_page: payload.current_page ?? 1,
+      last_page: payload.last_page ?? 1,
+    };
+  },
+
+  /**
+   * Ambil semua pesan forum untuk satu jadwal pertemuan (seluruh sesi).
+   * @param {string} id_jadwal
+   * @param {Object} params - { page, per_page }
+   */
+  getByJadwal: async (id_jadwal, params = {}) => {
+    const res = await api.get(`/jadwal/${id_jadwal}/forum`, { params });
     const payload = res.data.data ?? res.data;
     const items = Array.isArray(payload) ? payload : payload.data ?? [];
     return {

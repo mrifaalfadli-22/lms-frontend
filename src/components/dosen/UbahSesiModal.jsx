@@ -3,12 +3,14 @@ import { useFormik } from "formik";
 import Input from "../ui/Input";
 import SearchableSelect from "../ui/SearchableSelect";
 import ConfirmSaveModal from "../admin/ConfirmSaveModal";
+import sesiPertemuanService from "../../services/sesiPertemuanService";
 
-export default function UbahSesiModal({ isOpen, onClose, data }) {
+export default function UbahSesiModal({ isOpen, onClose, onSaveSuccess, data }) {
   if (!isOpen || !data) return null;
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
 
   // Opsi Metode Pertemuan
   const metodeOptions = [
@@ -18,10 +20,11 @@ export default function UbahSesiModal({ isOpen, onClose, data }) {
 
   const formik = useFormik({
     initialValues: {
-      metode: data.metode || "",
-      materi: data.materi || "",
-      tautan_cbt: data.tautan_cbt || "",
-      tautan_zoom: data.tautan_zoom || "",
+      metode: data.metode_pertemuan === "-" ? "Asynchronous" : (data.metode_pertemuan || "Asynchronous"),
+      tanggal_pelaksanaan: data.tanggal_pelaksanaan || "",
+      materi: data.materi !== "-" ? data.materi : "",
+      tautan_cbt: data.url_cbt || "",
+      tautan_zoom: data.link_kelas_daring || "",
     },
     enableReinitialize: true,
     onSubmit: async (values, { setSubmitting }) => {
@@ -33,18 +36,28 @@ export default function UbahSesiModal({ isOpen, onClose, data }) {
 
   const handleConfirmSave = async () => {
     setConfirmLoading(true);
+    setErrorMsg(null);
     try {
-      // Simulasi delay penyimpanan API
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      const payload = {
+        pertemuan_ke: data.pertemuan_ke,
+        judul_sesi: data.judul_sesi,
+        jam_mulai: data.jam_mulai ? data.jam_mulai.substring(0, 5) : "00:00",
+        jam_berakhir: data.jam_berakhir ? data.jam_berakhir.substring(0, 5) : "00:00",
+        tanggal_pelaksanaan: formik.values.tanggal_pelaksanaan,
+        metode_pertemuan: formik.values.metode.toLowerCase(),
+        materi: formik.values.materi,
+        url_cbt: formik.values.tautan_cbt,
+        link_kelas_daring: formik.values.metode === "Synchronous" ? formik.values.tautan_zoom : null,
+      };
 
-      // Update data dummy sementara (karena masih dummy)
-      data.metode = formik.values.metode;
-      data.materi = formik.values.materi;
+      const res = await sesiPertemuanService.update(data.id_sesi, payload);
 
       setShowConfirm(false);
-      onClose();
+      onSaveSuccess(res.data);
     } catch (err) {
       console.error(err);
+      setErrorMsg(err?.response?.data?.message || "Gagal menyimpan perubahan. Silakan coba lagi.");
+      setShowConfirm(false);
     } finally {
       setConfirmLoading(false);
     }
@@ -81,6 +94,12 @@ export default function UbahSesiModal({ isOpen, onClose, data }) {
             </button>
           </div>
 
+          {errorMsg && (
+            <div className="mx-7 mt-5 px-4 py-3 bg-red-50 text-red-600 border border-red-200 rounded-lg text-[13px] font-medium">
+              {errorMsg}
+            </div>
+          )}
+
           {/* Form Content */}
           <div className="overflow-y-auto custom-scrollbar">
             <form onSubmit={formik.handleSubmit} className="flex flex-col">
@@ -95,6 +114,20 @@ export default function UbahSesiModal({ isOpen, onClose, data }) {
                   error={formik.touched.metode && formik.errors.metode}
                   placeholder="Pilih metode"
                 />
+                
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[13px] font-bold text-[#1E293B]">Tanggal Pelaksanaan</label>
+                  <input
+                    type="date"
+                    name="tanggal_pelaksanaan"
+                    className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-[13px] bg-white outline-none focus:border-[#167A61] transition-all"
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    value={formik.values.tanggal_pelaksanaan}
+                    disabled={formik.isSubmitting}
+                  />
+                </div>
+
                 <Input
                   label="Materi Pembahasan"
                   name="materi"

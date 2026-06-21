@@ -10,12 +10,21 @@ const mapMateri = (item) => ({
   id: item.id ?? item.id_materi,
   id_sesi: item.id_sesi,
   judul_materi: item.judul_materi ?? item.judul ?? "-",
-  deskripsi: item.deskripsi ?? "",
-  tipe_materi: item.tipe_materi ?? item.tipe ?? "-",
-  url_file: item.url_file ?? item.file_url ?? null,
-  nama_file: item.nama_file ?? null,
-  ukuran_file: item.ukuran_file ?? null,
-  urutan: item.urutan ?? null,
+  deskripsi: item.deskripsi || "",
+  file_materi: Array.isArray(item.file_materi) 
+    ? item.file_materi 
+    : (() => {
+        if (typeof item.file_materi === 'string') {
+          try {
+            const parsed = JSON.parse(item.file_materi);
+            return Array.isArray(parsed) ? parsed : [item.file_materi];
+          } catch (e) {
+            return [item.file_materi];
+          }
+        }
+        return [];
+      })(),
+  link_video_pembelajaran: item.link_video_pembelajaran || null,
   created_at: item.created_at,
   updated_at: item.updated_at,
 });
@@ -29,6 +38,16 @@ const materiService = {
     const res = await api.get(`${BASE}/sesi/${id_sesi}`);
     const items = res.data.data ?? res.data;
     return Array.isArray(items) ? items.map(mapMateri) : [];
+  },
+
+  /**
+   * Ambil semua materi berdasarkan ID jadwal (semua sesi dalam jadwal).
+   * @param {string} id_jadwal
+   */
+  getByJadwal: async (id_jadwal) => {
+    const res = await api.get(`${BASE}/jadwal/${id_jadwal}`);
+    const items = res.data.data ?? res.data;
+    return Array.isArray(items) ? items : [];
   },
 
   /**
@@ -49,10 +68,16 @@ const materiService = {
    */
   update: async (id, payload) => {
     const isFormData = payload instanceof FormData;
-    const res = await api.put(`${BASE}/${id}`, payload, {
-      headers: isFormData ? { "Content-Type": "multipart/form-data" } : {},
-    });
-    return res.data;
+    if (isFormData) {
+      payload.append('_method', 'PUT');
+      const res = await api.post(`${BASE}/${id}`, payload, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return res.data;
+    } else {
+      const res = await api.put(`${BASE}/${id}`, payload);
+      return res.data;
+    }
   },
 
   /**
@@ -71,6 +96,21 @@ const materiService = {
   getDownloadLink: async (id) => {
     const res = await api.get(`${BASE}/${id}/download`);
     return res.data;
+  },
+  /**
+   * Force download file materi
+   */
+  forceDownload: async (path, filename) => {
+    const res = await api.get(`${BASE}/download?path=${encodeURIComponent(path)}`, {
+      responseType: 'blob',
+    });
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode.removeChild(link);
   },
 };
 

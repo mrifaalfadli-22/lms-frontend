@@ -124,7 +124,7 @@ export default function DetailKelasDummy({ title, backTo }) {
                       NIDN: {jadwal?.nidn || "-"}
                     </p>
                     <p className="text-[13px] text-[#167A61] font-bold pt-1">
-                      Total Mahasiswa: {((c.nama_kelas?.length || 5) * 2) + 15} Orang
+                      Total Mahasiswa: {c.total_mahasiswa || 0} Orang
                     </p>
                   </div>
                 </CardWrapper>

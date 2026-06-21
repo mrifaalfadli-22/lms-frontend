@@ -227,10 +227,9 @@ export default function AdminDashboard() {
                               }
                               disabled={confirmLoading}
                               className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[13px] font-bold transition-all
-                                ${
-                                  d.status_persetujuan === "Disetujui"
-                                    ? "bg-[#167A61] text-white border-[#167A61]"
-                                    : "text-[#167A61] border-[#167A61]/20 hover:bg-[#167A61] hover:text-white"
+                                ${d.status_persetujuan === "Disetujui"
+                                  ? "bg-[#167A61] text-white border-[#167A61]"
+                                  : "text-[#167A61] border-[#167A61]/20 hover:bg-[#167A61] hover:text-white"
                                 }`}
                             >
                               <CheckCircle size={14} />
@@ -242,10 +241,9 @@ export default function AdminDashboard() {
                               }
                               disabled={confirmLoading}
                               className={`flex items-center gap-2 px-3 py-1.5 border rounded-lg text-[13px] font-bold transition-all
-                                ${
-                                  d.status_persetujuan === "Ditolak"
-                                    ? "bg-red-600 text-white border-red-600"
-                                    : "text-red-600 border-red-100 hover:bg-red-50 hover:border-red-600"
+                                ${d.status_persetujuan === "Ditolak"
+                                  ? "bg-red-600 text-white border-red-600"
+                                  : "text-red-600 border-red-100 hover:bg-red-50 hover:border-red-600"
                                 }`}
                             >
                               <XCircle size={14} />

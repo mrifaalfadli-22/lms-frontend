@@ -1,19 +1,12 @@
-import { useState, useMemo } from "react";
-import { Search, Layout, CheckCircle, Eye, Edit2 } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Search, Layout, CheckCircle, Eye, Edit2, Loader2 } from "lucide-react";
+import api from "../../config/api";
 import Pagination from "../../components/common/Pagination";
 import VerifikasiSertifikatModal from "../../components/dosen/VerifikasiSertifikatModal";
 
-// Initial dummy data based on user requirements
-const initialData = [
-  { id: 1, npm: "2023001", nama: "Adam Ramadhan", fakultas: "Fakultas Teknik", prodi: "Teknik Informatika", matakuliah: "Pemrograman Web - Kelas A", kehadiran: "10 / 16", nilai: "85.00", status: "MENUNGGU", tugas: "5/5", ujian: true },
-  { id: 2, npm: "2023003", nama: "Dinda Permatasari", fakultas: "Fakultas Ilmu Komputer", prodi: "Sistem Informasi", matakuliah: "Kalkulus 1", kehadiran: "07 / 16", nilai: "92.50", status: "MENUNGGU", tugas: "5/5", ujian: true },
-  { id: 3, npm: "2023005", nama: "Siti Aisyah", fakultas: "Fakultas Teknik", prodi: "Teknik Informatika", matakuliah: "Kalkulus 1", kehadiran: "04 / 16", nilai: "88.00", status: "MENUNGGU", tugas: "4/5", ujian: true },
-  { id: 4, npm: "2023002", nama: "Nurhayati Mulyani", fakultas: "Fakultas Ilmu Komputer", prodi: "Ilmu Komputer", matakuliah: "Kalkulus 1", kehadiran: "06 / 16", nilai: "60.50", status: "DITOLAK", tugas: "3/5", ujian: false },
-  { id: 5, npm: "2023004", nama: "Farhan Santoso", fakultas: "Fakultas Teknik", prodi: "Teknik Informatika", matakuliah: "Kalkulus 1", kehadiran: "15 / 16", nilai: "78.00", status: "DISETUJUI", tugas: "5/5", ujian: true },
-];
-
 export default function VerifikasiSertifikat() {
-  const [sertifikatList, setSertifikatList] = useState(initialData);
+  const [sertifikatList, setSertifikatList] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [fakultasFilter, setFakultasFilter] = useState("");
   const [prodiFilter, setProdiFilter] = useState("");
@@ -28,6 +21,24 @@ export default function VerifikasiSertifikat() {
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
 
+  const fetchVerifikasi = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/dosen/verifikasi-sertifikat');
+      if (res.data.success) {
+        setSertifikatList(res.data.data);
+      }
+    } catch (error) {
+      console.error("Gagal memuat daftar verifikasi", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVerifikasi();
+  }, []);
+
   // Open modal handler
   const openModal = (item, mode) => {
     setSelectedSertifikat(item);
@@ -36,19 +47,29 @@ export default function VerifikasiSertifikat() {
   };
 
   // Status verify update handler
-  const handleVerify = (id, newStatus) => {
-    setSertifikatList((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
-    );
+  const handleVerify = async (id, newStatus) => {
+    try {
+      const res = await api.put(`/dosen/verifikasi-sertifikat/${id}`, {
+        status_kelayakan: newStatus === "MENUNGGU" ? "Belum Ditentukan" : newStatus === "DISETUJUI" ? "Disetujui" : "Ditolak",
+      });
+      if (res.data.success) {
+        setSertifikatList((prev) =>
+          prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
+        );
+      }
+    } catch (error) {
+      console.error("Gagal mengubah status kelayakan", error);
+    }
   };
 
   // Filter Data
   const filteredData = useMemo(() => {
     return sertifikatList.filter((item) => {
       const matchSearch =
-        item.nama.toLowerCase().includes(search.toLowerCase()) ||
-        item.npm.toLowerCase().includes(search.toLowerCase()) ||
-        item.matakuliah.toLowerCase().includes(search.toLowerCase());
+        !search ||
+        (item.nama && item.nama.toLowerCase().includes(search.toLowerCase())) ||
+        (item.nim && item.nim.toLowerCase().includes(search.toLowerCase())) ||
+        (item.mataKuliah && item.mataKuliah.toLowerCase().includes(search.toLowerCase()));
 
       const matchFakultas = fakultasFilter ? item.fakultas === fakultasFilter : true;
       const matchProdi = prodiFilter ? item.prodi === prodiFilter : true;
@@ -85,6 +106,19 @@ export default function VerifikasiSertifikat() {
     }
   };
 
+  // Extract unique options for filters
+  const uniqueFakultas = useMemo(() => {
+    return [...new Set(sertifikatList.map(item => item.fakultas).filter(Boolean))].sort();
+  }, [sertifikatList]);
+
+  const uniqueProdi = useMemo(() => {
+    // If fakultas is selected, only show prodi for that fakultas
+    const listToUse = fakultasFilter 
+      ? sertifikatList.filter(item => item.fakultas === fakultasFilter) 
+      : sertifikatList;
+    return [...new Set(listToUse.map(item => item.prodi).filter(Boolean))].sort();
+  }, [sertifikatList, fakultasFilter]);
+
   return (
     <>
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 py-7">
@@ -114,12 +148,16 @@ export default function VerifikasiSertifikat() {
 
           <select
             value={fakultasFilter}
-            onChange={(e) => setFakultasFilter(e.target.value)}
+            onChange={(e) => {
+              setFakultasFilter(e.target.value);
+              setProdiFilter(""); // reset prodi when fakultas changes
+            }}
             className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
           >
             <option value="">Semua Fakultas</option>
-            <option value="Fakultas Teknik">Fakultas Teknik</option>
-            <option value="Fakultas Ilmu Komputer">Fakultas Ilmu Komputer</option>
+            {uniqueFakultas.map(f => (
+              <option key={f} value={f}>{f}</option>
+            ))}
           </select>
 
           <select
@@ -128,9 +166,9 @@ export default function VerifikasiSertifikat() {
             className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
           >
             <option value="">Semua Prodi</option>
-            <option value="Teknik Informatika">Teknik Informatika</option>
-            <option value="Sistem Informasi">Sistem Informasi</option>
-            <option value="Ilmu Komputer">Ilmu Komputer</option>
+            {uniqueProdi.map(p => (
+              <option key={p} value={p}>{p}</option>
+            ))}
           </select>
 
           <select
@@ -139,7 +177,7 @@ export default function VerifikasiSertifikat() {
             className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
           >
             <option value="">Semua Status</option>
-            <option value="MENUNGGU">Menunggu</option>
+            <option value="BELUM DITENTUKAN">Menunggu</option>
             <option value="DISETUJUI">Disetujui</option>
             <option value="DITOLAK">Ditolak</option>
           </select>
@@ -147,7 +185,12 @@ export default function VerifikasiSertifikat() {
 
         {/* Table / State */}
         <div className="px-7 overflow-x-auto">
-          {currentData.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Loader2 size={28} className="animate-spin text-[#167A61] mb-4" />
+              <p className="text-[14px] font-bold text-[#64748B]">Memuat data...</p>
+            </div>
+          ) : currentData.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-16 h-16 bg-[#F1F5F9] rounded-full flex items-center justify-center mb-4">
                 <Layout size={28} className="text-[#94A3B8]" />
@@ -189,69 +232,76 @@ export default function VerifikasiSertifikat() {
                 </tr>
               </thead>
               <tbody className="text-[14px] text-[#1E293B]">
-                {currentData.map((item, i) => (
-                  <tr
-                    key={item.id}
-                    className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group"
-                  >
-                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {(currentPage - 1) * perPage + i + 1}
-                    </td>
-                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {item.npm}
-                    </td>
-                    <td className="py-4 px-4 font-bold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {item.nama}
-                    </td>
-                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {item.fakultas}
-                    </td>
-                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {item.prodi}
-                    </td>
-                    <td className="py-4 px-4 font-bold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {item.matakuliah}
-                    </td>
-                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      <span className="text-[#0E5C46] font-semibold">{item.kehadiran.split(" / ")[0]}</span>
-                      <span className="text-[#94A3B8]"> / {item.kehadiran.split(" / ")[1]}</span>
-                    </td>
-                    <td className="py-4 px-4 font-bold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {item.nilai}
-                    </td>
-                    <td className="py-4 px-4 whitespace-nowrap">
-                      {getStatusBadge(item.status)}
-                    </td>
-                    <td className="py-4 px-4">
-                      {item.status === "MENUNGGU" ? (
-                        <button
-                          onClick={() => openModal(item, "verifikasi")}
-                          className="flex items-center gap-2 px-3 py-1.5 text-[#167A61] border border-[#167A61]/30 rounded-lg hover:bg-[#167A61] hover:text-white transition-all text-[13px] font-bold"
-                        >
-                          <CheckCircle size={14} />
-                          <span>Verifikasi</span>
-                        </button>
-                      ) : (
-                        <div className="flex gap-2">
+                {currentData.map((item, i) => {
+                  // Handle safe display for kehadiran string
+                  const kehadiranParts = item.kehadiran ? item.kehadiran.split("/") : ["0", "0"];
+                  const hadir = kehadiranParts[0]?.trim() || "0";
+                  const total = kehadiranParts[1]?.trim() || "0";
+
+                  return (
+                    <tr
+                      key={item.id}
+                      className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group"
+                    >
+                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                        {(currentPage - 1) * perPage + i + 1}
+                      </td>
+                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                        {item.nim}
+                      </td>
+                      <td className="py-4 px-4 font-bold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                        {item.nama}
+                      </td>
+                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                        {item.fakultas}
+                      </td>
+                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                        {item.prodi}
+                      </td>
+                      <td className="py-4 px-4 font-bold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                        {item.mataKuliah}
+                      </td>
+                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                        <span className="text-[#0E5C46] font-semibold">{hadir}</span>
+                        <span className="text-[#94A3B8]"> / {total}</span>
+                      </td>
+                      <td className="py-4 px-4 font-bold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                        {item.nilaiAkhir}
+                      </td>
+                      <td className="py-4 px-4 whitespace-nowrap">
+                        {getStatusBadge(item.status === 'BELUM DITENTUKAN' ? 'MENUNGGU' : item.status)}
+                      </td>
+                      <td className="py-4 px-4">
+                        {item.status === "BELUM DITENTUKAN" || item.status === "MENUNGGU" ? (
                           <button
-                            onClick={() => openModal(item, "detail")}
-                            className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/30 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold"
-                          >
-                            <Eye size={14} />
-                            <span>Detail</span>
-                          </button>
-                          <button
-                            onClick={() => openModal(item, "ubah")}
+                            onClick={() => openModal(item, "verifikasi")}
                             className="flex items-center gap-2 px-3 py-1.5 text-[#167A61] border border-[#167A61]/30 rounded-lg hover:bg-[#167A61] hover:text-white transition-all text-[13px] font-bold"
                           >
-                            <Edit2 size={14} />
-                            <span>Ubah</span>
+                            <CheckCircle size={14} />
+                            <span>Verifikasi</span>
                           </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                        ) : (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => openModal(item, "detail")}
+                              className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/30 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold"
+                            >
+                              <Eye size={14} />
+                              <span>Detail</span>
+                            </button>
+                            <button
+                              onClick={() => openModal(item, "ubah")}
+                              className="flex items-center gap-2 px-3 py-1.5 text-[#167A61] border border-[#167A61]/30 rounded-lg hover:bg-[#167A61] hover:text-white transition-all text-[13px] font-bold"
+                            >
+                              <Edit2 size={14} />
+                              <span>Ubah</span>
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

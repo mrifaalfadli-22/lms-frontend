@@ -15,10 +15,12 @@
     "dayjs": "^1.11.21",
     "formik": "^2.4.9",
     "framer-motion": "^12.38.0",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.14.0",
     "puppeteer": "^25.1.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
+    "react-rnd": "^10.5.3",
     "react-router-dom": "^7.14.2",
     "yup": "^1.7.1"
   },

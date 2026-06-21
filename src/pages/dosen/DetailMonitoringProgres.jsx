@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams, useLocation } from "react-router-dom";
-import { ArrowLeft, ChevronRight, Eye } from "lucide-react";
+import { ArrowLeft, ChevronRight, Eye, Loader2 } from "lucide-react";
+import api from "../../config/api";
 import Pagination from "../../components/common/Pagination";
 import DetailProgressModal from "../../components/dosen/DetailProgressModal";
 
@@ -13,53 +14,32 @@ export default function DetailMonitoringProgres() {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [detailModalData, setDetailModalData] = useState(null);
+  const [mahasiswaList, setMahasiswaList] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const dummyMahasiswa = [
-    {
-      id: 1,
-      nim: "065120114",
-      nama: "Adam R.",
-      log: "Hadir Sesi Terakhir",
-      rataRata: "85.00",
-      progres: 75,
-    },
-    {
-      id: 2,
-      nim: "065120115",
-      nama: "Nurhayati M.",
-      log: "Bolos 1 Sesi",
-      rataRata: "60.50",
-      progres: 30,
-    },
-    {
-      id: 3,
-      nim: "065120116",
-      nama: "Dinda P.",
-      log: "Hadir Sesi Terakhir",
-      rataRata: "92.50",
-      progres: 100,
-    },
-    {
-      id: 4,
-      nim: "065120117",
-      nama: "Farhan S.",
-      log: "Hadir Sesi Terakhir",
-      rataRata: "78.00",
-      progres: 60,
-    },
-    {
-      id: 5,
-      nim: "065120118",
-      nama: "Siti Aisyah",
-      log: "Hadir Sesi Terakhir",
-      rataRata: "88.00",
-      progres: 90,
-    },
-  ];
+  useEffect(() => {
+    const fetchProgres = async () => {
+      try {
+        setLoading(true);
+        // kelasId from route params is actually the id_jadwal
+        const response = await api.get(`/dosen/monitoring-progres/${kelasId}`);
+        if (response.data.success) {
+          setMahasiswaList(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching monitoring progres:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (kelasId) {
+      fetchProgres();
+    }
+  }, [kelasId]);
 
   const startIndex = (page - 1) * perPage;
   const endIndex = startIndex + perPage;
-  const paginatedMahasiswa = dummyMahasiswa.slice(startIndex, endIndex);
+  const paginatedMahasiswa = mahasiswaList.slice(startIndex, endIndex);
 
   const getProgressColor = (value) => {
     if (value < 50) return "bg-orange-500";
@@ -108,62 +88,79 @@ export default function DetailMonitoringProgres() {
               </tr>
             </thead>
             <tbody className="text-[14px] text-[#1E293B]">
-              {paginatedMahasiswa.map((m, idx) => (
-                <tr key={m.id} className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 group">
-                  <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                    {startIndex + idx + 1}
-                  </td>
-                  <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                    {m.nim}
-                  </td>
-                  <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                    {m.nama}
-                  </td>
-                  <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                    {m.log}
-                  </td>
-                  <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                    {m.rataRata}
-                  </td>
-                  <td className="py-4 px-4 whitespace-nowrap min-w-[200px]">
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[13px] font-bold text-[#64748B]">{m.progres}% Selesai</span>
-                      <div className="w-full bg-[#E2E8F0] h-2.5 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-1000 ${getProgressColor(m.progres)}`}
-                          style={{ width: `${m.progres}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-4">
-                    <button 
-                      onClick={() => setDetailModalData(m)}
-                      className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/20 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold"
-                    >
-                      <Eye size={14} />
-                      <span>Detail Progress</span>
-                    </button>
+              {loading ? (
+                <tr>
+                  <td colSpan="7" className="py-8 text-center text-gray-500">
+                    <Loader2 size={24} className="animate-spin mx-auto mb-2 text-[#167A61]" />
+                    <span className="text-[13px] font-medium">Memuat data progres...</span>
                   </td>
                 </tr>
-              ))}
+              ) : paginatedMahasiswa.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="py-8 text-center text-gray-500 text-[13px] font-medium">
+                    Belum ada mahasiswa yang terdaftar di kelas ini.
+                  </td>
+                </tr>
+              ) : (
+                paginatedMahasiswa.map((m, idx) => (
+                  <tr key={m.id} className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 group">
+                    <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                      {startIndex + idx + 1}
+                    </td>
+                    <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                      {m.nim}
+                    </td>
+                    <td className="py-4 px-4 font-semibold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                      {m.nama}
+                    </td>
+                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                      {m.log}
+                    </td>
+                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                      {m.rataRata}
+                    </td>
+                    <td className="py-4 px-4 whitespace-nowrap min-w-[200px]">
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[13px] font-bold text-[#64748B]">{m.progres}% Selesai</span>
+                        <div className="w-full bg-[#E2E8F0] h-2.5 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-1000 ${getProgressColor(m.progres)}`}
+                            style={{ width: `${m.progres}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4">
+                      <button 
+                        onClick={() => setDetailModalData(m)}
+                        className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/20 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold"
+                      >
+                        <Eye size={14} />
+                        <span>Detail Progress</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
 
-        <div className="mt-6 border-t border-[#E2E8F0] pt-6">
-          <Pagination
-            currentPage={page}
-            lastPage={Math.ceil(dummyMahasiswa.length / perPage)}
-            total={dummyMahasiswa.length}
-            perPage={perPage}
-            onPageChange={(p) => setPage(p)}
-            onPerPageChange={(l) => {
-              setPerPage(l);
-              setPage(1);
-            }}
-          />
-        </div>
+        {!loading && mahasiswaList.length > 0 && (
+          <div className="mt-6 border-t border-[#E2E8F0] pt-6">
+            <Pagination
+              currentPage={page}
+              lastPage={Math.ceil(mahasiswaList.length / perPage)}
+              total={mahasiswaList.length}
+              perPage={perPage}
+              onPageChange={(p) => setPage(p)}
+              onPerPageChange={(l) => {
+                setPerPage(l);
+                setPage(1);
+              }}
+            />
+          </div>
+        )}
       </div>
 
       <DetailProgressModal

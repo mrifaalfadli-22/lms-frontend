@@ -1,75 +1,16 @@
-import { useState } from "react";
-import { Search, Download, Settings2, Eye, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Download, Settings2, Eye, Trash2, Loader2 } from "lucide-react";
 import Pagination from "../../components/common/Pagination";
 import DeleteConfirmModal from "../../components/admin/DeleteConfirmModal";
 import AturTemplateModal from "../../components/admin/AturTemplateModal";
-
-const SERTIFIKAT = [
-  {
-    noSertifikat: "CERT-2026-001",
-    mahasiswa: "Dimas Putra Pratama",
-    npm: "2210631170001",
-    mataKuliah: "Kalkulus 1",
-    semester: "Semester 2",
-    tahun: "2026",
-    dosen: "Dr. Fauzi Hamdan",
-    nidn: "0412038901",
-    tanggalTerbit: "04 April 2026",
-  },
-  {
-    noSertifikat: "CERT-2026-003",
-    mahasiswa: "Anwar Abdul",
-    npm: "2210631170034",
-    mataKuliah: "Algoritma & Pemrograman",
-    semester: "Semester 2",
-    tahun: "2026",
-    dosen: "Budi Santoso, M.Kom",
-    nidn: "0728068501",
-    tanggalTerbit: "01 April 2026",
-  },
-  {
-    noSertifikat: "CERT-2026-002",
-    mahasiswa: "Rifa Alfadli",
-    npm: "221063117012",
-    mataKuliah: "Pemrograman Web Dasar",
-    semester: "Semester 3",
-    tahun: "2026",
-    dosen: "Siti Aminah, M.Pd",
-    nidn: "0305076802",
-    tanggalTerbit: "02 Januari 2026",
-  },
-  {
-    noSertifikat: "CERT-2026-004",
-    mahasiswa: "Sarah Widyantari",
-    npm: "2210631170015",
-    mataKuliah: "Struktur Data",
-    semester: "Semester 4",
-    tahun: "2025",
-    dosen: "Budi Santoso, M.Kom",
-    nidn: "0728068501",
-    tanggalTerbit: "30 Maret 2025",
-  },
-  {
-    noSertifikat: "CERT-2026-005",
-    mahasiswa: "Bayu Anggara",
-    npm: "2210631170042",
-    mataKuliah: "Basis Data",
-    semester: "Semester 5",
-    tahun: "2025",
-    dosen: "Dr. Fauzi Hamdan",
-    nidn: "0412038901",
-    tanggalTerbit: "28 Januari 2025",
-  },
-];
-
-// ... (data dummy SERTIFIKAT di atas)
+import LihatSertifikatModal from "../../components/admin/LihatSertifikatModal";
+import api from "../../config/api";
 
 export default function KelolaSertifikat() {
-  const [sertifikatList, setSertifikatList] = useState(SERTIFIKAT);
+  const [sertifikatList, setSertifikatList] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const tahunOptions = [...new Set(sertifikatList.map((s) => s.tahun))].sort(
-    (a, b) => b - a,
-  );
+  // Filter and search
   const [search, setSearch] = useState("");
   const [tahunFilter, setTahunFilter] = useState("");
   const [semesterFilter, setSemesterFilter] = useState("");
@@ -77,17 +18,144 @@ export default function KelolaSertifikat() {
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [viewTarget, setViewTarget] = useState(null);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [savedTemplate, setSavedTemplate] = useState(null);
+
+  useEffect(() => {
+    fetchSertifikat();
+    fetchActiveTemplate();
+  }, []);
+
+  const fetchSertifikat = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/sertifikat');
+      if (res.data.status === 'success') {
+        const formatted = res.data.data.data.map(item => {
+          const mk = item.peserta?.jadwal?.mata_kuliah?.nama_mk || 'Mata Kuliah';
+          const kls = item.peserta?.jadwal?.kelas?.nama_kelas || 'Kelas';
+          
+          return {
+            idSertifikat: item.id_sertifikat,
+            noSertifikat: item.nomor_sertifikat,
+            id_template: item.id_template,
+            mahasiswa: item.peserta?.mahasiswa?.nama_lengkap || 'Tanpa Nama',
+            npm: item.peserta?.mahasiswa?.nomor_induk || '-',
+            mataKuliah: `${mk} - ${kls}`,
+            semester: `Semester ${item.peserta?.jadwal?.mata_kuliah?.semester || '-'}`,
+            tahun: item.peserta?.jadwal?.mata_kuliah?.semester || '-', // Ini bisa disesuaikan
+            dosen: item.peserta?.jadwal?.dosen?.nama_lengkap || '-',
+            nidn: item.peserta?.jadwal?.dosen?.nomor_induk || '-',
+            tanggalTerbit: new Date(item.tanggal_terbit).toLocaleDateString('id-ID', {
+              day: '2-digit', month: 'long', year: 'numeric'
+            }),
+          };
+        });
+        setSertifikatList(formatted);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchActiveTemplate = async () => {
+    try {
+      const res = await api.get('/template-sertifikat/aktif');
+      if (res.data.status === 'success' && res.data.data.length > 0) {
+        const active = res.data.data[0];
+        if (active.file_background && active.layout_data) {
+          try {
+            const imgRes = await api.get(`/template-sertifikat/${active.id_template}/download-background`, {
+              responseType: 'blob'
+            });
+            const imgBlob = imgRes.data;
+            const file = new File([imgBlob], "background.jpg", { type: imgBlob.type || "image/jpeg" });
+            
+            const parsedLayout = typeof active.layout_data === 'string' 
+              ? JSON.parse(active.layout_data) 
+              : active.layout_data;
+              
+            setSavedTemplate({ file, layoutData: parsedLayout, id_template: active.id_template });
+          } catch (fetchErr) {
+            console.error("Gagal mendownload background blob", fetchErr);
+          }
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSaveTemplate = async (file, layoutData) => {
+    try {
+      let savedIdTemplate = null;
+
+      if (savedTemplate?.id_template) {
+        // UPDATE template yang sudah ada — preserves FK references in sertifikat table
+        const formData = new FormData();
+        formData.append('nama_template', 'Template Baru');
+        formData.append('is_aktif', 1);
+        formData.append('layout_data', JSON.stringify(layoutData));
+        if (file && file.name !== 'background.jpg') {
+          // Only upload new background if the file was actually changed (not the fetched blob)
+          formData.append('file_background', file);
+        }
+
+        // Update layout_data via PUT (JSON)
+        await api.put(`/template-sertifikat/${savedTemplate.id_template}`, {
+          layout_data: layoutData,
+          nama_template: 'Template Baru',
+          is_aktif: true,
+        });
+
+        // If background file was changed, upload it separately
+        if (file && file.name !== 'background.jpg') {
+          const bgForm = new FormData();
+          bgForm.append('file_background', file);
+          await api.post(`/template-sertifikat/${savedTemplate.id_template}/background`, bgForm, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+        }
+
+        savedIdTemplate = savedTemplate.id_template;
+      } else {
+        // CREATE template baru
+        const formData = new FormData();
+        formData.append('nama_template', 'Template Baru');
+        formData.append('file_background', file);
+        formData.append('is_aktif', 1);
+        formData.append('layout_data', JSON.stringify(layoutData));
+
+        const createRes = await api.post('/template-sertifikat', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        savedIdTemplate = createRes.data.data?.id_template;
+      }
+
+      setSavedTemplate({ file, layoutData, id_template: savedIdTemplate });
+      setIsTemplateModalOpen(false);
+      // Refresh sertifikat list in case template reference changed
+      fetchSertifikat();
+    } catch (err) {
+      console.error("Gagal simpan template", err);
+      alert("Gagal menyimpan template");
+    }
+  };
+
+  const tahunOptions = [...new Set(sertifikatList.map((s) => s.tahun))].filter(Boolean).sort((a, b) => b - a);
 
   const filtered = sertifikatList.filter((s) => {
     const q = search.toLowerCase();
     const matchSearch =
       !q ||
       [s.noSertifikat, s.mahasiswa, s.npm, s.mataKuliah, s.dosen, s.nidn].some(
-        (v) => v.toLowerCase().includes(q),
+        (v) => v?.toLowerCase().includes(q),
       );
-    const matchTahun = !tahunFilter || s.tahun === tahunFilter;
-    const matchSemester = !semesterFilter || s.semester === semesterFilter;
+    const matchTahun = !tahunFilter || String(s.tahun) === String(tahunFilter);
+    const matchSemester = !semesterFilter || String(s.semester) === String(semesterFilter);
     return matchSearch && matchTahun && matchSemester;
   });
 
@@ -98,36 +166,30 @@ export default function KelolaSertifikat() {
     currentPage * perPage
   );
 
-  const handleSearchChange = (e) => {
-    setSearch(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const handleTahunChange = (e) => {
-    setTahunFilter(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const handleSemesterChange = (e) => {
-    setSemesterFilter(e.target.value);
-    setCurrentPage(1);
-  };
-
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deleteTarget) {
-      setSertifikatList((prev) => prev.filter((s) => s.noSertifikat !== deleteTarget.noSertifikat));
-      setDeleteTarget(null);
+      try {
+        await api.delete(`/sertifikat/${deleteTarget.idSertifikat}`);
+        fetchSertifikat();
+        setDeleteTarget(null);
+      } catch (err) {
+        console.error("Gagal menghapus sertifikat", err);
+      }
     }
   };
 
   return (
     <>
+      <LihatSertifikatModal
+        isOpen={!!viewTarget}
+        onClose={() => setViewTarget(null)}
+        data={viewTarget}
+      />
       <AturTemplateModal
         isOpen={isTemplateModalOpen}
         onClose={() => setIsTemplateModalOpen(false)}
-        onSave={(file) => {
-          // Dummy logic
-        }}
+        savedTemplate={savedTemplate}
+        onSave={handleSaveTemplate}
       />
       <DeleteConfirmModal
         data={deleteTarget}
@@ -173,14 +235,14 @@ export default function KelolaSertifikat() {
             <input
               type="text"
               value={search}
-              onChange={handleSearchChange}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
               placeholder="Cari berdasarkan no. sertifikat, mahasiswa, atau mata kuliah..."
               className="w-full pl-9 pr-4 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] placeholder:text-[#94A3B8] outline-none focus:border-[#167A61] transition-all"
             />
           </div>
           <select
             value={tahunFilter}
-            onChange={handleTahunChange}
+            onChange={(e) => { setTahunFilter(e.target.value); setCurrentPage(1); }}
             className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] bg-white cursor-pointer"
           >
             <option value="">Semua Tahun</option>
@@ -192,7 +254,7 @@ export default function KelolaSertifikat() {
           </select>
           <select
             value={semesterFilter}
-            onChange={handleSemesterChange}
+            onChange={(e) => { setSemesterFilter(e.target.value); setCurrentPage(1); }}
             className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] bg-white cursor-pointer"
           >
             <option value="">Semua Semester</option>
@@ -231,10 +293,16 @@ export default function KelolaSertifikat() {
               </tr>
             </thead>
             <tbody className="text-[14px] text-[#1E293B]">
-              {paginatedData.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={10} className="py-10 text-center">
+                    <Loader2 size={24} className="animate-spin text-[#167A61] mx-auto" />
+                  </td>
+                </tr>
+              ) : paginatedData.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={10}
                     className="py-10 text-center text-[#94A3B8] text-[13px]"
                   >
                     Tidak ada data yang ditemukan.
@@ -275,7 +343,10 @@ export default function KelolaSertifikat() {
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-2">
-                        <button className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/20 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold">
+                        <button 
+                          onClick={() => setViewTarget(s)}
+                          className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/20 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold"
+                        >
                           <Eye size={14} />
                           <span>Lihat</span>
                         </button>

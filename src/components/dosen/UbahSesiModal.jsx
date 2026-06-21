@@ -18,10 +18,18 @@ export default function UbahSesiModal({ isOpen, onClose, onSaveSuccess, data }) 
     { value: "Asynchronous", label: "Asynchronous" },
   ];
 
+  // Opsi Status
+  const statusOptions = [
+    { value: "TERJADWAL", label: "Terjadwal" },
+    { value: "BERJALAN", label: "Berjalan" },
+    { value: "SELESAI", label: "Selesai" },
+  ];
+
   const formik = useFormik({
     initialValues: {
+      status: data.status || "TERJADWAL",
       metode: data.metode_pertemuan === "-" ? "Asynchronous" : (data.metode_pertemuan || "Asynchronous"),
-      tanggal_pelaksanaan: data.tanggal_pelaksanaan || "",
+      tanggal_pelaksanaan: data.tanggal_pelaksanaan ? data.tanggal_pelaksanaan.substring(0, 10) : "",
       materi: data.materi !== "-" ? data.materi : "",
       tautan_cbt: data.url_cbt || "",
       tautan_zoom: data.link_kelas_daring || "",
@@ -45,6 +53,7 @@ export default function UbahSesiModal({ isOpen, onClose, onSaveSuccess, data }) 
         jam_berakhir: data.jam_berakhir ? data.jam_berakhir.substring(0, 5) : "00:00",
         tanggal_pelaksanaan: formik.values.tanggal_pelaksanaan,
         metode_pertemuan: formik.values.metode.toLowerCase(),
+        status: formik.values.status,
         materi: formik.values.materi,
         url_cbt: formik.values.tautan_cbt,
         link_kelas_daring: formik.values.metode === "Synchronous" ? formik.values.tautan_zoom : null,
@@ -105,6 +114,17 @@ export default function UbahSesiModal({ isOpen, onClose, onSaveSuccess, data }) 
             <form onSubmit={formik.handleSubmit} className="flex flex-col">
               <div className="p-7 space-y-5">
                 <SearchableSelect
+                  label="Status Pertemuan"
+                  name="status"
+                  options={statusOptions}
+                  value={formik.values.status}
+                  onChange={(e) => formik.setFieldValue("status", e.target.value)}
+                  onBlur={() => formik.setFieldTouched("status", true)}
+                  error={formik.touched.status && formik.errors.status}
+                  placeholder="Pilih status"
+                />
+
+                <SearchableSelect
                   label="Metode Pertemuan"
                   name="metode"
                   options={metodeOptions}
@@ -115,18 +135,15 @@ export default function UbahSesiModal({ isOpen, onClose, onSaveSuccess, data }) 
                   placeholder="Pilih metode"
                 />
                 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[13px] font-bold text-[#1E293B]">Tanggal Pelaksanaan</label>
-                  <input
-                    type="date"
-                    name="tanggal_pelaksanaan"
-                    className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-xl text-[13px] bg-white outline-none focus:border-[#167A61] transition-all"
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.tanggal_pelaksanaan}
-                    disabled={formik.isSubmitting}
-                  />
-                </div>
+                <Input
+                  label="Tanggal Pelaksanaan"
+                  type="date"
+                  name="tanggal_pelaksanaan"
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  value={formik.values.tanggal_pelaksanaan}
+                  disabled={formik.isSubmitting}
+                />
 
                 <Input
                   label="Materi Pembahasan"

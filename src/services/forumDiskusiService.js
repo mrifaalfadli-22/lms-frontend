@@ -13,10 +13,18 @@ const mapPesan = (item) => ({
   // Relasi pengirim
   nama_pengirim: item.pengirim?.nama_lengkap ?? item.user?.nama_lengkap ?? "-",
   role_pengirim: item.pengirim?.role ?? item.user?.role ?? "-",
+  nim: item.pengirim?.nomor_induk ?? item.user?.nomor_induk ?? "-",
   // Sesi
-  pertemuan: item.sesi?.pertemuan_ke ? `Pertemuan ke-${item.sesi.pertemuan_ke}` : "-",
+  pertemuan: item.sesi?.pertemuan_ke ? `Pertemuan ${item.sesi.pertemuan_ke}` : "-",
   pertemuan_ke: item.sesi?.pertemuan_ke ?? 0,
+  // Matakuliah dan Kelas (dari relasi jadwal)
+  matakuliah: item.sesi?.jadwal_perkuliahan?.mata_kuliah?.nama_mk ?? "-",
+  kelas: item.sesi?.jadwal_perkuliahan?.kelas?.nama_kelas ?? "-",
+  id_jadwal: item.sesi?.id_jadwal ?? null,
+  id_kelas: item.sesi?.jadwal_perkuliahan?.id_kelas ?? null,
+  sesi_data: item.sesi ?? null,
   // Metadata
+  is_read: item.is_read ?? false,
   jumlah_balasan: item.jumlah_balasan ?? 0,
   created_at: item.created_at,
   updated_at: item.updated_at,
@@ -25,6 +33,23 @@ const mapPesan = (item) => ({
 });
 
 const forumDiskusiService = {
+  /**
+   * Ambil semua pesan forum untuk dosen yang login
+   * @param {Object} params - { page, per_page }
+   */
+  getAllForDosen: async (params = {}) => {
+    const res = await api.get(`/forum/dosen/all`, { params });
+    const payload = res.data.data ?? res.data;
+    const items = Array.isArray(payload) ? payload : payload.data ?? [];
+    return {
+      data: items.map(mapPesan),
+      total: payload.total ?? items.length,
+      per_page: payload.per_page ?? 20,
+      current_page: payload.current_page ?? 1,
+      last_page: payload.last_page ?? 1,
+    };
+  },
+
   /**
    * Ambil semua pesan forum untuk satu sesi pertemuan.
    * @param {string} id_sesi
@@ -41,6 +66,15 @@ const forumDiskusiService = {
       current_page: payload.current_page ?? 1,
       last_page: payload.last_page ?? 1,
     };
+  },
+
+  /**
+   * Tandai semua pesan di satu sesi sebagai sudah dibaca
+   * @param {string} id_sesi 
+   */
+  markAsRead: async (id_sesi) => {
+    const res = await api.post(`/sesi/${id_sesi}/forum/read`);
+    return res.data;
   },
 
   /**

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useParams, useLocation } from "react-router-dom";
-import { ArrowLeft, ChevronRight, Download, Edit2, Trash2, Plus, MoreVertical, Reply, Eye, Save, Send, X, Edit3 } from "lucide-react";
+import { ArrowLeft, ChevronRight, Download, Edit2, Trash2, Plus, MoreVertical, Reply, Eye, Save, Send, X, Edit3, Loader2 } from "lucide-react";
 import Pagination from "../../components/common/Pagination";
 import ConfirmSaveModal from "../../components/admin/ConfirmSaveModal";
 import DeleteConfirmModal from "../../components/admin/DeleteConfirmModal";
@@ -49,11 +49,16 @@ export default function DetailPertemuanTabs() {
     }).format(date);
   };
 
-  const [activeTab, setActiveTab] = useState("presensi");
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || "presensi");
 
   const [presensi, setPresensi] = useState([]);
   const [materiList, setMateriList] = useState([]);
   const [tugasList, setTugasList] = useState([]);
+
+  const [loadingPresensi, setLoadingPresensi] = useState(true);
+  const [loadingMateri, setLoadingMateri] = useState(true);
+  const [loadingTugas, setLoadingTugas] = useState(true);
+  const [loadingForum, setLoadingForum] = useState(true);
 
   const [presensiPage, setPresensiPage] = useState(1);
   const [presensiPerPage, setPresensiPerPage] = useState(10);
@@ -78,6 +83,7 @@ export default function DetailPertemuanTabs() {
 
   const fetchPresensi = async () => {
     try {
+      setLoadingPresensi(true);
       const res = await presensiService.getBySesi(pertemuanId);
       if (res && res.data) {
         const mapped = res.data.map((p) => ({
@@ -91,20 +97,26 @@ export default function DetailPertemuanTabs() {
       }
     } catch (err) {
       console.error("Gagal memuat presensi:", err);
+    } finally {
+      setLoadingPresensi(false);
     }
   };
 
   const fetchTugas = async () => {
     try {
+      setLoadingTugas(true);
       const res = await tugasService.getBySesi(pertemuanId);
       setTugasList(res);
     } catch (err) {
       console.error("Gagal memuat tugas:", err);
+    } finally {
+      setLoadingTugas(false);
     }
   };
 
   const fetchForum = async () => {
     try {
+      setLoadingForum(true);
       const res = await forumDiskusiService.getBySesi(pertemuanId, { per_page: 100 });
       const mapped = res.data.map(item => ({
         id: item.id_pesan,
@@ -120,8 +132,15 @@ export default function DetailPertemuanTabs() {
         } : null,
       }));
       setChats(mapped);
+      
+      // Tandai pesan sudah dibaca di background
+      if (activeTab === "forum") {
+        forumDiskusiService.markAsRead(pertemuanId).catch(err => console.error("Gagal markAsRead:", err));
+      }
     } catch (err) {
       console.error("Gagal memuat forum:", err);
+    } finally {
+      setLoadingForum(false);
     }
   };
 
@@ -145,18 +164,24 @@ export default function DetailPertemuanTabs() {
 
   const fetchMateri = async () => {
     try {
+      setLoadingMateri(true);
       const res = await materiService.getBySesi(pertemuanId);
       setMateriList(res);
     } catch (err) {
       console.error("Gagal memuat materi:", err);
+    } finally {
+      setLoadingMateri(false);
     }
   };
 
   useEffect(() => {
     if (activeTab === "forum") {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      
+      // Tandai pesan sudah dibaca jika membuka tab forum
+      forumDiskusiService.markAsRead(pertemuanId).catch(err => console.error("Gagal markAsRead:", err));
     }
-  }, [chats, activeTab]);
+  }, [chats, activeTab, pertemuanId]);
 
   useEffect(() => {
     if (chatInputRef.current) {
@@ -225,7 +250,12 @@ export default function DetailPertemuanTabs() {
         )}
       </div>
 
-      {presensi.length === 0 ? (
+      {loadingPresensi ? (
+        <div className="flex flex-col items-center justify-center py-16 bg-[#F8FAFC]/50 rounded-2xl border border-dashed border-[#E2E8F0]">
+          <Loader2 size={32} className="animate-spin text-[#167A61] mb-4" />
+          <p className="text-[15px] font-bold text-[#64748B]">Memuat Data...</p>
+        </div>
+      ) : presensi.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 bg-[#F8FAFC]/50 rounded-2xl border border-dashed border-[#E2E8F0]">
           <p className="text-[15px] font-bold text-[#64748B]">Tidak ada Data</p>
           <p className="text-[13px] text-[#94A3B8] mt-1">Data presensi mahasiswa belum tersedia.</p>
@@ -303,7 +333,12 @@ export default function DetailPertemuanTabs() {
       </div>
 
       <div className="flex flex-col gap-4">
-        {materiList.length === 0 ? (
+        {loadingMateri ? (
+          <div className="flex flex-col items-center justify-center py-16 bg-[#F8FAFC]/50 rounded-2xl border border-dashed border-[#E2E8F0]">
+            <Loader2 size={32} className="animate-spin text-[#167A61] mb-4" />
+            <p className="text-[15px] font-bold text-[#64748B]">Memuat Data...</p>
+          </div>
+        ) : materiList.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 bg-[#F8FAFC]/50 rounded-2xl border border-dashed border-[#E2E8F0]">
             <p className="text-[15px] font-bold text-[#64748B]">Tidak ada Data</p>
             <p className="text-[13px] text-[#94A3B8] mt-1">Belum ada materi yang diunggah untuk pertemuan ini.</p>
@@ -439,7 +474,12 @@ export default function DetailPertemuanTabs() {
       </div>
 
       <div className="flex flex-col gap-4">
-        {tugasList.length === 0 ? (
+        {loadingTugas ? (
+          <div className="flex flex-col items-center justify-center py-16 bg-[#F8FAFC]/50 rounded-2xl border border-dashed border-[#E2E8F0]">
+            <Loader2 size={32} className="animate-spin text-[#167A61] mb-4" />
+            <p className="text-[15px] font-bold text-[#64748B]">Memuat Data...</p>
+          </div>
+        ) : tugasList.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 bg-[#F8FAFC]/50 rounded-2xl border border-dashed border-[#E2E8F0]">
             <p className="text-[15px] font-bold text-[#64748B]">Tidak ada Data</p>
             <p className="text-[13px] text-[#94A3B8] mt-1">Belum ada tugas yang diberikan untuk pertemuan ini.</p>
@@ -521,7 +561,7 @@ export default function DetailPertemuanTabs() {
 
   const renderForum = () => (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <div className="border border-[#E2E8F0] rounded-2xl bg-white overflow-hidden flex flex-col h-[600px]">
+      <div className="border border-[#E2E8F0] rounded-2xl bg-white overflow-hidden flex flex-col h-[800px]">
         {/* Header Forum */}
         <div className="px-6 py-4 border-b border-[#E2E8F0] bg-[#F8FAFC]/50">
           <h4 className="text-[16px] font-bold text-[#1E293B]">Forum Diskusi: {pertemuanName}</h4>
@@ -530,7 +570,12 @@ export default function DetailPertemuanTabs() {
 
         {/* Chat Area */}
         <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-3 bg-[#F5F9F8]">
-          {chats.length === 0 ? (
+          {loadingForum ? (
+            <div className="flex-1 flex flex-col items-center justify-center py-16">
+              <Loader2 size={32} className="animate-spin text-[#167A61] mb-4" />
+              <p className="text-[15px] font-bold text-[#64748B]">Memuat Data...</p>
+            </div>
+          ) : chats.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center py-16">
               <p className="text-[15px] font-bold text-[#64748B]">Tidak ada Data</p>
               <p className="text-[13px] text-[#94A3B8] mt-1">Belum ada diskusi di forum ini. Jadilah yang pertama mengirim pesan!</p>

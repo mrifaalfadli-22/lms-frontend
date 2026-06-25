@@ -16,6 +16,7 @@ export default function TugasModal({ isOpen, onClose, editData, pertemuanId, onS
   const formik = useFormik({
     initialValues: {
       judul: editData?.judul || "",
+      deskripsi: editData?.deskripsi || "",
       tautan: editData?.tautan || "",
       token: editData?.token || "",
       batasWaktu: editData?.batasWaktu || "",
@@ -39,6 +40,7 @@ export default function TugasModal({ isOpen, onClose, editData, pertemuanId, onS
     try {
       const payload = {
         judul_tugas: formik.values.judul,
+        deskripsi_tugas: formik.values.deskripsi,
         link_cbt: formik.values.tautan,
         token_cbt: formik.values.token,
         batas_waktu: formik.values.batasWaktu,
@@ -58,6 +60,7 @@ export default function TugasModal({ isOpen, onClose, editData, pertemuanId, onS
         const errors = err.response.data.errors;
         const formikErrors = {};
         if (errors.judul_tugas) formikErrors.judul = errors.judul_tugas[0];
+        if (errors.deskripsi_tugas) formikErrors.deskripsi = errors.deskripsi_tugas[0];
         if (errors.link_cbt) formikErrors.tautan = errors.link_cbt[0];
         if (errors.token_cbt) formikErrors.token = errors.token_cbt[0];
         if (errors.batas_waktu) formikErrors.batasWaktu = errors.batas_waktu[0];
@@ -101,6 +104,43 @@ export default function TugasModal({ isOpen, onClose, editData, pertemuanId, onS
             error={formik.errors.judul}
             touched={formik.touched.judul}
           />
+
+          <div className="w-full text-left">
+            <label className="text-sm text-gray-500 font-semibold ml-1 tracking-tight">
+              Deskripsi Tugas
+            </label>
+            <div className="relative">
+              <textarea
+                name="deskripsi"
+                placeholder="Masukkan deskripsi tugas"
+                value={formik.values.deskripsi}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                rows={3}
+                className={`
+                  w-full mt-1.5 px-4 py-3 
+                  bg-white 
+                  border border-gray-300
+                  rounded-lg 
+                  text-sm text-gray-700
+                  placeholder-gray-400/80
+                  outline-none
+                  transition-all duration-200
+                  focus:bg-white
+                  focus:ring-2 focus:ring-[#0E5C46]
+                  resize-none
+                  ${formik.errors.deskripsi && formik.touched.deskripsi ? "ring-2 ring-red-400 bg-white" : ""}
+                `}
+              />
+            </div>
+            <div className="h-5 mt-1 ml-1">
+              {formik.errors.deskripsi && formik.touched.deskripsi && (
+                <p className="text-red-500 text-[11px] font-medium animate-fadeIn">
+                  {formik.errors.deskripsi}
+                </p>
+              )}
+            </div>
+          </div>
 
           <Input
             label="Tautan CBT"

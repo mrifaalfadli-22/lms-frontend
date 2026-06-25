@@ -516,6 +516,7 @@ export default function DetailPertemuanTabs() {
                         setEditTugasTarget({
                           id: tugas.id,
                           judul: tugas.judul_tugas,
+                          deskripsi: tugas.deskripsi_tugas,
                           tautan: tugas.link_cbt,
                           token: tugas.token_cbt,
                           batasWaktu: tugas.batas_waktu ? tugas.batas_waktu.slice(0, 16) : "",

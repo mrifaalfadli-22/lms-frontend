@@ -82,7 +82,7 @@ export default function DetailMonitoringProgres() {
                 <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">NPM</th>
                 <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Nama Mahasiswa</th>
                 <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Aktivitas Log</th>
-                <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Nilai Akhir</th>
+                <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Nilai Tugas</th>
                 <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Progres Belajar</th>
                 <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Aksi Pantau</th>
               </tr>
@@ -118,9 +118,8 @@ export default function DetailMonitoringProgres() {
                     </td>
                     <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                       <div className="flex flex-col gap-0.5">
-                        <span className={`text-[15px] font-black ${
-                          parseFloat(m.rataRata) >= 70 ? 'text-[#0E5C46]' : 'text-red-500'
-                        }`}>
+                        <span className={`text-[15px] font-black ${parseFloat(m.rataRata) >= 70 ? 'text-[#0E5C46]' : 'text-red-500'
+                          }`}>
                           {(() => {
                             const score = parseFloat(m.rataRata);
                             if (score >= 90) return "A";
@@ -149,7 +148,7 @@ export default function DetailMonitoringProgres() {
                       </div>
                     </td>
                     <td className="py-4 px-4">
-                      <button 
+                      <button
                         onClick={() => setDetailModalData(m)}
                         className="flex items-center gap-2 px-3 py-1.5 text-[#2563EB] border border-[#2563EB]/20 rounded-lg hover:bg-[#2563EB] hover:text-white transition-all text-[13px] font-bold"
                       >

@@ -15,6 +15,7 @@ import TambahMataKuliahModal from "../../components/admin/TambahMataKuliahModal"
 import UbahMataKuliahModal from "../../components/admin/UbahMataKuliahModal";
 import DetailMataKuliahModal from "../../components/admin/DetailMataKuliahModal";
 import Pagination from "../../components/common/Pagination";
+import { formatFakultas } from "../../utils/formatters";
 
 const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
 
@@ -280,8 +281,8 @@ export default function DaftarMataKuliah() {
                     <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                       {val(mk.nama_mk)}
                     </td>
-                    <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {val(mk.fakultas)}
+                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
+                      {formatFakultas(val(mk.fakultas))}
                     </td>
                     <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                       {val(mk.prodi)}

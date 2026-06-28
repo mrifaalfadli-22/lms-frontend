@@ -17,6 +17,7 @@ import UbahJadwalModal from "../../components/admin/UbahJadwalModal";
 import DetailJadwalModal from "../../components/admin/DetailJadwalModal";
 import Pagination from "../../components/common/Pagination";
 import { TAHUN_AJARAN_OPTIONS } from "../../schemas/jadwalSchema";
+import { formatFakultas } from "../../utils/formatters";
 
 const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
 
@@ -24,7 +25,7 @@ const HARI_OPTIONS = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 const SEMESTER_OPTIONS = Array.from({ length: 8 }, (_, i) => i + 1);
 
 export default function DaftarJadwalKuliah() {
-  const { jadwal, loading, error, pagination, fetchPage, debouncedFetch, tambah, update, hapus } =
+  const { jadwal, loading, error, pagination, fetchPage, debouncedFetchPage, tambah, update, hapus } =
     useJadwalKuliah();
 
   const [search, setSearch] = useState("");
@@ -65,7 +66,7 @@ export default function DaftarJadwalKuliah() {
     if (semesterFilter) params.semester = semesterFilter;
     if (tahunFilter) params.tahun = tahunFilter;
     if (hariFilter) params.hari = hariFilter;
-    debouncedFetch(params);
+    debouncedFetchPage(params);
   };
 
   const handleFilterChange = (setter, key) => (e) => {
@@ -304,8 +305,8 @@ export default function DaftarJadwalKuliah() {
                     <td className="py-4 px-4 whitespace-nowrap">
                       {val(j.kelas)}
                     </td>
-                    <td className="py-4 px-4 whitespace-nowrap text-[13px]">
-                      {val(j.fakultas)}
+                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
+                      {formatFakultas(val(j.fakultas))}
                     </td>
                     <td className="py-4 px-4 whitespace-nowrap text-[13px]">
                       {val(j.prodi)}

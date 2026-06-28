@@ -15,6 +15,7 @@ import TambahKelasModal from "../../components/admin/TambahKelasModal";
 import UbahKelasModal from "../../components/admin/UbahKelasModal";
 import DetailKelasModal from "../../components/admin/DetailKelasModal";
 import Pagination from "../../components/common/Pagination";
+import { formatFakultas } from "../../utils/formatters";
 
 const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
 
@@ -389,7 +390,7 @@ export default function KelolaKelas() {
                       {val(k.nama_kelas)}
                     </td>
                     <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {val(k.fakultas)}
+                      {formatFakultas(val(k.fakultas))}
                     </td>
                     <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                       {val(k.prodi)}

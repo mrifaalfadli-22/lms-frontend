@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import UbahSandiModal from "../../components/admin/UbahSandiModal";
 import ConfirmSaveModal from "../../components/admin/ConfirmSaveModal";
 import { useProfile } from "../../hooks/useProfile";
+import { formatFakultas } from "../../utils/formatters";
 
 export default function ProfilDosen() {
   const { user } = useProfile();
@@ -144,7 +145,7 @@ export default function ProfilDosen() {
               </label>
               <input
                 type="text"
-                defaultValue={user?.fakultas || "Teknik"}
+                defaultValue={formatFakultas(user?.fakultas)}
                 className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-gray-50 cursor-not-allowed"
                 disabled
               />

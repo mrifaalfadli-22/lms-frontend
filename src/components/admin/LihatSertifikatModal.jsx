@@ -19,6 +19,16 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
     }
   }, [isOpen, data]);
 
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,400;0,600;0,700;1,400&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Poppins:ital,wght@0,400;0,600;0,700;1,400&family=Roboto:ital,wght@0,400;0,500;0,700;1,400&display=swap";
+    link.rel = "stylesheet";
+    document.head.appendChild(link);
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
+
   // Hitung scale agar canvas A4 muat dalam wrapper preview
   useEffect(() => {
     if (!isOpen) return;
@@ -54,17 +64,10 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
       if (res.data.status === "success") {
         const tpl = res.data.data;
         setTemplate(tpl);
-
-        // Fetch background image blob directly
-        try {
-          const imgRes = await api.get(`/template-sertifikat/${id_template}/download-background`, {
-            responseType: 'blob'
-          });
-          const blob = imgRes.data;
-          setBackgroundUrl(URL.createObjectURL(blob));
-        } catch (e) {
-          console.error("Gagal mendownload background sertifikat", e);
-        }
+        // Gunakan background_url publik langsung — tidak perlu download blob
+        const bgUrl = tpl.background_url
+          || (tpl.file_background ? `http://127.0.0.1:8000/storage/${tpl.file_background}` : null);
+        setBackgroundUrl(bgUrl || "");
       }
     } catch (err) {
       console.error("Gagal memuat template", err);
@@ -76,9 +79,13 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
   const resolveText = (el) => {
     switch (el.id) {
       case "nama_peserta":     return data?.mahasiswa    || el.label;
+      case "npm":              return data?.npm          || el.label;
       case "nomor_sertifikat": return data?.noSertifikat || el.label;
-      case "nama_kelas":       return data?.mataKuliah   || el.label;
+      case "nama_kelas":       
+      case "mata_kuliah_kelas":return (data?.mataKuliah ? `${data.mataKuliah}` : el.label);
+      case "nilai_tugas":      return "Nilai: 90 (A)"; // Placeholder untuk preview Admin
       case "tanggal_terbit":   return data?.tanggalTerbit|| el.label;
+      case "status_kelulusan": return data?.statusKelulusan || "LULUS";
       default:                 return el.label;
     }
   };
@@ -118,16 +125,22 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
         : template.layout_data;
 
       elements.forEach((el) => {
+        if (el.isHidden) return;
+        
         ctx.save();
         // Multi-line word wrap
         const text = resolveText(el);
         const fontWeight = el.fontWeight === "semibold" ? "600" : el.fontWeight;
-        ctx.font = `${fontWeight} ${el.fontSize}px 'Segoe UI', sans-serif`;
+        const fontFamily = el.fontFamily || "Arial";
+        ctx.font = `${fontWeight} ${el.fontSize}px '${fontFamily}', sans-serif`;
         ctx.fillStyle = el.color;
-        ctx.textAlign = "center";
+        ctx.textAlign = el.textAlign || "center";
         ctx.textBaseline = "middle";
 
-        const cx = el.x + el.width  / 2;
+        let cx = el.x + el.width / 2;
+        if (el.textAlign === 'left') cx = el.x;
+        else if (el.textAlign === 'right') cx = el.x + el.width;
+        
         const cy = el.y + el.height / 2;
 
         // Simple word wrap
@@ -241,30 +254,40 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
                 }}
               >
               {/* Text overlays — koordinat identik dengan editor */}
-              {layoutElements.map((el) => (
-                <div
-                  key={el.id}
-                  style={{
-                    position:   "absolute",
-                    left:       el.x,
-                    top:        el.y,
-                    width:      el.width,
-                    height:     el.height,
-                    fontSize:   el.fontSize,
-                    color:      el.color,
-                    fontWeight: el.fontWeight === "semibold" ? 600 : el.fontWeight,
-                    display:    "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    textAlign:  "center",
-                    lineHeight: 1.3,
-                    overflow:   "hidden",
-                    wordBreak:  "break-word",
-                  }}
-                >
-                  {resolveText(el)}
-                </div>
-              ))}
+              {layoutElements.map((el) => {
+                if (el.isHidden) return null;
+                return (
+                  <div
+                    key={el.id}
+                    style={{
+                      position:  "absolute",
+                      left:      el.x,
+                      top:       el.y,
+                      width:     el.width,
+                      height:    el.height,
+                      display:   "flex",
+                      alignItems:"center",
+                      overflow:  "hidden",
+                    }}
+                  >
+                    <span style={{
+                      display:    "block",
+                      width:      "100%",
+                      textAlign:  el.textAlign || "center",
+                      fontSize:   el.fontSize,
+                      color:      el.color,
+                      fontWeight: el.fontWeight === "semibold" ? 600 : (el.fontWeight || "normal"),
+                      fontFamily: el.fontFamily || "Arial",
+                      lineHeight: 1.3,
+                      overflow:   "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}>
+                      {resolveText(el)}
+                    </span>
+                  </div>
+                );
+              })}
               </div>
             </div>
           )}

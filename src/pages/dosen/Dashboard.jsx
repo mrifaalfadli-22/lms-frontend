@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   ExternalLink,
 } from "lucide-react";
+import { formatFakultas } from "../../utils/formatters";
 
 export default function DosenDashboard() {
   return (
@@ -88,7 +89,7 @@ export default function DosenDashboard() {
                     {s.kelas}
                   </td>
                   <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                    {s.fakultas}
+                    {formatFakultas(s.fakultas)}
                   </td>
                   <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                     {s.prodi}
@@ -218,7 +219,7 @@ export default function DosenDashboard() {
                   <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                     {f.matakuliah}
                   </td>
-                  <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
+                  <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                     {f.kelas}
                   </td>
                   <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">

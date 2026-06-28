@@ -68,7 +68,15 @@ export function useJadwalKuliah() {
     fetchPage(lastParamsRef.current);
   }, [fetchPage]);
 
-  const debouncedFetch = useCallback(
+  const debouncedFetchPage = useCallback(
+    (params) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => fetchPage(params), DEBOUNCE_MS);
+    },
+    [fetchPage],
+  );
+
+  const debouncedFetchGrouped = useCallback(
     (params) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => fetchGrouped(params), DEBOUNCE_MS);
@@ -112,7 +120,8 @@ export function useJadwalKuliah() {
     pagination,
     fetchPage,
     fetchGrouped,
-    debouncedFetch,
+    debouncedFetchPage,
+    debouncedFetchGrouped,
     tambah,
     update,
     hapus,

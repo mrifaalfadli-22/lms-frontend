@@ -62,10 +62,11 @@ export default function ForumDiskusiMahasiswa() {
   const filteredData = useMemo(() => {
     return forumData.filter((item) => {
       const matchSearch =
-        item.nama_pengirim.toLowerCase().includes(search.toLowerCase()) ||
-        (item.role_pengirim.toLowerCase().includes(search.toLowerCase())) ||
-        item.isi_pesan.toLowerCase().includes(search.toLowerCase()) ||
-        item.matakuliah.toLowerCase().includes(search.toLowerCase());
+        (item.nama_pengirim && item.nama_pengirim.toLowerCase().includes(search.toLowerCase())) ||
+        (item.nim && item.nim.toLowerCase().includes(search.toLowerCase())) ||
+        (item.role_pengirim && item.role_pengirim.toLowerCase().includes(search.toLowerCase())) ||
+        (item.isi_pesan && item.isi_pesan.toLowerCase().includes(search.toLowerCase())) ||
+        (item.matakuliah && item.matakuliah.toLowerCase().includes(search.toLowerCase()));
 
       let matchStatus = true;
       if (statusFilter === "Belum Dibaca") {

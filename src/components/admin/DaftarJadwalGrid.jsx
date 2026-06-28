@@ -4,33 +4,11 @@ import { Search, Loader2, CalendarDays } from "lucide-react";
 import { useJadwalKuliah } from "../../hooks/useJadwalKuliah";
 import Pagination from "../common/Pagination";
 
-const FAKULTAS_OPTIONS = [
-  "Fakultas Ilmu Komputer",
-  "Fakultas Ekonomi dan Bisnis",
-  "Fakultas Teknik",
-  "Fakultas Hukum",
-  "Fakultas Ilmu Kesehatan",
-  "Fakultas Keguruan dan Ilmu Pendidikan",
-  "Fakultas Agama Islam",
-];
+import { fakultasData } from "../../data/fakultasData";
+import { formatFakultas } from "../../utils/formatters";
 
-const PRODI_OPTIONS = [
-  "Teknik Informatika",
-  "Sistem Informasi",
-  "Ilmu Komunikasi",
-  "Manajemen",
-  "Akuntansi",
-  "Teknik Mesin",
-  "Teknik Elektro",
-  "Teknik Industri",
-  "Teknik Sipil",
-  "Ilmu Hukum",
-  "Kesehatan Masyarakat",
-  "Gizi",
-  "Pendidikan Guru Sekolah Dasar",
-  "Pendidikan Bahasa Inggris",
-  "Pendidikan Agama Islam",
-];
+// Generate flat options for Prodi from fakultasData
+const PRODI_OPTIONS = [...new Set(fakultasData.flatMap(f => f.prodi.map(p => p.value)))].sort();
 
 const SEMESTER_OPTIONS = Array.from({ length: 8 }, (_, i) => i + 1);
 
@@ -49,7 +27,7 @@ export default function DaftarJadwalGrid({ title, basePath, dosenNidn, isDosenVi
     pagination,
     fetchPage,
     fetchGrouped,
-    debouncedFetch,
+    debouncedFetchGrouped,
   } = useJadwalKuliah();
 
   const [search, setSearch] = useState("");
@@ -92,7 +70,7 @@ export default function DaftarJadwalGrid({ title, basePath, dosenNidn, isDosenVi
     if (semesterFilter) params.semester = semesterFilter;
     if (tahunFilter) params.tahun = tahunFilter;
     if (dosenNidn) params.nidn = dosenNidn;
-    debouncedFetch(params);
+    debouncedFetchGrouped(params);
   };
 
   const handleFilterChange = (setter, key) => (e) => {
@@ -162,9 +140,9 @@ export default function DaftarJadwalGrid({ title, basePath, dosenNidn, isDosenVi
           className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
         >
           <option value="">Semua Fakultas</option>
-          {FAKULTAS_OPTIONS.map((f) => (
-            <option key={f} value={f}>
-              {f}
+          {fakultasData.map((f) => (
+            <option key={f.value} value={f.value}>
+              {f.label}
             </option>
           ))}
         </select>
@@ -274,8 +252,8 @@ export default function DaftarJadwalGrid({ title, basePath, dosenNidn, isDosenVi
                 </div>
 
                 <div className="flex flex-col gap-1 mt-auto">
-                  <span className="text-[13px] font-bold text-[#167A61] truncate" title={val(j.fakultas)}>
-                    {val(j.fakultas)}
+                  <span className="text-[13px] font-bold text-[#167A61] truncate" title={formatFakultas(val(j.fakultas))}>
+                    {formatFakultas(val(j.fakultas))}
                   </span>
                   <span className="text-[13px] font-bold text-[#167A61] truncate" title={`${val(j.prodi)} - Semester ${val(j.semester)}`}>
                     {val(j.prodi)} - Semester {val(j.semester)}

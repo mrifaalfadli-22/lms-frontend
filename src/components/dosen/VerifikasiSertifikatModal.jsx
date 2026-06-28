@@ -46,20 +46,7 @@ export default function VerifikasiSertifikatModal({ isOpen, onClose, data, mode 
     }
   };
 
-  const checklistItems = [
-    {
-      label: `Kehadiran minimal ${kehadiranMinimal} / ${kehadiranTotal} (Tercapai: ${kehadiranTercapai})`,
-      isMet: isKehadiranMet,
-    },
-    {
-      label: `Nilai akhir minimal 70.00 (Tercapai: ${nilaiAkhir.toFixed(2)})`,
-      isMet: isNilaiMet,
-    },
-    {
-      label: `Seluruh tugas telah dinilai (${tugasTercapai}/${tugasTotal} tugas)`,
-      isMet: isTugasMet,
-    },
-  ];
+
 
   return (
     <div className="fixed inset-0 z-[998] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -88,36 +75,73 @@ export default function VerifikasiSertifikatModal({ isOpen, onClose, data, mode 
           </div>
 
           {/* Checklist Requirements */}
-          <div>
-            <h4 className="text-[14px] font-bold text-[#1E293B] mb-3.5">
-              Checklist Persyaratan
-            </h4>
-            <div className="flex flex-col gap-2.5">
-              {checklistItems.map((item, idx) => (
-                <div
-                  key={idx}
-                  className={`flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all duration-200 ${item.isMet
-                    ? "bg-[#ECFDF5] border-[#ECFDF5] text-[#008B5E]"
-                    : "bg-[#FDF2F2] border-[#FDF2F2] text-[#EF4444]"
-                    }`}
-                >
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${item.isMet
-                      ? "bg-[#008B5E]/10"
-                      : "bg-[#EF4444]/10"
-                      }`}
-                  >
-                    {item.isMet ? (
-                      <Check size={13} strokeWidth={3} />
-                    ) : (
-                      <X size={13} strokeWidth={3} />
-                    )}
-                  </div>
-                  <span className="text-[13px] font-semibold tracking-wide">
-                    {item.label}
-                  </span>
+          <div className="flex flex-col gap-4">
+            {/* Sertifikat Pelatihan */}
+            <div className="bg-[#F8FAFC] rounded-xl p-4 border border-gray-100">
+              <h5 className="text-[13px] font-bold text-[#1E293B] mb-2 flex items-center justify-between">
+                <span>Sertifikat Pelatihan</span>
+                {isKehadiranMet ? (
+                  <span className="text-[11px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Layak</span>
+                ) : (
+                  <span className="text-[11px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Tidak Layak</span>
+                )}
+              </h5>
+              <div className={`flex items-center gap-2.5 p-3 rounded-xl border transition-colors ${
+                isKehadiranMet ? 'bg-[#F0FAF6] border-[#167A61]/20' : 'bg-[#FEF2F2] border-red-500/20'
+              }`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                  isKehadiranMet ? 'bg-[#167A61] text-white' : 'bg-red-100 text-red-500'
+                }`}>
+                  {isKehadiranMet ? <Check size={12} strokeWidth={3} /> : <X size={12} strokeWidth={3} />}
                 </div>
-              ))}
+                <span className={`text-[13px] font-semibold ${
+                  isKehadiranMet ? 'text-[#0E5C46]' : 'text-red-600'
+                }`}>
+                  Kehadiran minimal {kehadiranMinimal} / {kehadiranTotal} (Tercapai: {kehadiranTercapai})
+                </span>
+              </div>
+            </div>
+
+            {/* Sertifikat Kelulusan */}
+            <div className="bg-[#F8FAFC] rounded-xl p-4 border border-gray-100">
+              <h5 className="text-[13px] font-bold text-[#1E293B] mb-2 flex items-center justify-between">
+                <span>Sertifikat Kelulusan</span>
+                {isNilaiMet ? (
+                  <span className="text-[11px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Layak</span>
+                ) : (
+                  <span className="text-[11px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Tidak Layak</span>
+                )}
+              </h5>
+              <div className={`flex items-center gap-2.5 p-3 rounded-xl border transition-colors ${
+                isNilaiMet ? 'bg-[#F0FAF6] border-[#167A61]/20' : 'bg-[#FEF2F2] border-red-500/20'
+              }`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                  isNilaiMet ? 'bg-[#167A61] text-white' : 'bg-red-100 text-red-500'
+                }`}>
+                  {isNilaiMet ? <Check size={12} strokeWidth={3} /> : <X size={12} strokeWidth={3} />}
+                </div>
+                <span className={`text-[13px] font-semibold ${
+                  isNilaiMet ? 'text-[#0E5C46]' : 'text-red-600'
+                }`}>
+                  Nilai akhir minimal 70.00 (Tercapai: {nilaiAkhir.toFixed(2)})
+                </span>
+              </div>
+            </div>
+
+            {/* Daftar Nilai */}
+            <div className="bg-[#F8FAFC] rounded-xl p-4 border border-gray-100">
+              <h5 className="text-[13px] font-bold text-[#1E293B] mb-2 flex items-center justify-between">
+                <span>Daftar Nilai</span>
+                <span className="text-[11px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Otomatis Layak</span>
+              </h5>
+              <div className={`flex items-center gap-2.5 p-3 rounded-xl border transition-colors bg-[#F0FAF6] border-[#167A61]/20`}>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 bg-[#167A61] text-white`}>
+                  <Check size={12} strokeWidth={3} />
+                </div>
+                <span className={`text-[13px] font-semibold text-[#0E5C46]`}>
+                  Seluruh tugas telah dinilai ({tugasTercapai}/{tugasTotal} tugas)
+                </span>
+              </div>
             </div>
           </div>
 

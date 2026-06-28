@@ -17,6 +17,7 @@ import TambahMahasiswaModal from "../../components/admin/TambahMahasiswaModal";
 import UbahMahasiswaModal from "../../components/admin/UbahMahasiswaModal";
 import UbahDosenModal from "../../components/admin/UbahDosenModal";
 import Pagination from "../../components/common/Pagination";
+import { formatFakultas } from "../../utils/formatters";
 
 const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
 
@@ -185,7 +186,7 @@ function UserTable({
                       {val(r.email)}
                     </td>
                     <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
-                      {val(r.fakultas)}
+                      {formatFakultas(val(r.fakultas))}
                     </td>
                     <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
                       {val(r.prodi)}

@@ -38,6 +38,7 @@ const mapJadwal = (item) => ({
   prodi: item.prodi ?? "-",
   // Token
   token_enrollment: item.token_enrollment,
+  tanggal_mulai: item.tanggal_mulai,
 });
 
 const jadwalService = {

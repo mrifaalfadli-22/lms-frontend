@@ -3,6 +3,7 @@ import { Search, Layout, CheckCircle, Eye, Edit2, Loader2 } from "lucide-react";
 import api from "../../config/api";
 import Pagination from "../../components/common/Pagination";
 import VerifikasiSertifikatModal from "../../components/dosen/VerifikasiSertifikatModal";
+import { formatFakultas } from "../../utils/formatters";
 
 export default function VerifikasiSertifikat() {
   const [sertifikatList, setSertifikatList] = useState([]);
@@ -156,7 +157,7 @@ export default function VerifikasiSertifikat() {
           >
             <option value="">Semua Fakultas</option>
             {uniqueFakultas.map(f => (
-              <option key={f} value={f}>{f}</option>
+              <option key={f} value={f}>{formatFakultas(f)}</option>
             ))}
           </select>
 
@@ -253,7 +254,7 @@ export default function VerifikasiSertifikat() {
                         {item.nama}
                       </td>
                       <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                        {item.fakultas}
+                        {formatFakultas(item.fakultas)}
                       </td>
                       <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                         {item.prodi}

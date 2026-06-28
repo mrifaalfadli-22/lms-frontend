@@ -9,6 +9,7 @@ import {
 import { useVerifikasi } from "../../hooks/useVerifikasi";
 import VerifikasiConfirmModal from "../../components/admin/VerifikasiConfirmModal";
 import Pagination from "../../components/common/Pagination";
+import { formatFakultas } from "../../utils/formatters";
 
 const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
 
@@ -230,7 +231,7 @@ export default function VerifikasiDosen() {
                         {val(d.email)}
                       </td>
                       <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
-                        {val(d.fakultas)}
+                        {formatFakultas(val(d.fakultas))}
                       </td>
                       <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                         {val(d.prodi)}

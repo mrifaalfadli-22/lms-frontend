@@ -135,7 +135,9 @@ export default function DetailForumDiskusiDummy() {
         isOpen={!!viewTarget}
         onClose={() => setViewTarget(null)}
         data={viewTarget ? {
+          pertemuan: viewTarget.pertemuan,
           pembuat: viewTarget.nama_pengirim,
+          nidn: viewTarget.nim,
           role: viewTarget.role_pengirim,
           waktu: formatWaktu(viewTarget.created_at),
           isi: viewTarget.isi_pesan,

@@ -11,10 +11,11 @@ export default function VerifikasiSertifikatModal({ isOpen, onClose, data, mode 
   // Extract presence details
   const kehadiranTercapai = parseInt(data.kehadiran.split(" / ")[0]) || 0;
   const kehadiranTotal = parseInt(data.kehadiran.split(" / ")[1]) || 16;
-  const isKehadiranMet = kehadiranTercapai >= 10;
+  const kehadiranMinimal = Math.ceil(kehadiranTotal * 0.75);
+  const isKehadiranMet = kehadiranTercapai >= kehadiranMinimal;
 
   // Extract grade details
-  const nilaiAkhir = parseFloat(data.nilai) || 0;
+  const nilaiAkhir = parseFloat(data.nilaiAkhir) || 0;
   const isNilaiMet = nilaiAkhir >= 70;
 
   // Assignments check
@@ -22,11 +23,8 @@ export default function VerifikasiSertifikatModal({ isOpen, onClose, data, mode 
   const tugasTotal = data.tugas ? parseInt(data.tugas.split("/")[1]) : 5;
   const isTugasMet = tugasTercapai === tugasTotal;
 
-  // Exams check
-  const isUjianMet = data.ujian !== undefined ? data.ujian : true;
-
   // Check if all criteria met
-  const isAllMet = isKehadiranMet && isNilaiMet && isTugasMet && isUjianMet;
+  const isAllMet = isKehadiranMet && isNilaiMet && isTugasMet;
 
   const handleInitiateAction = (status) => {
     setPendingStatus(status);
@@ -50,7 +48,7 @@ export default function VerifikasiSertifikatModal({ isOpen, onClose, data, mode 
 
   const checklistItems = [
     {
-      label: `Kehadiran minimal 10 / ${kehadiranTotal} (Tercapai: ${kehadiranTercapai})`,
+      label: `Kehadiran minimal ${kehadiranMinimal} / ${kehadiranTotal} (Tercapai: ${kehadiranTercapai})`,
       isMet: isKehadiranMet,
     },
     {
@@ -58,12 +56,8 @@ export default function VerifikasiSertifikatModal({ isOpen, onClose, data, mode 
       isMet: isNilaiMet,
     },
     {
-      label: `Seluruh tugas telah dikumpulkan (${tugasTercapai}/${tugasTotal} tugas)`,
+      label: `Seluruh tugas telah dinilai (${tugasTercapai}/${tugasTotal} tugas)`,
       isMet: isTugasMet,
-    },
-    {
-      label: "Ujian telah diselesaikan",
-      isMet: isUjianMet,
     },
   ];
 
@@ -85,16 +79,11 @@ export default function VerifikasiSertifikatModal({ isOpen, onClose, data, mode 
         <div className="overflow-y-auto max-h-[80vh] p-7 flex flex-col gap-6">
           {/* Student Info Card */}
           <div className="bg-[#F8FAFC] rounded-2xl p-5 border border-gray-100/80 flex flex-col gap-3">
-            <div className="flex justify-between items-start">
-              <div>
-                <h4 className="text-[16px] font-bold text-[#1E293B]">{data.nama}</h4>
-                <p className="text-[13px] text-[#64748B] mt-1">{data.matakuliah}</p>
-              </div>
-              <div className="text-right">
-                <span className="text-[13px] bg-slate-200/60 text-slate-600 px-2.5 py-1 rounded-md font-semibold">
-                  NPM: {data.npm}
-                </span>
-              </div>
+            <div className="flex flex-col gap-1 items-start">
+              <h4 className="text-[16px] font-bold text-[#1E293B]">
+                {data.nama} <span className="text-gray-500 text-[14px] font-medium ml-1">- {data.nim}</span>
+              </h4>
+              <p className="text-[13px] text-[#64748B]">{data.mataKuliah}</p>
             </div>
           </div>
 

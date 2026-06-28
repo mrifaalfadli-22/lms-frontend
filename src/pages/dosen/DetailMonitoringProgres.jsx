@@ -82,7 +82,7 @@ export default function DetailMonitoringProgres() {
                 <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">NPM</th>
                 <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Nama Mahasiswa</th>
                 <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Aktivitas Log</th>
-                <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Nilai Kuis Rata-Rata</th>
+                <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Nilai Akhir</th>
                 <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Progres Belajar</th>
                 <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Aksi Pantau</th>
               </tr>
@@ -117,7 +117,25 @@ export default function DetailMonitoringProgres() {
                       {m.log}
                     </td>
                     <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {m.rataRata}
+                      <div className="flex flex-col gap-0.5">
+                        <span className={`text-[15px] font-black ${
+                          parseFloat(m.rataRata) >= 70 ? 'text-[#0E5C46]' : 'text-red-500'
+                        }`}>
+                          {(() => {
+                            const score = parseFloat(m.rataRata);
+                            if (score >= 90) return "A";
+                            if (score >= 85) return "A-";
+                            if (score >= 80) return "B";
+                            if (score >= 75) return "B-";
+                            if (score >= 70) return "C";
+                            if (score >= 65) return "C-";
+                            return "D";
+                          })()}
+                        </span>
+                        <span className="text-[11px] font-bold text-[#64748B]">
+                          Rata-rata: {Math.round(parseFloat(m.rataRata))}
+                        </span>
+                      </div>
                     </td>
                     <td className="py-4 px-4 whitespace-nowrap min-w-[200px]">
                       <div className="flex flex-col gap-1.5">
@@ -169,6 +187,7 @@ export default function DetailMonitoringProgres() {
         data={detailModalData}
         mataKuliah={jadwal.nama_mk}
         kelas={classData.nama_kelas}
+        idJadwal={kelasId}
       />
     </>
   );

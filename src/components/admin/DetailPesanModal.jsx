@@ -10,7 +10,6 @@ export default function DetailPesanModal({ isOpen, onClose, data }) {
     { label: "Pembuat", value: val(data.pembuat) },
     { label: "NIDN/NPM", value: val(data.nidn) },
     { label: "Role", value: val(data.role) },
-    { label: "Judul", value: val(data.judul) },
     { label: "Isi Diskusi", value: val(data.isi) },
     { label: "Waktu Kirim", value: val(data.waktu) },
   ];

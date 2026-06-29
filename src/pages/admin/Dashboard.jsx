@@ -34,6 +34,7 @@ export default function AdminDashboard() {
     setStats,
     dosenList,
     setDosenList,
+    forumList,
     statsLoading,
     dosenLoading,
     dosenError,
@@ -122,7 +123,7 @@ export default function AdminDashboard() {
             title="Mata Kuliah"
             value={statsLoading ? "..." : stats.mataKuliah}
           />
-          <StatCard title="Sertifikat Terbit" value="860" />
+          <StatCard title="Sertifikat Terbit" value={statsLoading ? "..." : stats.sertifikat} />
         </div>
 
         {/* 2. Card Verifikasi Dosen */}
@@ -294,102 +295,60 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="text-[14px] text-[#1E293B]">
-                {[
-                  {
-                    pengguna: "Dimas Putra",
-                    nomor_induk: "2210631170001",
-                    role: "Mahasiswa",
-                    matakuliah: "Pemograman",
-                    kelas: "Kelas A",
-                    pertemuan: "Pertemuan 1",
-                    topik: "Pertanyaan seputar array di Javascript",
-                    waktu: "10 menit yang lalu",
-                  },
-                  {
-                    pengguna: "Sarah W.",
-                    nomor_induk: "0305076802",
-                    role: "Dosen",
-                    matakuliah: "Kalkulus 1",
-                    kelas: "Kelas B",
-                    pertemuan: "Pertemuan 2",
-                    topik: "Materi Kalkulus minggu ke-3",
-                    waktu: "1 jam yang lalu",
-                  },
-                  {
-                    pengguna: "Ahmad Fauzan",
-                    nomor_induk: "2210631170002",
-                    role: "Mahasiswa",
-                    matakuliah: "Algorithm",
-                    kelas: "Kelas C",
-                    pertemuan: "Pertemuan 3",
-                    topik: "Cara deploy aplikasi Node.js ke server",
-                    waktu: "2 jam yang lalu",
-                  },
-                  {
-                    pengguna: "Rina Marlina",
-                    nomor_induk: "0412038901",
-                    role: "Dosen",
-                    matakuliah: "Kalkulus 1",
-                    kelas: "Kelas D",
-                    pertemuan: "Pertemuan 6",
-                    topik: "Perbedaan JOIN dan UNION di SQL",
-                    waktu: "3 jam yang lalu",
-                  },
-                  {
-                    pengguna: "Bayu Anggara",
-                    nomor_induk: "2210631170003",
-                    role: "Mahasiswa",
-                    matakuliah: "Pemograman",
-                    kelas: "Kelas A",
-                    pertemuan: "Pertemuan 1",
-                    topik: "Diskusi tugas akhir Pemrograman Web",
-                    waktu: "5 jam yang lalu",
-                  },
-                ].map((f, i) => (
-                  <tr
-                    key={i}
-                    className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group"
-                  >
-                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {i + 1}
-                    </td>
-                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {f.pengguna}
-                    </td>
-                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
-                      {f.nomor_induk}
-                    </td>
-                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
-                      {f.role}
-                    </td>
-                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {f.matakuliah}
-                    </td>
-                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
-                      {f.kelas}
-                    </td>
-                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {f.pertemuan}
-                    </td>
-                    <td
-                      className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] max-w-[200px]"
-                      title={f.topik}
-                    >
-                      <span className="block truncate">{f.topik}</span>
-                    </td>
-                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {f.waktu}
-                    </td>
-                    <td className="py-4 px-4">
-                      <button
-                        title="Lihat Detail"
-                        className="p-1.5 text-[#64748B] hover:text-[#167A61] transition-colors rounded-lg hover:bg-[#167A61]/10"
-                      >
-                        <ExternalLink size={18} />
-                      </button>
+                {forumList.length === 0 ? (
+                  <tr>
+                    <td colSpan="10" className="py-16 text-center text-[14px] text-[#94A3B8]">
+                      Belum ada aktivitas forum.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  forumList.map((f, i) => (
+                    <tr
+                      key={f.id_pesan}
+                      className="border-y border-[#E2E8F0] hover:bg-[#0E5C46]/5 transition-all duration-200 cursor-pointer group"
+                    >
+                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                        {i + 1}
+                      </td>
+                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                        {f.pengirim?.nama_lengkap || "-"}
+                      </td>
+                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
+                        {f.pengirim?.nomor_induk || "-"}
+                      </td>
+                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
+                        {f.pengirim?.role || "-"}
+                      </td>
+                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                        {f.sesi?.jadwal_perkuliahan?.mata_kuliah?.nama_mk || "-"}
+                      </td>
+                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46]">
+                        {f.sesi?.jadwal_perkuliahan?.kelas?.nama_kelas || "-"}
+                      </td>
+                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                        {f.sesi?.judul_sesi || "Sesi " + f.sesi?.urutan_sesi}
+                      </td>
+                      <td
+                        className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] max-w-[200px]"
+                        title={f.isi_pesan}
+                      >
+                        <span className="block truncate">{f.isi_pesan}</span>
+                      </td>
+                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
+                        {f.created_at ? new Date(f.created_at).toLocaleString('id-ID', {day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'}) : "-"}
+                      </td>
+                      <td className="py-4 px-4">
+                        <Link
+                          to={`/admin/forum/${f.id_pesan}`}
+                          title="Lihat Detail"
+                          className="p-1.5 text-[#64748B] hover:text-[#167A61] transition-colors rounded-lg hover:bg-[#167A61]/10 inline-flex items-center"
+                        >
+                          <ExternalLink size={18} />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

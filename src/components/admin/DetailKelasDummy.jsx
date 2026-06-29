@@ -13,14 +13,15 @@ export default function DetailKelasDummy({ title, backTo }) {
   const [perPage, setPerPage] = useState(10);
 
   useEffect(() => {
-    if (!jadwal) {
+    // Fetch jika jadwal belum ada, atau ada tapi tidak punya kelas_list (misal datang dari Dashboard)
+    if (!jadwal || !jadwal.kelas_list) {
       jadwalService.getGroupedByJadwalId(id).then((res) => {
         setJadwal(res);
       }).catch(err => {
         console.error("Gagal memuat data jadwal terkelompok", err);
       });
     }
-  }, [id, jadwal]);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const kelasList = jadwal?.kelas_list || [];
 

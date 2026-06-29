@@ -4,9 +4,10 @@ import { dashboardService } from "../services/dashboardService";
 export const useDashboardStats = () => {
   const [stats, setStats] = useState({
     mahasiswa: "-",
-    dosen: "-",
-    kelas: "-",
-    mataKuliah: "-",
+    dosen: 0,
+    kelas: 0,
+    mataKuliah: 0,
+    sertifikat: 0,
   });
 
   const [statsLoading, setStatsLoading] = useState(false);
@@ -14,6 +15,7 @@ export const useDashboardStats = () => {
   const [dosenError, setDosenError] = useState(null);
   const [globalError, setGlobalError] = useState(null);
   const [dosenList, setDosenList] = useState([]);
+  const [forumList, setForumList] = useState([]);
 
   // cegah fetch bersamaan
   const fetchingRef = useRef(false);
@@ -31,6 +33,7 @@ export const useDashboardStats = () => {
     if (cacheRef.current && !force) {
       setStats(cacheRef.current.stats);
       setDosenList(cacheRef.current.dosenList);
+      setForumList(cacheRef.current.forumList);
       return;
     }
 
@@ -46,20 +49,24 @@ export const useDashboardStats = () => {
 
       const newStats = {
         mahasiswa: result.stats?.mahasiswa ?? "-",
-        dosen: result.stats?.dosen ?? "-",
-        kelas: result.stats?.kelas ?? "-",
-        mataKuliah: result.stats?.mata_kuliah ?? "-",
+        dosen: result.stats?.dosen ?? 0,
+        kelas: result.stats?.kelas ?? 0,
+        mataKuliah: result.stats?.mata_kuliah ?? 0,
+        sertifikat: result.stats?.sertifikat ?? 0,
       };
 
       const newDosenList = result.dosen_terbaru || [];
+      const newForumList = result.forum_terbaru || [];
 
       setStats(newStats);
       setDosenList(newDosenList);
+      setForumList(newForumList);
 
       // simpan cache
       cacheRef.current = {
         stats: newStats,
         dosenList: newDosenList,
+        forumList: newForumList,
       };
     } catch (err) {
       console.error(err);
@@ -83,6 +90,9 @@ export const useDashboardStats = () => {
 
     dosenList,
     setDosenList,
+
+    forumList,
+    setForumList,
 
     statsLoading,
     dosenLoading,

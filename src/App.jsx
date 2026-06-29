@@ -12,6 +12,9 @@ import AdminDashboardLayout from "./layouts/admin/DashboardLayout";
 import DosenDashboardLayout from "./layouts/dosen/DashboardLayout";
 import LoginForm from "./components/auth/LoginForm";
 import RegisterForm from "./components/auth/RegistrasiForm";
+import ForgotPassword from "./pages/auth/ForgotPassword";
+import ResetPassword from "./pages/auth/ResetPassword";
+import AuthCallback from "./pages/auth/AuthCallback";
 import DosenDashboard from "./pages/dosen/Dashboard";
 import KelolaSesiPertemuan from "./pages/dosen/KelolaSesiPertemuan";
 import DetailSesiKelas from "./pages/dosen/DetailSesiKelas";
@@ -50,6 +53,9 @@ function App() {
           <Route path="/login" element={<LoginForm role="dosen" />} />
           <Route path="/login-admin" element={<LoginForm role="admin" />} />
           <Route path="/register" element={<RegisterForm />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
         </Route>
 
         {/* 3. Grouping Halaman Dashboard Dosen (Protected) */}

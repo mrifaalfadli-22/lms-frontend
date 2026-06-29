@@ -101,4 +101,14 @@ export const authService = {
       return null;
     }
   },
+
+  forgotPassword: async (email) => {
+    const response = await api.post("/forgot-password", { email });
+    return response.data;
+  },
+
+  resetPassword: async (data) => {
+    const response = await api.post("/reset-password", data);
+    return response.data;
+  }
 };

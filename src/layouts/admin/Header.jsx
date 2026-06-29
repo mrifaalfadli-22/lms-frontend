@@ -74,8 +74,16 @@ export default function Header() {
               {fullName || "Memuat..."}
             </p>
           </div>
-          <div className="w-10 h-10 bg-gradient-to-r from-[#167A61] to-[#0E5C46] rounded-full flex items-center justify-center text-white text-base font-normal flex-shrink-0">
-            {initials}
+          <div className="w-10 h-10 bg-gradient-to-r from-[#167A61] to-[#0E5C46] rounded-full flex items-center justify-center text-white text-base font-normal flex-shrink-0 overflow-hidden">
+            {user?.foto_profil_url ? (
+              <img
+                src={user.foto_profil_url}
+                alt={fullName}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              initials
+            )}
           </div>
         </div>
       </div>

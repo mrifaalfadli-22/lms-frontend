@@ -1,5 +1,6 @@
 import { useFormik } from "formik";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { dosenLoginSchema, adminLoginSchema } from "../../schemas/authSchema";
 import Input from "../ui/Input";
@@ -12,6 +13,19 @@ export default function LoginForm({ role = "dosen" }) {
   const navigate = useNavigate();
 
   const { login, loading, errorMsg, errorType, setErrorMsg } = useAuth();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.errorMsg) {
+      setErrorMsg(location.state.errorMsg);
+      // Clear the state so error doesn't persist on reload
+      window.history.replaceState({}, document.title);
+    }
+  }, [location, setErrorMsg]);
+
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:8000/api/auth/google/redirect";
+  };
 
   const formik = useFormik({
     // REVISI: Mengubah 'email' menjadi 'identifier' agar universal (bisa Email/Username/NIDN)
@@ -76,7 +90,16 @@ export default function LoginForm({ role = "dosen" }) {
             disabled={loading}
           />
 
-          <div className="mt-2">
+          <div className="mt-2 text-right">
+            <Link
+              to="/forgot-password"
+              className="text-[#1A7A5F] text-[13px] font-bold hover:underline"
+            >
+              Lupa kata sandi?
+            </Link>
+          </div>
+
+          <div className="mt-4">
             <Button type="submit" disabled={loading}>
               {loading ? "Memproses..." : "Masuk"}
             </Button>
@@ -88,7 +111,7 @@ export default function LoginForm({ role = "dosen" }) {
             <div className="flex-1 h-px bg-gray-200"></div>
           </div>
 
-          <Button type="button" variant="outline" disabled={loading}>
+          <Button type="button" variant="outline" disabled={loading} onClick={handleGoogleLogin}>
             <img src={googleIcon} className="w-5 h-5" alt="google" />
             Masuk dengan Google
           </Button>

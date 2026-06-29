@@ -13,6 +13,7 @@ const menuItems = [
   { name: "Monitoring Progres", path: "/dosen/monitoring-progres" },
   { name: "Forum Diskusi", path: "/dosen/forum-diskusi" },
   { name: "Verifikasi Sertifikat", path: "/dosen/verifikasi-sertifikat" },
+  { name: "Hasil Evaluasi", path: "/dosen/hasil-evaluasi" },
 ];
 
 export default function Sidebar(role = "dosen") {

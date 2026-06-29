@@ -9,6 +9,7 @@ const mapPertanyaan = (item) => ({
   id_pertanyaan: item.id_pertanyaan,
   kategori: item.kategori ?? "-",
   teks_pertanyaan: item.teks_pertanyaan ?? "-",
+  tipe_pertanyaan: item.tipe_pertanyaan ?? "skala",
   urutan: item.urutan ?? 0,
   is_aktif: item.is_aktif ?? false,
   created_at: item.created_at,
@@ -154,6 +155,15 @@ const evaluasiService = {
     const res = await api.get(`/jawaban-evaluasi/peserta/${id_peserta}`);
     const items = res.data.data ?? res.data;
     return Array.isArray(items) ? items : [];
+  },
+
+  /**
+   * Ambil hasil evaluasi anonim per jadwal/mata kuliah untuk dosen tertentu.
+   * @param {string} id_dosen
+   */
+  getHasilByDosen: async (id_dosen) => {
+    const res = await api.get(`/dosen/${id_dosen}/hasil-evaluasi`);
+    return res.data.data ?? res.data;
   },
 };
 

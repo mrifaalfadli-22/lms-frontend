@@ -19,6 +19,7 @@ const menuItems = [
   },
   { name: "Forum Diskusi", path: "/admin/forum-diskusi" },
   { name: "Kelola Sertifikat", path: "/admin/kelola-sertifikat" },
+  { name: "Kelola Evaluasi", path: "/admin/kelola-evaluasi" },
   { name: "Verifikasi Dosen", path: "/admin/verifikasi-dosen" },
 ];
 

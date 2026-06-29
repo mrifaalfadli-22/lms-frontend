@@ -20,6 +20,7 @@ import MonitoringProgres from "./pages/dosen/MonitoringProgres";
 import DetailMonitoringProgres from "./pages/dosen/DetailMonitoringProgres";
 import ForumDiskusiMahasiswa from "./pages/dosen/ForumDiskusi";
 import VerifikasiSertifikat from "./pages/dosen/VerifikasiSertifikat";
+import HasilEvaluasi from "./pages/dosen/HasilEvaluasi";
 import ProfilDosen from "./pages/dosen/ProfilDosen";
 
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -32,6 +33,7 @@ import ForumDiskusi from "./pages/admin/ForumDiskusi";
 import KelolaSertifikat from "./pages/admin/KelolaSertifikat";
 import VerifikasiDosen from "./pages/admin/VerifikasiDosen";
 import ProfilAdmin from "./pages/admin/ProfilAdmin";
+import KelolaEvaluasi from "./pages/admin/KelolaEvaluasi";
 import DetailKelasDummy from "./components/admin/DetailKelasDummy";
 import DetailForumDiskusiDummy from "./components/admin/DetailForumDiskusiDummy";
 import DetailMateriDummy from "./components/admin/DetailMateriDummy";
@@ -90,6 +92,7 @@ function App() {
             path="verifikasi-sertifikat"
             element={<VerifikasiSertifikat />}
           />
+          <Route path="hasil-evaluasi" element={<HasilEvaluasi />} />
           <Route path="profil" element={<ProfilDosen />} />
         </Route>
 
@@ -132,6 +135,7 @@ function App() {
             element={<DetailForumDiskusiDummy />}
           />
           <Route path="kelola-sertifikat" element={<KelolaSertifikat />} />
+          <Route path="kelola-evaluasi" element={<KelolaEvaluasi />} />
           <Route path="verifikasi-dosen" element={<VerifikasiDosen />} />
           <Route path="profil" element={<ProfilAdmin />} />
         </Route>

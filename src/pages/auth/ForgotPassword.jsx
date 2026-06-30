@@ -58,9 +58,17 @@ export default function ForgotPassword() {
             <div className="w-16 h-16 bg-[#F0FAF6] rounded-full flex items-center justify-center mx-auto mb-4">
               <Mail className="text-[#167A61]" size={32} />
             </div>
-            <p className="text-[#1E293B] text-[14px] font-semibold mb-6">
+            <p className="text-[#1E293B] text-[14px] font-semibold mb-2">
               {message}
             </p>
+            <div className="p-3 mb-6 bg-blue-50 border border-blue-100 rounded-xl text-left flex items-start gap-3">
+              <div className="text-blue-600 mt-0.5">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              </div>
+              <p className="text-[#475569] text-[13px] leading-relaxed">
+                Jika email tidak muncul di kotak masuk (inbox), pastikan untuk memeriksa folder <strong>Spam</strong> Anda.
+              </p>
+            </div>
             <Link
               to="/login"
               className="w-full flex items-center justify-center py-3 bg-[#167A61] hover:bg-[#0E5C46] text-white text-[14px] font-bold rounded-xl transition-colors shadow-sm"

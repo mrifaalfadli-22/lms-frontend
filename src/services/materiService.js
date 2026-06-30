@@ -101,7 +101,7 @@ const materiService = {
    * Force download file materi
    */
   forceDownload: async (path, filename) => {
-    const res = await api.get(`${BASE}/download?path=${encodeURIComponent(path)}`, {
+    const res = await api.get(`/public/download?path=${encodeURIComponent(path)}&title=${encodeURIComponent(filename)}`, {
       responseType: 'blob',
     });
     const url = window.URL.createObjectURL(new Blob([res.data]));

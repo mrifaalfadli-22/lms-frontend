@@ -25,11 +25,21 @@ export default function UbahSesiModal({ isOpen, onClose, onSaveSuccess, data }) 
     { value: "SELESAI", label: "Selesai" },
   ];
 
+  const formatDateToLocal = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString.substring(0, 10);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const formik = useFormik({
     initialValues: {
       status: data.status || "TERJADWAL",
       metode: data.metode_pertemuan === "-" ? "Asynchronous" : (data.metode_pertemuan || "Asynchronous"),
-      tanggal_pelaksanaan: data.tanggal_pelaksanaan ? data.tanggal_pelaksanaan.substring(0, 10) : "",
+      tanggal_pelaksanaan: data.tanggal_pelaksanaan ? formatDateToLocal(data.tanggal_pelaksanaan) : "",
       materi: data.materi !== "-" ? data.materi : "",
       tautan_cbt: data.url_cbt || "",
       tautan_zoom: data.link_kelas_daring || "",

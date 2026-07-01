@@ -68,7 +68,8 @@ export default function DetailSertifikatMahasiswaModal({ isOpen, onClose, data }
                             ...data,
                             id_template: cert.id_template,
                             noSertifikat: cert.nomor_sertifikat,
-                            tanggalTerbit: tanggal
+                            tanggalTerbit: tanggal,
+                            daftar_nilai: cert.daftar_nilai || [],
                           });
                         }}
                         className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[#167A61] bg-[#167A61]/10 rounded-xl hover:bg-[#167A61] hover:text-white transition-colors"

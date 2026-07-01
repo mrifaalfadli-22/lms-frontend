@@ -84,7 +84,29 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
       case "nomor_sertifikat": return data?.noSertifikat || el.label;
       case "nama_kelas":
       case "mata_kuliah_kelas": return (data?.mataKuliah ? `${data.mataKuliah}` : el.label);
-      case "nilai_tugas": return "Nilai: 90 (A)"; // Placeholder untuk preview Admin
+      case "nama_dosen": return data?.dosen || "Nama Dosen";
+      case "nilai_tugas": {
+        let nilai = parseFloat(data?.nilaiAkhir || 0);
+        
+        if (data?.daftar_nilai && data.daftar_nilai.length > 0) {
+          const total = data.daftar_nilai.reduce((sum, val) => sum + parseFloat(val.nilai || 0), 0);
+          nilai = total / data.daftar_nilai.length;
+        }
+
+        let predikat = "E";
+        if (nilai >= 85) predikat = "A";
+        else if (nilai >= 80) predikat = "A-";
+        else if (nilai >= 75) predikat = "B+";
+        else if (nilai >= 70) predikat = "B";
+        else if (nilai >= 65) predikat = "B-";
+        else if (nilai >= 60) predikat = "C+";
+        else if (nilai >= 55) predikat = "C";
+        else if (nilai >= 40) predikat = "D";
+        
+        // Return whole number if it's an integer, otherwise 1 decimal place
+        const formattedNilai = nilai % 1 === 0 ? nilai : nilai.toFixed(1);
+        return `Nilai: ${formattedNilai} (${predikat})`;
+      }
       case "tanggal_terbit": return data?.tanggalTerbit || el.label;
       case "status_kelulusan": return data?.statusKelulusan || "LULUS";
       default: return el.label;
@@ -125,8 +147,83 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
         ? JSON.parse(template.layout_data)
         : template.layout_data;
 
-      elements.forEach((el) => {
-        if (el.isHidden) return;
+      for (const el of elements) {
+        if (el.isHidden) continue;
+
+        if (el.id === 'qr_code') {
+          await new Promise((resolve) => {
+            const qr = new Image();
+            qr.crossOrigin = "anonymous";
+            qr.onload = () => {
+              ctx.drawImage(qr, el.x, el.y, el.width, el.height);
+              resolve();
+            };
+            qr.onerror = resolve;
+            qr.src = `https://api.qrserver.com/v1/create-qr-code/?size=${el.width}x${el.height}&data=${data?.noSertifikat || "12345"}`;
+          });
+          continue;
+        }
+
+        if (el.id === 'daftar_nilai') {
+          ctx.save();
+          ctx.fillStyle = el.color || "#000";
+          ctx.font = `bold ${el.fontSize}px '${el.fontFamily || 'Arial'}', sans-serif`;
+          ctx.textAlign = "left";
+          ctx.textBaseline = "top";
+          ctx.fillText("Pertemuan", el.x, el.y);
+          ctx.fillText("Tugas", el.x + 180, el.y);
+          ctx.fillText("Nilai", el.x + el.width - 40, el.y);
+          
+          ctx.beginPath();
+          ctx.moveTo(el.x, el.y + el.fontSize + 4);
+          ctx.lineTo(el.x + el.width, el.y + el.fontSize + 4);
+          ctx.strokeStyle = el.color || "#000";
+          ctx.stroke();
+
+          ctx.font = `normal ${el.fontSize}px '${el.fontFamily || 'Arial'}', sans-serif`;
+          const gradesData = (data && data.daftar_nilai && data.daftar_nilai.length > 0) 
+            ? data.daftar_nilai 
+            : [
+                { pertemuan: '1', tugas: 'Tugas 1', nilai: '80' },
+                { pertemuan: '16', tugas: 'Kuis Teknologi Multimedia', nilai: '90' }
+              ];
+          
+          let currentY = el.y + el.fontSize + 12;
+          gradesData.forEach(row => {
+            ctx.fillText(`Pertemuan Ke-${row.pertemuan}`, el.x, currentY);
+            ctx.fillText(row.tugas, el.x + 180, currentY);
+            ctx.fillText(row.nilai, el.x + el.width - 40, currentY);
+            currentY += el.fontSize + 10;
+          });
+
+          // Draw table footer for average
+          ctx.beginPath();
+          ctx.moveTo(el.x, currentY);
+          ctx.lineTo(el.x + el.width, currentY);
+          ctx.stroke();
+
+          // Calculate average for footer
+          const total = gradesData.reduce((sum, val) => sum + parseFloat(val.nilai || 0), 0);
+          const avg = total / gradesData.length;
+          let pred = "E";
+          if (avg >= 85) pred = "A";
+          else if (avg >= 80) pred = "A-";
+          else if (avg >= 75) pred = "B+";
+          else if (avg >= 70) pred = "B";
+          else if (avg >= 65) pred = "B-";
+          else if (avg >= 60) pred = "C+";
+          else if (avg >= 55) pred = "C";
+          else if (avg >= 40) pred = "D";
+          const avgStr = avg % 1 === 0 ? avg : avg.toFixed(1);
+
+          currentY += 4;
+          ctx.font = `bold ${el.fontSize}px '${el.fontFamily || 'Arial'}', sans-serif`;
+          ctx.fillText("Rata-rata Nilai Akhir", el.x + 100, currentY);
+          ctx.fillText(`${avgStr} (${pred})`, el.x + el.width - 40, currentY);
+
+          ctx.restore();
+          continue;
+        }
 
         ctx.save();
         // Multi-line word wrap
@@ -165,7 +262,7 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
           ctx.fillText(line, cx, startY + i * lineH);
         });
         ctx.restore();
-      });
+      }
 
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
@@ -268,6 +365,72 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
                 {/* Text overlays — koordinat identik dengan editor */}
                 {layoutElements.map((el) => {
                   if (el.isHidden) return null;
+                  
+                  if (el.id === 'qr_code') {
+                    return (
+                      <div key={el.id} style={{ position: "absolute", left: el.x, top: el.y, width: el.width, height: el.height }}>
+                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=${el.width}x${el.height}&data=${data?.noSertifikat || "12345"}`} style={{ width: '100%', height: '100%' }} />
+                      </div>
+                    );
+                  }
+
+                  if (el.id === 'daftar_nilai') {
+                    return (
+                      <div key={el.id} style={{ position: "absolute", left: el.x, top: el.y, width: el.width, height: el.height, fontSize: el.fontSize, color: el.color, fontFamily: el.fontFamily || "Arial" }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ borderBottom: `2px solid ${el.color || '#000'}` }}>
+                              <th style={{ textAlign: 'left', padding: '4px' }}>Pertemuan</th>
+                              <th style={{ textAlign: 'left', padding: '4px' }}>Tugas</th>
+                              <th style={{ textAlign: 'center', padding: '4px' }}>Nilai</th>
+                            </tr>
+                          </thead>
+                        {(() => {
+                          const gradesData = (data && data.daftar_nilai && data.daftar_nilai.length > 0) 
+                            ? data.daftar_nilai 
+                            : [
+                                { pertemuan: '1', tugas: 'Tugas 1', nilai: '80' },
+                                { pertemuan: '16', tugas: 'Kuis Teknologi Multimedia', nilai: '90' }
+                              ];
+                          
+                          const total = gradesData.reduce((sum, val) => sum + parseFloat(val.nilai || 0), 0);
+                          const avg = total / gradesData.length;
+                          let pred = "E";
+                          if (avg >= 85) pred = "A";
+                          else if (avg >= 80) pred = "A-";
+                          else if (avg >= 75) pred = "B+";
+                          else if (avg >= 70) pred = "B";
+                          else if (avg >= 65) pred = "B-";
+                          else if (avg >= 60) pred = "C+";
+                          else if (avg >= 55) pred = "C";
+                          else if (avg >= 40) pred = "D";
+                          const avgStr = avg % 1 === 0 ? avg : avg.toFixed(1);
+
+                          return (
+                            <>
+                              <tbody>
+                                {gradesData.map((row, idx) => (
+                                  <tr key={idx} style={{ borderBottom: '1px solid #ccc' }}>
+                                    <td style={{ padding: '4px' }}>Pertemuan Ke-{row.pertemuan}</td>
+                                    <td style={{ padding: '4px' }}>{row.tugas}</td>
+                                    <td align="center" style={{ padding: '4px' }}>{row.nilai}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                              <tfoot>
+                                <tr style={{ borderTop: `2px solid ${el.color || '#000'}`, fontWeight: 'bold' }}>
+                                  <td colSpan={2} style={{ padding: '4px', textAlign: 'right' }}>Rata-rata Nilai Akhir</td>
+                                  <td align="center" style={{ padding: '4px' }}>{avgStr} ({pred})</td>
+                                </tr>
+                              </tfoot>
+                            </>
+                          );
+                        })()}
+                        </table>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div
                       key={el.id}

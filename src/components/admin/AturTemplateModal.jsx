@@ -8,9 +8,12 @@ const DEFAULT_LAYOUT = [
   { id: "npm",               label: "[NPM]",               x: 361, y: 380, width: 400, height: 30,  fontSize: 18, color: "#333333", fontWeight: "normal",  fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
   { id: "nomor_sertifikat",  label: "[NOMOR_SERTIFIKAT]",  x: 361, y: 80,  width: 400, height: 40,  fontSize: 18, color: "#475569", fontWeight: "normal",  fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
   { id: "mata_kuliah_kelas", label: "[MATA_KULIAH_KELAS]", x: 361, y: 420, width: 400, height: 40,  fontSize: 20, color: "#1E293B", fontWeight: "semibold", fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
+  { id: "nama_dosen",        label: "[NAMA_DOSEN]",        x: 361, y: 450, width: 400, height: 30,  fontSize: 18, color: "#333333", fontWeight: "normal",  fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
   { id: "nilai_tugas",       label: "[NILAI_TUGAS]",       x: 361, y: 470, width: 400, height: 30,  fontSize: 18, color: "#167A61", fontWeight: "semibold", fontFamily: "Montserrat",       textAlign: "center", isHidden: false },
   { id: "status_kelulusan",  label: "[STATUS_KELULUSAN]",  x: 361, y: 520, width: 400, height: 40,  fontSize: 24, color: "#167A61", fontWeight: "bold",    fontFamily: "Montserrat",       textAlign: "center", isHidden: false },
   { id: "tanggal_terbit",    label: "[TANGGAL_TERBIT]",    x: 361, y: 620, width: 400, height: 36,  fontSize: 16, color: "#64748B", fontWeight: "normal",  fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
+  { id: "qr_code",           label: "[QR_CODE]",           x: 80,  y: 80,  width: 150, height: 150, fontSize: 16, color: "#000000", fontWeight: "normal",  fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
+  { id: "daftar_nilai",      label: "[DAFTAR_NILAI]",      x: 80,  y: 250, width: 300, height: 200, fontSize: 14, color: "#000000", fontWeight: "normal",  fontFamily: "Open Sans",        textAlign: "left",   isHidden: false },
 ];
 
 const TABS = [
@@ -78,7 +81,19 @@ export default function AturTemplateModal({ isOpen, onClose, onSave, activeTempl
     const parsed = tmpl.layout_data
       ? (typeof tmpl.layout_data === "string" ? JSON.parse(tmpl.layout_data) : tmpl.layout_data)
       : null;
-    setLayoutData((parsed && Array.isArray(parsed) && parsed.length > 0) ? parsed : DEFAULT_LAYOUT);
+      
+    let finalLayout = DEFAULT_LAYOUT;
+    if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+      finalLayout = [...parsed];
+      // Tambahkan item baru dari DEFAULT_LAYOUT yang belum ada di database
+      DEFAULT_LAYOUT.forEach(defItem => {
+        if (!finalLayout.find(item => item.id === defItem.id)) {
+          finalLayout.push(defItem);
+        }
+      });
+    }
+    
+    setLayoutData(finalLayout);
   };
 
   const handleFileChange = (e) => {

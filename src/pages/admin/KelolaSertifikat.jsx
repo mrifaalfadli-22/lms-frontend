@@ -52,7 +52,8 @@ export default function KelolaSertifikat() {
             prodi: item.jadwal?.prodi || '-',
             jumlahSertifikat: item.sertifikat?.length || 0,
             sertifikats: item.sertifikat || [],
-            statusKelulusan: item.status_kelulusan,
+            statusKelulusan: item.status_kelayakan === 'Disetujui' ? 'LULUS' : '-',
+            nilaiAkhir: item.nilai_akhir || 0,
           };
         });
         setSertifikatList(formatted);

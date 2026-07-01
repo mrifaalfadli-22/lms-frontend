@@ -37,7 +37,7 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
     const calcScale = () => {
       if (!wrapperRef.current) return;
       const { clientWidth, clientHeight } = wrapperRef.current;
-      const scaleX = (clientWidth - 32)  / A4_WIDTH;
+      const scaleX = (clientWidth - 32) / A4_WIDTH;
       const scaleY = (clientHeight - 32) / A4_HEIGHT;
       setScale(Math.min(scaleX, scaleY, 1));
     };
@@ -50,7 +50,7 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
     calcScale();
     const ro = new ResizeObserver(handleResize);
     if (wrapperRef.current) ro.observe(wrapperRef.current);
-    
+
     return () => {
       ro.disconnect();
       cancelAnimationFrame(animationFrameId);
@@ -64,9 +64,10 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
       if (res.data.status === "success") {
         const tpl = res.data.data;
         setTemplate(tpl);
-        // Gunakan background_url publik langsung — tidak perlu download blob
-        const bgUrl = tpl.background_url
-          || (tpl.file_background ? `http://127.0.0.1:8000/storage/${tpl.file_background}` : null);
+        // Paksa menggunakan endpoint API agar mendapatkan CORS headers
+        // Hindari tpl.background_url karena itu menunjuk langsung ke /storage/ (tanpa CORS)
+        const baseUrl = api.defaults.baseURL.replace('/api', '');
+        const bgUrl = tpl.id_template ? `${baseUrl}/api/template-sertifikat/${tpl.id_template}/download-background` : null;
         setBackgroundUrl(bgUrl || "");
       }
     } catch (err) {
@@ -78,22 +79,22 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
 
   const resolveText = (el) => {
     switch (el.id) {
-      case "nama_peserta":     return data?.mahasiswa    || el.label;
-      case "npm":              return data?.npm          || el.label;
+      case "nama_peserta": return data?.mahasiswa || el.label;
+      case "npm": return data?.npm || el.label;
       case "nomor_sertifikat": return data?.noSertifikat || el.label;
-      case "nama_kelas":       
-      case "mata_kuliah_kelas":return (data?.mataKuliah ? `${data.mataKuliah}` : el.label);
-      case "nilai_tugas":      return "Nilai: 90 (A)"; // Placeholder untuk preview Admin
-      case "tanggal_terbit":   return data?.tanggalTerbit|| el.label;
+      case "nama_kelas":
+      case "mata_kuliah_kelas": return (data?.mataKuliah ? `${data.mataKuliah}` : el.label);
+      case "nilai_tugas": return "Nilai: 90 (A)"; // Placeholder untuk preview Admin
+      case "tanggal_terbit": return data?.tanggalTerbit || el.label;
       case "status_kelulusan": return data?.statusKelulusan || "LULUS";
-      default:                 return el.label;
+      default: return el.label;
     }
   };
 
   const handleDownload = async () => {
     try {
       const canvas = document.createElement("canvas");
-      canvas.width  = A4_WIDTH;
+      canvas.width = A4_WIDTH;
       canvas.height = A4_HEIGHT;
       const ctx = canvas.getContext("2d");
 
@@ -107,10 +108,10 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
         img.crossOrigin = "anonymous";
         img.onload = () => {
           // cover logic
-          const hRatio = A4_WIDTH  / img.width;
+          const hRatio = A4_WIDTH / img.width;
           const vRatio = A4_HEIGHT / img.height;
-          const ratio  = Math.max(hRatio, vRatio);
-          const cx = (A4_WIDTH  - img.width  * ratio) / 2;
+          const ratio = Math.max(hRatio, vRatio);
+          const cx = (A4_WIDTH - img.width * ratio) / 2;
           const cy = (A4_HEIGHT - img.height * ratio) / 2;
           ctx.drawImage(img, 0, 0, img.width, img.height, cx, cy, img.width * ratio, img.height * ratio);
           resolve();
@@ -126,7 +127,7 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
 
       elements.forEach((el) => {
         if (el.isHidden) return;
-        
+
         ctx.save();
         // Multi-line word wrap
         const text = resolveText(el);
@@ -140,7 +141,7 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
         let cx = el.x + el.width / 2;
         if (el.textAlign === 'left') cx = el.x;
         else if (el.textAlign === 'right') cx = el.x + el.width;
-        
+
         const cy = el.y + el.height / 2;
 
         // Simple word wrap
@@ -167,16 +168,27 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
       });
 
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
-      
+
       // Ukuran A4 Landscape: 297mm x 210mm
       const pdf = new jsPDF({
         orientation: "landscape",
         unit: "mm",
         format: "a4",
       });
-      
+
       pdf.addImage(imgData, "JPEG", 0, 0, 297, 210);
-      pdf.save(`Sertifikat_${data.mahasiswa}.pdf`);
+      const getTipeLabel = (tipe) => {
+        if (tipe === "kelulusan") return "Kelulusan";
+        if (tipe === "nilai") return "Daftar Nilai";
+        return "Pelatihan";
+      };
+      const tipeLabel = getTipeLabel(template?.tipe_sertifikat);
+      const mkRaw = data?.mataKuliah || "";
+      const mk = mkRaw.split(" - ")[0]; // Jaga-jaga jika ada embel-embel kelas
+      const mhs = data?.mahasiswa || "Download";
+      const namaFile = `Sertifikat ${tipeLabel} - ${mk} - ${mhs}.pdf`;
+
+      pdf.save(namaFile);
     } catch (error) {
       console.error("Gagal mendownload sertifikat", error);
       alert("Gagal mendownload sertifikat.");
@@ -230,64 +242,64 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
           ) : (
             /* Container ukuran scaled — mencegah overflow di flex parent */
             <div style={{
-              width:    A4_WIDTH  * scale,
-              height:   A4_HEIGHT * scale,
+              width: A4_WIDTH * scale,
+              height: A4_HEIGHT * scale,
               position: "relative",
               flexShrink: 0,
             }}>
               {/* Canvas A4 yang di-scale dari top-left */}
               <div
                 style={{
-                  width:           A4_WIDTH,
-                  height:          A4_HEIGHT,
-                  transform:       `scale(${scale})`,
+                  width: A4_WIDTH,
+                  height: A4_HEIGHT,
+                  transform: `scale(${scale})`,
                   transformOrigin: "top left",
-                  position:        "absolute",
+                  position: "absolute",
                   top: 0,
                   left: 0,
                   backgroundImage: `url(${backgroundUrl})`,
-                  backgroundSize:  "cover",
-                  backgroundRepeat:"no-repeat",
+                  backgroundSize: "cover",
+                  backgroundRepeat: "no-repeat",
                   backgroundPosition: "center",
                   backgroundColor: "white",
-                  boxShadow:       "0 4px 32px rgba(0,0,0,0.2)",
+                  boxShadow: "0 4px 32px rgba(0,0,0,0.2)",
                 }}
               >
-              {/* Text overlays — koordinat identik dengan editor */}
-              {layoutElements.map((el) => {
-                if (el.isHidden) return null;
-                return (
-                  <div
-                    key={el.id}
-                    style={{
-                      position:  "absolute",
-                      left:      el.x,
-                      top:       el.y,
-                      width:     el.width,
-                      height:    el.height,
-                      display:   "flex",
-                      alignItems:"center",
-                      overflow:  "hidden",
-                    }}
-                  >
-                    <span style={{
-                      display:    "block",
-                      width:      "100%",
-                      textAlign:  el.textAlign || "center",
-                      fontSize:   el.fontSize,
-                      color:      el.color,
-                      fontWeight: el.fontWeight === "semibold" ? 600 : (el.fontWeight || "normal"),
-                      fontFamily: el.fontFamily || "Arial",
-                      lineHeight: 1.3,
-                      overflow:   "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}>
-                      {resolveText(el)}
-                    </span>
-                  </div>
-                );
-              })}
+                {/* Text overlays — koordinat identik dengan editor */}
+                {layoutElements.map((el) => {
+                  if (el.isHidden) return null;
+                  return (
+                    <div
+                      key={el.id}
+                      style={{
+                        position: "absolute",
+                        left: el.x,
+                        top: el.y,
+                        width: el.width,
+                        height: el.height,
+                        display: "flex",
+                        alignItems: "center",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <span style={{
+                        display: "block",
+                        width: "100%",
+                        textAlign: el.textAlign || "center",
+                        fontSize: el.fontSize,
+                        color: el.color,
+                        fontWeight: el.fontWeight === "semibold" ? 600 : (el.fontWeight || "normal"),
+                        fontFamily: el.fontFamily || "Arial",
+                        lineHeight: 1.3,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}>
+                        {resolveText(el)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

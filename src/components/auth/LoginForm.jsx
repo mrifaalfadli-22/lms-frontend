@@ -24,7 +24,8 @@ export default function LoginForm({ role = "dosen" }) {
   }, [location, setErrorMsg]);
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:8000/api/auth/google/redirect";
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
+    window.location.href = `${baseUrl}/auth/google/redirect`;
   };
 
   const formik = useFormik({

@@ -7,6 +7,8 @@ import {
   Trash2,
   ChevronUp,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   BookOpen,
   GraduationCap,
@@ -64,23 +66,22 @@ function PertanyaanRow({ pertanyaan, index, onEdit, onDelete, onToggle, onMoveUp
   return (
     <div className="flex items-start gap-3 px-5 py-4 border-b border-gray-100 last:border-0 hover:bg-gray-50/60 transition-colors group">
       {/* Urutan & kontrol pindah */}
-      <div className="flex flex-col items-center gap-0.5 pt-0.5 min-w-[28px]">
+      <div className="flex flex-col items-center gap-1.5 pt-0.5 min-w-[28px]">
         <button
           onClick={onMoveUp}
           disabled={isFirst}
-          className="w-5 h-5 flex items-center justify-center rounded text-gray-300 hover:text-gray-500 hover:bg-gray-200 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+          title="Geser ke atas"
+          className="w-6 h-6 flex items-center justify-center rounded-md bg-gray-50 text-gray-400 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all disabled:opacity-30 disabled:hover:bg-gray-50 disabled:hover:text-gray-400 disabled:hover:border-gray-200 disabled:cursor-not-allowed shadow-sm"
         >
-          <ChevronUp size={13} />
+          <ChevronUp size={16} strokeWidth={2.5} />
         </button>
-        <span className="text-[12px] font-bold text-gray-400 leading-none">
-          {pertanyaan.urutan}
-        </span>
         <button
           onClick={onMoveDown}
           disabled={isLast}
-          className="w-5 h-5 flex items-center justify-center rounded text-gray-300 hover:text-gray-500 hover:bg-gray-200 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+          title="Geser ke bawah"
+          className="w-6 h-6 flex items-center justify-center rounded-md bg-gray-50 text-gray-400 border border-gray-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all disabled:opacity-30 disabled:hover:bg-gray-50 disabled:hover:text-gray-400 disabled:hover:border-gray-200 disabled:cursor-not-allowed shadow-sm"
         >
-          <ChevronDown size={13} />
+          <ChevronDown size={16} strokeWidth={2.5} />
         </button>
       </div>
 
@@ -156,6 +157,28 @@ function KategoriCard({ kategori, pertanyaans, onEdit, onDelete, onToggle, onMov
   const Icon = style.icon;
   const aktifCount = pertanyaans.filter((p) => p.is_aktif).length;
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  
+  const totalPages = Math.ceil(pertanyaans.length / itemsPerPage);
+  
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [pertanyaans.length, totalPages, currentPage]);
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentItems = pertanyaans.slice(startIndex, startIndex + itemsPerPage);
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
   return (
     <div className={`rounded-2xl border ${style.border} overflow-hidden shadow-sm`}>
       {/* Header kategori */}
@@ -183,22 +206,55 @@ function KategoriCard({ kategori, pertanyaans, onEdit, onDelete, onToggle, onMov
             Belum ada pertanyaan di kategori ini.
           </div>
         ) : (
-          pertanyaans.map((p, idx) => (
-            <PertanyaanRow
-              key={p.id_pertanyaan}
-              pertanyaan={p}
-              index={idx}
-              isFirst={idx === 0}
-              isLast={idx === pertanyaans.length - 1}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onToggle={onToggle}
-              onMoveUp={() => onMoveUp(kategori, idx)}
-              onMoveDown={() => onMoveDown(kategori, idx)}
-            />
-          ))
+          currentItems.map((p, idx) => {
+            const globalIdx = startIndex + idx;
+            return (
+              <PertanyaanRow
+                key={p.id_pertanyaan}
+                pertanyaan={p}
+                index={globalIdx}
+                isFirst={globalIdx === 0}
+                isLast={globalIdx === pertanyaans.length - 1}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onToggle={onToggle}
+                onMoveUp={() => onMoveUp(kategori, globalIdx)}
+                onMoveDown={() => onMoveDown(kategori, globalIdx)}
+              />
+            );
+          })
         )}
       </div>
+
+      {/* Pagination control */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50/50">
+          <span className="text-[12px] text-gray-500 font-medium">
+            Menampilkan {startIndex + 1}-{Math.min(startIndex + itemsPerPage, pertanyaans.length)} dari {pertanyaans.length}
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handlePrevPage}
+              disabled={currentPage === 1}
+              title="Halaman Sebelumnya"
+              className="p-1.5 text-gray-500 bg-white border border-gray-200 rounded-md hover:bg-gray-50 hover:text-blue-600 disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-gray-500 transition-all shadow-sm"
+            >
+              <ChevronLeft size={16} strokeWidth={2.5} />
+            </button>
+            <span className="px-2 text-[12px] font-bold text-[#1E293B]">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              title="Halaman Selanjutnya"
+              className="p-1.5 text-gray-500 bg-white border border-gray-200 rounded-md hover:bg-gray-50 hover:text-blue-600 disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-gray-500 transition-all shadow-sm"
+            >
+              <ChevronRight size={16} strokeWidth={2.5} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

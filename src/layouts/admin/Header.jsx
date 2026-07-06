@@ -11,6 +11,7 @@ const pageTitles = {
   "/admin/kelola-materi-perkuliahan": "Kelola Materi Perkuliahan",
   "/admin/forum-diskusi": "Kelola Forum Diskusi",
   "/admin/kelola-sertifikat": "Kelola Sertifikat",
+  "/admin/kelola-evaluasi": "Kelola Evaluasi",
   "/admin/verifikasi-dosen": "Verifikasi Dosen",
   "/admin/profil": "Profil Admin",
 };

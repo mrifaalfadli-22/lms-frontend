@@ -11,15 +11,16 @@ import presensiService from "../../services/presensiService";
 import materiService from "../../services/materiService";
 import tugasService from "../../services/tugasService";
 import forumDiskusiService from "../../services/forumDiskusiService";
+import sesiPertemuanService from "../../services/sesiPertemuanService";
 import { useProfile } from "../../hooks/useProfile";
 
 export default function DetailPertemuanTabs() {
   const { id, kelasId, pertemuanId } = useParams();
   const location = useLocation();
   const { user: currentUser } = useProfile();
-  const jadwal = location.state?.groupData || { nama_mk: "Pemrograman Web" };
-  const classData = location.state?.classData || { nama_kelas: "Kelas A" };
-  const pertemuanName = location.state?.pertemuanName || `Pertemuan ke-${pertemuanId}`;
+  const [jadwal, setJadwal] = useState(location.state?.groupData || { nama_mk: "Memuat..." });
+  const [classData, setClassData] = useState(location.state?.classData || { nama_kelas: "Memuat..." });
+  const [pertemuanName, setPertemuanName] = useState(location.state?.pertemuanName || "");
   const [localPertemuanData, setLocalPertemuanData] = useState(location.state?.pertemuanData || { metode: "Synchronous" });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [sendingChat, setSendingChat] = useState(false);
@@ -148,6 +149,29 @@ export default function DetailPertemuanTabs() {
     fetchPresensi();
     fetchMateri();
     fetchTugas();
+
+    // Fetch session details if not completely passed from location state
+    const fetchSession = async () => {
+      try {
+        const sesi = await sesiPertemuanService.getById(pertemuanId);
+        if (sesi) {
+          setPertemuanName(sesi.judul_sesi || `Pertemuan ke-${sesi.pertemuan_ke}`);
+          setLocalPertemuanData((prev) => ({ ...prev, ...sesi }));
+          if (sesi.jadwal_perkuliahan) {
+             if (sesi.jadwal_perkuliahan.mata_kuliah) {
+               setJadwal({ nama_mk: sesi.jadwal_perkuliahan.mata_kuliah.nama_mk });
+             }
+             if (sesi.jadwal_perkuliahan.kelas) {
+               setClassData({ nama_kelas: sesi.jadwal_perkuliahan.kelas.nama_kelas });
+             }
+          }
+        }
+      } catch (err) {
+        console.error("Gagal memuat detail sesi:", err);
+        if (!pertemuanName) setPertemuanName(`Pertemuan ke-${pertemuanId}`);
+      }
+    };
+    fetchSession();
   }, [pertemuanId]);
 
   useEffect(() => {
@@ -565,7 +589,7 @@ export default function DetailPertemuanTabs() {
       <div className="border border-[#E2E8F0] rounded-2xl bg-white overflow-hidden flex flex-col h-[800px]">
         {/* Header Forum */}
         <div className="px-6 py-4 border-b border-[#E2E8F0] bg-[#F8FAFC]/50">
-          <h4 className="text-[16px] font-bold text-[#1E293B]">Forum Diskusi: {pertemuanName}</h4>
+          <h4 className="text-[16px] font-bold text-[#1E293B]">Forum Diskusi: {pertemuanName || `Pertemuan ke-${pertemuanId}`}</h4>
           <p className="text-[14px] font-medium text-[#64748B]">{pesertaCount} Peserta</p>
         </div>
 
@@ -788,7 +812,7 @@ export default function DetailPertemuanTabs() {
           state={{ groupData: jadwal }}
           className="hover:text-[#167A61] transition-colors"
         >
-          {jadwal.nama_mk}
+          {jadwal?.nama_mk || "Memuat..."}
         </Link>
         <ChevronRight size={14} />
         <Link
@@ -796,20 +820,24 @@ export default function DetailPertemuanTabs() {
           state={{ groupData: jadwal, classData: classData }}
           className="hover:text-[#167A61] transition-colors"
         >
-          {classData.nama_kelas}
+          {classData?.nama_kelas || "Memuat..."}
         </Link>
         <ChevronRight size={14} />
-        <span className="text-[#1E293B] font-semibold">{pertemuanName}</span>
+        <span className="text-[#1E293B] font-semibold">{pertemuanName || `Pertemuan ke-${pertemuanId}`}</span>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        {/* Header Info */}
-        <div className="p-8 pb-0">
-          <div className="flex justify-between items-start mb-8">
-            <div>
-              <h2 className="text-[24px] font-extrabold text-[#1E293B] mb-1.5">{pertemuanName}</h2>
-              <p className="text-[15px] font-semibold text-[#64748B]">{jadwal.nama_mk} - {classData.nama_kelas}</p>
-            </div>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-7 mb-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-[#167A61]"></div>
+        
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h3 className="text-[20px] font-extrabold text-[#1E293B] mb-1">
+              {pertemuanName || `Pertemuan ke-${pertemuanId}`}
+            </h3>
+            <p className="text-[14px] text-[#64748B] font-medium">
+              {jadwal?.nama_mk} - {classData?.nama_kelas}
+            </p>
+          </div>
             <div className="flex items-center gap-3">
               <span className={`px-6 py-2 rounded-full text-[13px] font-black tracking-wide uppercase ${localPertemuanData.status === "SELESAI"
                 ? "bg-[#DCFCE7] text-[#008B5E]"
@@ -887,7 +915,6 @@ export default function DetailPertemuanTabs() {
               </button>
             ))}
           </div>
-        </div>
 
         {/* Tab Content */}
         <div className="p-8 min-h-[400px]">
@@ -900,6 +927,7 @@ export default function DetailPertemuanTabs() {
 
       <DeleteConfirmModal
         data={deleteChatTarget}
+        isOpen={!!deleteChatTarget}
         title="Hapus Pesan"
         fields={[{ label: "Isi Pesan", key: "message" }]}
         onConfirm={async () => {

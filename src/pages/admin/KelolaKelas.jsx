@@ -16,6 +16,9 @@ import UbahKelasModal from "../../components/admin/UbahKelasModal";
 import DetailKelasModal from "../../components/admin/DetailKelasModal";
 import Pagination from "../../components/common/Pagination";
 import { formatFakultas } from "../../utils/formatters";
+import { fakultasData } from "../../data/fakultasData";
+import { kelasService } from "../../services/kelasService";
+import ExcelJS from "exceljs";
 
 const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
 
@@ -33,6 +36,7 @@ export default function KelolaKelas() {
   const [detailTarget, setDetailTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
@@ -136,6 +140,103 @@ export default function KelolaKelas() {
     }
   };
 
+  const handleExport = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      // Ambil data tanpa limit dengan filter yang sedang aktif
+      const params = buildParams(1, 10000);
+      const res = await kelasService.getPage(params);
+      const dataToExport = res.data;
+
+      if (!dataToExport || dataToExport.length === 0) {
+        alert("Tidak ada data untuk dieksport.");
+        setIsExporting(false);
+        return;
+      }
+
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Data Kelas");
+
+      // Styling Header
+      const headerRow = sheet.addRow(["No", "Kode Kelas", "Nama Kelas", "Fakultas", "Program Studi", "Tahun Angkatan"]);
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FF167A61" }, // Warna hijau aplikasi
+        };
+        cell.font = {
+          color: { argb: "FFFFFFFF" },
+          bold: true,
+        };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.border = {
+          top: { style: "thin", color: { argb: "FFCCCCCC" } },
+          left: { style: "thin", color: { argb: "FFCCCCCC" } },
+          bottom: { style: "thin", color: { argb: "FFCCCCCC" } },
+          right: { style: "thin", color: { argb: "FFCCCCCC" } },
+        };
+      });
+      headerRow.height = 25;
+
+      // Data Rows
+      dataToExport.forEach((item, index) => {
+        const row = sheet.addRow([
+          index + 1,
+          item.kode_kelas || "-",
+          item.nama_kelas || "-",
+          formatFakultas(item.fakultas) || "-",
+          item.prodi || "-",
+          item.tahun_angkatan || "-",
+        ]);
+
+        row.eachCell((cell) => {
+          cell.alignment = { vertical: "middle", horizontal: "left" };
+          cell.border = {
+            top: { style: "thin", color: { argb: "FFEEEEEE" } },
+            left: { style: "thin", color: { argb: "FFEEEEEE" } },
+            bottom: { style: "thin", color: { argb: "FFEEEEEE" } },
+            right: { style: "thin", color: { argb: "FFEEEEEE" } },
+          };
+        });
+        
+        // Center alignment for No, Kode Kelas, and Tahun
+        row.getCell(1).alignment = { horizontal: "center" };
+        row.getCell(2).alignment = { horizontal: "center" };
+        row.getCell(6).alignment = { horizontal: "center" };
+      });
+
+      // Auto-fit columns
+      sheet.columns.forEach((column) => {
+        let maxLength = 0;
+        column["eachCell"]({ includeEmpty: true }, (cell) => {
+          const columnLength = cell.value ? cell.value.toString().length : 10;
+          if (columnLength > maxLength) maxLength = columnLength;
+        });
+        column.width = maxLength < 10 ? 10 : maxLength + 2;
+      });
+
+      // Download file
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const date = new Date().toISOString().split("T")[0];
+      link.href = url;
+      link.download = `Data_Kelas_${date}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Gagal mengeksport data:", error);
+      alert("Terjadi kesalahan saat mengeksport data.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <>
       <TambahKelasModal
@@ -176,9 +277,13 @@ export default function KelolaKelas() {
             Daftar Kelas
           </h3>
           <div className="flex gap-2.5">
-            <button className="flex items-center gap-1.5 text-sm font-bold text-[#167A61] border border-[#167A61] px-4 py-2 rounded-lg hover:bg-[#167A61] hover:text-white transition-all">
-              <Download size={14} />
-              Eksport Data
+            <button 
+              onClick={handleExport}
+              disabled={isExporting}
+              className={`flex items-center gap-1.5 text-sm font-bold text-[#167A61] border border-[#167A61] px-4 py-2 rounded-lg hover:bg-[#167A61] hover:text-white transition-all ${isExporting ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+              {isExporting ? "Mengeksport..." : "Eksport Data"}
             </button>
             <button
               onClick={() => setShowTambah(true)}
@@ -228,13 +333,11 @@ export default function KelolaKelas() {
             className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
           >
             <option value="">Semua Fakultas</option>
-            <option value="Teknik">Teknik</option>
-            <option value="Ekonomi">Ekonomi</option>
-            <option value="Hukum">Hukum</option>
-            <option value="FKIP">FKIP</option>
-            <option value="Pertanian">Pertanian</option>
-            <option value="Agama Islam">Agama Islam</option>
-            <option value="Ilmu Sosial">Ilmu Sosial</option>
+            {fakultasData.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
           </select>
 
           {/* Filter Program Studi */}
@@ -244,66 +347,14 @@ export default function KelolaKelas() {
             className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
           >
             <option value="">Semua Program Studi</option>
-            {fakultasFilter === "Teknik" && (
-              <>
-                <option value="Informatika">Informatika</option>
-                <option value="Sistem Informasi">Sistem Informasi</option>
-                <option value="Teknik Sipil">Teknik Sipil</option>
-                <option value="Teknik Elektro">Teknik Elektro</option>
-                <option value="Teknik Mesin">Teknik Mesin</option>
-              </>
-            )}
-            {fakultasFilter === "Ekonomi" && (
-              <>
-                <option value="Manajemen">Manajemen</option>
-                <option value="Akuntansi">Akuntansi</option>
-                <option value="Ekonomi Pembangunan">Ekonomi Pembangunan</option>
-              </>
-            )}
-            {fakultasFilter === "Hukum" && (
-              <option value="Ilmu Hukum">Ilmu Hukum</option>
-            )}
-            {fakultasFilter === "FKIP" && (
-              <>
-                <option value="Pendidikan Matematika">Pendidikan Matematika</option>
-                <option value="Pendidikan Bahasa Indonesia">Pendidikan Bahasa Indonesia</option>
-                <option value="Pendidikan Bahasa Inggris">Pendidikan Bahasa Inggris</option>
-                <option value="PGSD">PGSD</option>
-              </>
-            )}
-            {fakultasFilter === "Pertanian" && (
-              <>
-                <option value="Agroteknologi">Agroteknologi</option>
-                <option value="Agribisnis">Agribisnis</option>
-              </>
-            )}
-            {fakultasFilter === "Agama Islam" && (
-              <>
-                <option value="Pendidikan Agama Islam">Pendidikan Agama Islam</option>
-                <option value="Hukum Ekonomi Syariah">Hukum Ekonomi Syariah</option>
-                <option value="Komunikasi Penyiaran Islam">Komunikasi Penyiaran Islam</option>
-              </>
-            )}
-            {fakultasFilter === "Ilmu Sosial" && (
-              <>
-                <option value="Ilmu Komunikasi">Ilmu Komunikasi</option>
-                <option value="Administrasi Publik">Administrasi Publik</option>
-              </>
-            )}
-            {/* Jika belum pilih fakultas, tampilkan semua prodi */}
-            {!fakultasFilter && (
-              <>
-                <option value="Informatika">Informatika</option>
-                <option value="Sistem Informasi">Sistem Informasi</option>
-                <option value="Manajemen">Manajemen</option>
-                <option value="Akuntansi">Akuntansi</option>
-                <option value="Ilmu Hukum">Ilmu Hukum</option>
-                <option value="Pendidikan Matematika">Pendidikan Matematika</option>
-                <option value="Agroteknologi">Agroteknologi</option>
-                <option value="Pendidikan Agama Islam">Pendidikan Agama Islam</option>
-                <option value="Ilmu Komunikasi">Ilmu Komunikasi</option>
-              </>
-            )}
+            {(fakultasFilter
+              ? fakultasData.find((f) => f.value === fakultasFilter)?.prodi || []
+              : [...new Set(fakultasData.flatMap((f) => f.prodi.map((p) => p.value)))].sort().map(value => ({ value, label: value }))
+            ).map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
+            ))}
           </select>
 
           {/* Tombol Reset Filter */}

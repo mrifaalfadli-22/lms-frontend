@@ -16,6 +16,9 @@ import UbahMataKuliahModal from "../../components/admin/UbahMataKuliahModal";
 import DetailMataKuliahModal from "../../components/admin/DetailMataKuliahModal";
 import Pagination from "../../components/common/Pagination";
 import { formatFakultas } from "../../utils/formatters";
+import { fakultasData } from "../../data/fakultasData";
+import { mataKuliahService } from "../../services/mataKuliahService";
+import ExcelJS from "exceljs";
 
 const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
 
@@ -29,12 +32,15 @@ export default function DaftarMataKuliah() {
   const [search, setSearch] = useState("");
   const [sksFilter, setSksFilter] = useState("");
   const [semesterFilter, setSemesterFilter] = useState("");
+  const [fakultasFilter, setFakultasFilter] = useState("");
+  const [prodiFilter, setProdiFilter] = useState("");
 
   const [showTambah, setShowTambah] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
   const [detailTarget, setDetailTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
@@ -44,9 +50,11 @@ export default function DaftarMataKuliah() {
       if (search) params.search = search;
       if (semesterFilter) params.semester = semesterFilter;
       if (sksFilter) params.sks = sksFilter;
+      if (fakultasFilter) params.fakultas = fakultasFilter;
+      if (prodiFilter) params.prodi = prodiFilter;
       return params;
     },
-    [search, semesterFilter, sksFilter, itemsPerPage],
+    [search, semesterFilter, sksFilter, fakultasFilter, prodiFilter, itemsPerPage],
   );
 
   // Fetch awal
@@ -61,6 +69,8 @@ export default function DaftarMataKuliah() {
     if (value) params.search = value;
     if (semesterFilter) params.semester = semesterFilter;
     if (sksFilter) params.sks = sksFilter;
+    if (fakultasFilter) params.fakultas = fakultasFilter;
+    if (prodiFilter) params.prodi = prodiFilter;
     debouncedFetch(params);
   };
 
@@ -71,6 +81,8 @@ export default function DaftarMataKuliah() {
     if (search) params.search = search;
     if (value) params.semester = value;
     if (sksFilter) params.sks = sksFilter;
+    if (fakultasFilter) params.fakultas = fakultasFilter;
+    if (prodiFilter) params.prodi = prodiFilter;
     fetchPage(params);
   };
 
@@ -81,6 +93,34 @@ export default function DaftarMataKuliah() {
     if (search) params.search = search;
     if (semesterFilter) params.semester = semesterFilter;
     if (value) params.sks = value;
+    if (fakultasFilter) params.fakultas = fakultasFilter;
+    if (prodiFilter) params.prodi = prodiFilter;
+    fetchPage(params);
+  };
+
+  const handleFakultasChange = (e) => {
+    const value = e.target.value;
+    setFakultasFilter(value);
+    setProdiFilter(""); // reset prodi
+
+    const params = { page: 1 };
+    if (search) params.search = search;
+    if (semesterFilter) params.semester = semesterFilter;
+    if (sksFilter) params.sks = sksFilter;
+    if (value) params.fakultas = value;
+    fetchPage(params);
+  };
+
+  const handleProdiChange = (e) => {
+    const value = e.target.value;
+    setProdiFilter(value);
+
+    const params = { page: 1 };
+    if (search) params.search = search;
+    if (semesterFilter) params.semester = semesterFilter;
+    if (sksFilter) params.sks = sksFilter;
+    if (fakultasFilter) params.fakultas = fakultasFilter;
+    if (value) params.prodi = value;
     fetchPage(params);
   };
 
@@ -117,6 +157,96 @@ export default function DaftarMataKuliah() {
       alert("Gagal menghapus data.");
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  const handleExport = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      const params = buildParams(1, 10000);
+      const res = await mataKuliahService.getPage(params);
+      const dataToExport = res.data;
+
+      if (!dataToExport || dataToExport.length === 0) {
+        alert("Tidak ada data untuk dieksport.");
+        setIsExporting(false);
+        return;
+      }
+
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Data Mata Kuliah");
+
+      // Styling Header
+      const headerRow = sheet.addRow(["No", "Kode MK", "Nama Mata Kuliah", "Fakultas", "Program Studi", "Semester", "SKS"]);
+      headerRow.eachCell((cell) => {
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF167A61" } };
+        cell.font = { color: { argb: "FFFFFFFF" }, bold: true };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.border = {
+          top: { style: "thin", color: { argb: "FFCCCCCC" } },
+          left: { style: "thin", color: { argb: "FFCCCCCC" } },
+          bottom: { style: "thin", color: { argb: "FFCCCCCC" } },
+          right: { style: "thin", color: { argb: "FFCCCCCC" } },
+        };
+      });
+      headerRow.height = 25;
+
+      // Data Rows
+      dataToExport.forEach((item, index) => {
+        const row = sheet.addRow([
+          index + 1,
+          item.kode_mk || "-",
+          item.nama_mk || "-",
+          formatFakultas(item.fakultas) || "-",
+          item.prodi || "-",
+          item.semester ? `Semester ${item.semester}` : "-",
+          item.sks ? `${item.sks} SKS` : "-",
+        ]);
+
+        row.eachCell((cell) => {
+          cell.alignment = { vertical: "middle", horizontal: "left" };
+          cell.border = {
+            top: { style: "thin", color: { argb: "FFEEEEEE" } },
+            left: { style: "thin", color: { argb: "FFEEEEEE" } },
+            bottom: { style: "thin", color: { argb: "FFEEEEEE" } },
+            right: { style: "thin", color: { argb: "FFEEEEEE" } },
+          };
+        });
+        
+        row.getCell(1).alignment = { horizontal: "center" };
+        row.getCell(2).alignment = { horizontal: "center" };
+        row.getCell(6).alignment = { horizontal: "center" };
+        row.getCell(7).alignment = { horizontal: "center" };
+      });
+
+      // Auto-fit columns
+      sheet.columns.forEach((column) => {
+        let maxLength = 0;
+        column["eachCell"]({ includeEmpty: true }, (cell) => {
+          const columnLength = cell.value ? cell.value.toString().length : 10;
+          if (columnLength > maxLength) maxLength = columnLength;
+        });
+        column.width = maxLength < 10 ? 10 : maxLength + 2;
+      });
+
+      // Download file
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const date = new Date().toISOString().split("T")[0];
+      link.href = url;
+      link.download = `Data_Mata_Kuliah_${date}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Gagal mengeksport data:", error);
+      alert("Terjadi kesalahan saat mengeksport data.");
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -160,9 +290,13 @@ export default function DaftarMataKuliah() {
             Daftar Mata Kuliah
           </h3>
           <div className="flex gap-2.5">
-            <button className="flex items-center gap-1.5 text-sm font-bold text-[#167A61] border border-[#167A61] px-4 py-2 rounded-lg hover:bg-[#167A61] hover:text-white transition-all">
-              <Download size={14} />
-              Eksport Data
+            <button
+              onClick={handleExport}
+              disabled={isExporting}
+              className={`flex items-center gap-1.5 text-sm font-bold text-[#167A61] border border-[#167A61] px-4 py-2 rounded-lg hover:bg-[#167A61] hover:text-white transition-all ${isExporting ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+              {isExporting ? "Mengeksport..." : "Eksport Data"}
             </button>
             <button
               onClick={() => setShowTambah(true)}
@@ -190,6 +324,33 @@ export default function DaftarMataKuliah() {
               className="w-full pl-9 pr-4 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] placeholder:text-[#94A3B8] outline-none focus:border-[#167A61] transition-all"
             />
           </div>
+          <select
+            value={fakultasFilter}
+            onChange={handleFakultasChange}
+            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
+          >
+            <option value="">Semua Fakultas</option>
+            {fakultasData.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={prodiFilter}
+            onChange={handleProdiChange}
+            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
+          >
+            <option value="">Semua Prodi</option>
+            {(fakultasFilter
+              ? fakultasData.find((f) => f.value === fakultasFilter)?.prodi || []
+              : [...new Set(fakultasData.flatMap((f) => f.prodi.map((p) => p.value)))].sort().map(value => ({ value, label: value }))
+            ).map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
+            ))}
+          </select>
           <select
             value={semesterFilter}
             onChange={handleSemesterChange}
@@ -233,12 +394,12 @@ export default function DaftarMataKuliah() {
                 <BookOpen size={28} className="text-[#94A3B8]" />
               </div>
               <p className="text-[14px] font-bold text-[#64748B]">
-                {search || semesterFilter || sksFilter
+                {search || semesterFilter || sksFilter || fakultasFilter || prodiFilter
                   ? "Data tidak ditemukan."
                   : "Belum ada data mata kuliah."}
               </p>
               <p className="text-[13px] text-[#94A3B8] mt-1">
-                {search || semesterFilter || sksFilter
+                {search || semesterFilter || sksFilter || fakultasFilter || prodiFilter
                   ? "Coba ubah kata kunci atau filter pencarian."
                   : "Data akan muncul setelah ditambahkan ke sistem."}
               </p>

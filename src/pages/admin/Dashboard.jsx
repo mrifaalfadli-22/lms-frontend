@@ -339,7 +339,7 @@ export default function AdminDashboard() {
                       </td>
                       <td className="py-4 px-4">
                         <Link
-                          to={`/admin/forum/${f.id_pesan}`}
+                          to={`/admin/forum-diskusi/${f.sesi?.id_jadwal}/kelas/${f.sesi?.id_jadwal}`}
                           title="Lihat Detail"
                           className="p-1.5 text-[#64748B] hover:text-[#167A61] transition-colors rounded-lg hover:bg-[#167A61]/10 inline-flex items-center"
                         >

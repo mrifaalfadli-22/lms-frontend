@@ -14,6 +14,7 @@ import {
 import evaluasiService from "../../services/evaluasiService";
 import { useProfile } from "../../hooks/useProfile";
 import { formatFakultas } from "../../utils/formatters";
+import { fakultasData } from "../../data/fakultasData";
 
 function RatingStars({ rating }) {
   return (
@@ -183,9 +184,8 @@ export default function HasilEvaluasi() {
     }
   };
 
-  // Generate unique filter options
-  const listFakultas = [...new Set(data.map((d) => d.fakultas).filter(Boolean))];
-  const listProdi = [...new Set(data.map((d) => d.prodi).filter(Boolean))];
+  // We don't need listFakultas and listProdi from data anymore
+  // as we use fakultasData directly
 
   // Apply filters and sort
   const processedData = data
@@ -240,13 +240,16 @@ export default function HasilEvaluasi() {
         </div>
         <select
           value={filterFakultas}
-          onChange={(e) => setFilterFakultas(e.target.value)}
+          onChange={(e) => {
+            setFilterFakultas(e.target.value);
+            setFilterProdi(""); // Reset prodi
+          }}
           className="px-4 py-2.5 border border-gray-200 rounded-xl text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] bg-white min-w-[150px] cursor-pointer"
         >
           <option value="">Semua Fakultas</option>
-          {listFakultas.map((f) => (
-            <option key={f} value={f}>
-              {formatFakultas(f)}
+          {fakultasData.map((f) => (
+            <option key={f.value} value={f.value}>
+              {f.label}
             </option>
           ))}
         </select>
@@ -256,9 +259,12 @@ export default function HasilEvaluasi() {
           className="px-4 py-2.5 border border-gray-200 rounded-xl text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] bg-white min-w-[150px] cursor-pointer"
         >
           <option value="">Semua Prodi</option>
-          {listProdi.map((p) => (
-            <option key={p} value={p}>
-              {p}
+          {(filterFakultas
+            ? fakultasData.find((f) => f.value === filterFakultas)?.prodi || []
+            : [...new Set(fakultasData.flatMap((f) => f.prodi.map((p) => p.value)))].sort().map(value => ({ value, label: value }))
+          ).map((p) => (
+            <option key={p.value} value={p.value}>
+              {p.label}
             </option>
           ))}
         </select>

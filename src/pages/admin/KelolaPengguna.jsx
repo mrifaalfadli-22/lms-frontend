@@ -18,6 +18,9 @@ import UbahMahasiswaModal from "../../components/admin/UbahMahasiswaModal";
 import UbahDosenModal from "../../components/admin/UbahDosenModal";
 import Pagination from "../../components/common/Pagination";
 import { formatFakultas } from "../../utils/formatters";
+import { fakultasData } from "../../data/fakultasData";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 
 const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
 
@@ -75,9 +78,13 @@ function UserTable({
   onSearchChange,
   onStatusChange,
   onTahunChange,
+  onFakultasChange,
+  onProdiChange,
   search,
   statusFilter,
   tahunFilter,
+  fakultasFilter,
+  prodiFilter,
 }) {
   const getTahun = (r) => {
     if (identifierLabel === "NPM") return val(r.angkatan);
@@ -129,17 +136,44 @@ function UserTable({
           <option value="AKTIF">Aktif</option>
           <option value="NONAKTIF">Nonaktif</option>
         </select>
+
+        <select
+          value={fakultasFilter}
+          onChange={onFakultasChange}
+          className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
+        >
+          <option value="">Semua Fakultas</option>
+          {fakultasData.map((f) => (
+            <option key={f.value} value={f.value}>{f.label}</option>
+          ))}
+        </select>
+        
+        <select
+          value={prodiFilter}
+          onChange={onProdiChange}
+          className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
+        >
+          <option value="">Semua Prodi</option>
+          {(fakultasFilter
+            ? fakultasData.find((f) => f.value === fakultasFilter)?.prodi || []
+            : [...new Set(fakultasData.flatMap((f) => f.prodi.map((p) => p.value)))].sort().map(value => ({ value, label: value }))
+          ).map((p) => (
+            <option key={p.value} value={p.value}>
+              {p.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="px-7 overflow-x-auto">
         {data.length === 0 ? (
           <EmptyState
             message={
-              search || statusFilter || tahunFilter
+              search || statusFilter || tahunFilter || fakultasFilter || prodiFilter
                 ? "Data tidak ditemukan."
                 : emptyMessage
             }
-            hasFilter={!!(search || statusFilter || tahunFilter)}
+            hasFilter={!!(search || statusFilter || tahunFilter || fakultasFilter || prodiFilter)}
           />
         ) : (
           <table className="w-full text-left">
@@ -272,9 +306,13 @@ export default function KelolaPengguna() {
   const [searchMhs, setSearchMhs] = useState("");
   const [statusMhs, setStatusMhs] = useState("");
   const [tahunMhs, setTahunMhs] = useState("");
+  const [fakultasMhs, setFakultasMhs] = useState("");
+  const [prodiMhs, setProdiMhs] = useState("");
 
   const [searchDosen, setSearchDosen] = useState("");
   const [statusDosen, setStatusDosen] = useState("");
+  const [fakultasDosen, setFakultasDosen] = useState("");
+  const [prodiDosen, setProdiDosen] = useState("");
 
   const [showTambah, setShowTambah] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -285,6 +323,8 @@ export default function KelolaPengguna() {
   const [editMahasiswaTarget, setEditMahasiswaTarget] = useState(null);
   const [editDosenTarget, setEditDosenTarget] = useState(null);
 
+  const [isExporting, setIsExporting] = useState(false);
+
   const isMahasiswa = activeTab === "mahasiswa";
 
   const [itemsPerPageMhs, setItemsPerPageMhs] = useState(10);
@@ -292,28 +332,39 @@ export default function KelolaPengguna() {
 
   // Build params helpers
   const buildMhsParams = useCallback(
-    (page = 1, limit = itemsPerPageMhs) => {
+    (page = 1, limit = itemsPerPageMhs, overrides = {}) => {
       const params = { page, per_page: limit };
-      if (searchMhs) params.search = searchMhs;
-      if (statusMhs)
-        params.status_aktif = statusMhs === "AKTIF" ? "true" : "false";
-      if (tahunMhs) params.angkatan = tahunMhs;
+      const s = overrides.search !== undefined ? overrides.search : searchMhs;
+      const st = overrides.status !== undefined ? overrides.status : statusMhs;
+      const t = overrides.tahun !== undefined ? overrides.tahun : tahunMhs;
+      const f = overrides.fakultas !== undefined ? overrides.fakultas : fakultasMhs;
+      const p = overrides.prodi !== undefined ? overrides.prodi : prodiMhs;
+
+      if (s) params.search = s;
+      if (st) params.status_aktif = st === "AKTIF" ? "true" : "false";
+      if (t) params.angkatan = t;
+      if (f) params.fakultas = f;
+      if (p) params.prodi = p;
       return params;
     },
-    [searchMhs, statusMhs, tahunMhs, itemsPerPageMhs],
+    [searchMhs, statusMhs, tahunMhs, fakultasMhs, prodiMhs, itemsPerPageMhs],
   );
 
   const buildDosenParams = useCallback(
-    (page = 1, limit = itemsPerPageDosen) => {
+    (page = 1, limit = itemsPerPageDosen, overrides = {}) => {
       const params = { page, per_page: limit };
-      if (searchDosen) params.search = searchDosen;
-      if (statusDosen) {
-        // Untuk dosen, kita filter berdasarkan status_aktif juga
-        // tapi getDosen sudah default status=Disetujui
-      }
+      const s = overrides.search !== undefined ? overrides.search : searchDosen;
+      const st = overrides.status !== undefined ? overrides.status : statusDosen;
+      const f = overrides.fakultas !== undefined ? overrides.fakultas : fakultasDosen;
+      const p = overrides.prodi !== undefined ? overrides.prodi : prodiDosen;
+
+      if (s) params.search = s;
+      if (st) params.status_aktif = st === "AKTIF" ? "true" : "false";
+      if (f) params.fakultas = f;
+      if (p) params.prodi = p;
       return params;
     },
-    [searchDosen, statusDosen, itemsPerPageDosen],
+    [searchDosen, statusDosen, fakultasDosen, prodiDosen, itemsPerPageDosen],
   );
 
   const isInitialMount = useRef(true);
@@ -339,33 +390,32 @@ export default function KelolaPengguna() {
   const handleSearchMhsChange = (e) => {
     const value = e.target.value;
     setSearchMhs(value);
-    const params = { page: 1 };
-    if (value) params.search = value;
-    if (statusMhs)
-      params.status_aktif = statusMhs === "AKTIF" ? "true" : "false";
-    if (tahunMhs) params.angkatan = tahunMhs;
-    debouncedFetchMahasiswa(params);
+    debouncedFetchMahasiswa(buildMhsParams(1, itemsPerPageMhs, { search: value }));
   };
 
   const handleStatusMhsChange = (e) => {
     const value = e.target.value;
     setStatusMhs(value);
-    const params = { page: 1 };
-    if (searchMhs) params.search = searchMhs;
-    if (value) params.status_aktif = value === "AKTIF" ? "true" : "false";
-    if (tahunMhs) params.angkatan = tahunMhs;
-    fetchMahasiswa(params);
+    fetchMahasiswa(buildMhsParams(1, itemsPerPageMhs, { status: value }));
   };
 
   const handleTahunMhsChange = (e) => {
     const value = e.target.value;
     setTahunMhs(value);
-    const params = { page: 1 };
-    if (searchMhs) params.search = searchMhs;
-    if (statusMhs)
-      params.status_aktif = statusMhs === "AKTIF" ? "true" : "false";
-    if (value) params.angkatan = value;
-    fetchMahasiswa(params);
+    fetchMahasiswa(buildMhsParams(1, itemsPerPageMhs, { tahun: value }));
+  };
+
+  const handleFakultasMhsChange = (e) => {
+    const value = e.target.value;
+    setFakultasMhs(value);
+    setProdiMhs("");
+    fetchMahasiswa(buildMhsParams(1, itemsPerPageMhs, { fakultas: value, prodi: "" }));
+  };
+
+  const handleProdiMhsChange = (e) => {
+    const value = e.target.value;
+    setProdiMhs(value);
+    fetchMahasiswa(buildMhsParams(1, itemsPerPageMhs, { prodi: value }));
   };
 
   const handleMhsPageChange = (page) => {
@@ -382,17 +432,26 @@ export default function KelolaPengguna() {
   const handleSearchDosenChange = (e) => {
     const value = e.target.value;
     setSearchDosen(value);
-    const params = { page: 1 };
-    if (value) params.search = value;
-    debouncedFetchDosen(params);
+    debouncedFetchDosen(buildDosenParams(1, itemsPerPageDosen, { search: value }));
   };
 
   const handleStatusDosenChange = (e) => {
     const value = e.target.value;
     setStatusDosen(value);
-    const params = { page: 1 };
-    if (searchDosen) params.search = searchDosen;
-    fetchDosen(params);
+    fetchDosen(buildDosenParams(1, itemsPerPageDosen, { status: value }));
+  };
+
+  const handleFakultasDosenChange = (e) => {
+    const value = e.target.value;
+    setFakultasDosen(value);
+    setProdiDosen("");
+    fetchDosen(buildDosenParams(1, itemsPerPageDosen, { fakultas: value, prodi: "" }));
+  };
+
+  const handleProdiDosenChange = (e) => {
+    const value = e.target.value;
+    setProdiDosen(value);
+    fetchDosen(buildDosenParams(1, itemsPerPageDosen, { prodi: value }));
   };
 
   const handleDosenPageChange = (page) => {
@@ -459,6 +518,135 @@ export default function KelolaPengguna() {
     }
   };
 
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      let dataToExport = [];
+      let filename = "";
+      
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet(isMahasiswa ? "Data Mahasiswa" : "Data Dosen");
+      
+      if (isMahasiswa) {
+        const response = await penggunaService.getMahasiswa({ 
+          ...buildMhsParams(1, 10000) 
+        });
+        
+        dataToExport = response.data.map((m, index) => ({
+          no: index + 1,
+          nama_lengkap: val(m.nama_lengkap),
+          npm: val(m.nomor_induk),
+          email: val(m.email),
+          fakultas: formatFakultas(val(m.fakultas)),
+          prodi: val(m.prodi),
+          tahun_angkatan: val(m.angkatan),
+          status: m.status_aktif ? "Aktif" : "Nonaktif"
+        }));
+        
+        filename = `Data_Mahasiswa_${new Date().toISOString().split("T")[0]}.xlsx`;
+
+        worksheet.columns = [
+          { header: "No", key: "no", width: 5 },
+          { header: "Nama Lengkap", key: "nama_lengkap", width: 30 },
+          { header: "NPM", key: "npm", width: 20 },
+          { header: "Email", key: "email", width: 30 },
+          { header: "Fakultas", key: "fakultas", width: 25 },
+          { header: "Program Studi", key: "prodi", width: 25 },
+          { header: "Tahun Angkatan", key: "tahun_angkatan", width: 15 },
+          { header: "Status", key: "status", width: 15 }
+        ];
+
+      } else {
+        const response = await penggunaService.getDosen({ 
+          ...buildDosenParams(1, 10000) 
+        });
+        
+        dataToExport = response.data.map((d, index) => ({
+          no: index + 1,
+          nama_lengkap: val(d.nama_lengkap),
+          nidn: val(d.nomor_induk),
+          email: val(d.email),
+          fakultas: formatFakultas(val(d.fakultas)),
+          prodi: val(d.prodi),
+          tahun_bergabung: d.created_at ? new Date(d.created_at).getFullYear().toString() : "-",
+          status: d.status_aktif ? "Aktif" : "Nonaktif"
+        }));
+        
+        filename = `Data_Dosen_${new Date().toISOString().split("T")[0]}.xlsx`;
+
+        worksheet.columns = [
+          { header: "No", key: "no", width: 5 },
+          { header: "Nama Lengkap", key: "nama_lengkap", width: 30 },
+          { header: "NIDN", key: "nidn", width: 20 },
+          { header: "Email", key: "email", width: 30 },
+          { header: "Fakultas", key: "fakultas", width: 25 },
+          { header: "Program Studi", key: "prodi", width: 25 },
+          { header: "Tahun Bergabung", key: "tahun_bergabung", width: 15 },
+          { header: "Status", key: "status", width: 15 }
+        ];
+      }
+
+      if (dataToExport.length === 0) {
+        alert("Tidak ada data untuk diekspor.");
+        setIsExporting(false);
+        return;
+      }
+
+      // Add Data
+      worksheet.addRows(dataToExport);
+
+      // Style Headers
+      const headerRow = worksheet.getRow(1);
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FF167A61" } // Green background
+        };
+        cell.font = {
+          bold: true,
+          color: { argb: "FFFFFFFF" } // White text
+        };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+          left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+          bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+          right: { style: 'thin', color: { argb: 'FFCCCCCC' } }
+        };
+      });
+      headerRow.height = 25;
+
+      // Style Data Rows
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber > 1) {
+          row.eachCell((cell) => {
+            cell.alignment = { vertical: "middle", horizontal: "left" };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFEEEEEE' } },
+              left: { style: 'thin', color: { argb: 'FFEEEEEE' } },
+              bottom: { style: 'thin', color: { argb: 'FFEEEEEE' } },
+              right: { style: 'thin', color: { argb: 'FFEEEEEE' } }
+            };
+          });
+          // Center align the No column
+          row.getCell(1).alignment = { vertical: "middle", horizontal: "center" };
+        }
+      });
+
+      // Generate Excel File and Download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      saveAs(blob, filename);
+      
+    } catch (error) {
+      console.error("Gagal mengekspor data:", error);
+      alert("Terjadi kesalahan saat mengekspor data.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <>
       {/* Modal Tambah Mahasiswa */}
@@ -518,9 +706,17 @@ export default function KelolaPengguna() {
             Daftar Pengguna
           </h3>
           <div className="flex gap-2.5">
-            <button className="flex items-center gap-1.5 text-sm font-bold text-[#167A61] border border-[#167A61] px-4 py-2 rounded-lg hover:bg-[#167A61] hover:text-white transition-all">
-              <Download size={14} />
-              Eksport Data
+            <button 
+              onClick={handleExport}
+              disabled={isExporting}
+              className={`flex items-center gap-1.5 text-sm font-bold border px-4 py-2 rounded-lg transition-all
+                ${isExporting 
+                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed" 
+                  : "text-[#167A61] border-[#167A61] hover:bg-[#167A61] hover:text-white"
+                }`}
+            >
+              {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+              {isExporting ? "Mengekspor..." : "Eksport Data"}
             </button>
             {isMahasiswa && (
               <button
@@ -581,9 +777,13 @@ export default function KelolaPengguna() {
             onSearchChange={handleSearchMhsChange}
             onStatusChange={handleStatusMhsChange}
             onTahunChange={handleTahunMhsChange}
+            onFakultasChange={handleFakultasMhsChange}
+            onProdiChange={handleProdiMhsChange}
             search={searchMhs}
             statusFilter={statusMhs}
             tahunFilter={tahunMhs}
+            fakultasFilter={fakultasMhs}
+            prodiFilter={prodiMhs}
           />
         ) : (
           <UserTable
@@ -602,9 +802,13 @@ export default function KelolaPengguna() {
             onSearchChange={handleSearchDosenChange}
             onStatusChange={handleStatusDosenChange}
             onTahunChange={() => {}}
+            onFakultasChange={handleFakultasDosenChange}
+            onProdiChange={handleProdiDosenChange}
             search={searchDosen}
             statusFilter={statusDosen}
             tahunFilter=""
+            fakultasFilter={fakultasDosen}
+            prodiFilter={prodiDosen}
           />
         )}
       </div>

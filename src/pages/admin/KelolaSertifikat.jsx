@@ -5,7 +5,9 @@ import DeleteConfirmModal from "../../components/admin/DeleteConfirmModal";
 import AturTemplateModal from "../../components/admin/AturTemplateModal";
 import DetailSertifikatMahasiswaModal from "../../components/admin/DetailSertifikatMahasiswaModal";
 import { formatFakultas } from "../../utils/formatters";
+import { fakultasData } from "../../data/fakultasData";
 import api from "../../config/api";
+import ExcelJS from "exceljs";
 
 export default function KelolaSertifikat() {
   const [sertifikatList, setSertifikatList] = useState([]);
@@ -24,6 +26,7 @@ export default function KelolaSertifikat() {
   const [viewTarget, setViewTarget] = useState(null);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [activeTemplates, setActiveTemplates] = useState([]);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     fetchSertifikat();
@@ -119,8 +122,6 @@ export default function KelolaSertifikat() {
   };
 
   const tahunOptions = [...new Set(sertifikatList.map((s) => s.tahun))].filter(Boolean).sort((a, b) => b - a);
-  const fakultasOptions = [...new Set(sertifikatList.map((s) => s.fakultas))].filter(f => f && f !== '-').sort();
-  const prodiOptions = [...new Set(sertifikatList.map((s) => s.prodi))].filter(p => p && p !== '-').sort();
 
   const filtered = sertifikatList.filter((s) => {
     const q = search.toLowerCase();
@@ -147,6 +148,100 @@ export default function KelolaSertifikat() {
   const handleDeleteConfirm = async () => {
     // Implement delete by id_peserta or specific certificates if needed
     setDeleteTarget(null);
+  };
+
+  const handleExport = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      if (filtered.length === 0) {
+        alert("Tidak ada data untuk dieksport.");
+        setIsExporting(false);
+        return;
+      }
+
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet("Data Sertifikat");
+
+      // Styling Header
+      const headerRow = sheet.addRow(["No", "NPM", "Mahasiswa", "Mata Kuliah", "Fakultas", "Program Studi", "Semester", "NIDN", "Dosen", "Jumlah Sertifikat", "Nilai Akhir", "Status Kelulusan"]);
+      headerRow.eachCell((cell) => {
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF167A61" } };
+        cell.font = { color: { argb: "FFFFFFFF" }, bold: true };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.border = {
+          top: { style: "thin", color: { argb: "FFCCCCCC" } },
+          left: { style: "thin", color: { argb: "FFCCCCCC" } },
+          bottom: { style: "thin", color: { argb: "FFCCCCCC" } },
+          right: { style: "thin", color: { argb: "FFCCCCCC" } },
+        };
+      });
+      headerRow.height = 25;
+
+      // Data Rows
+      filtered.forEach((item, index) => {
+        const row = sheet.addRow([
+          index + 1,
+          item.npm || "-",
+          item.mahasiswa || "-",
+          item.mataKuliah || "-",
+          formatFakultas(item.fakultas) || "-",
+          item.prodi || "-",
+          item.semester || "-",
+          item.nidn || "-",
+          item.dosen || "-",
+          item.jumlahSertifikat || 0,
+          item.nilaiAkhir || 0,
+          item.statusKelulusan || "-",
+        ]);
+
+        row.eachCell((cell) => {
+          cell.alignment = { vertical: "middle", horizontal: "left" };
+          cell.border = {
+            top: { style: "thin", color: { argb: "FFEEEEEE" } },
+            left: { style: "thin", color: { argb: "FFEEEEEE" } },
+            bottom: { style: "thin", color: { argb: "FFEEEEEE" } },
+            right: { style: "thin", color: { argb: "FFEEEEEE" } },
+          };
+        });
+        
+        row.getCell(1).alignment = { horizontal: "center" };
+        row.getCell(2).alignment = { horizontal: "center" };
+        row.getCell(7).alignment = { horizontal: "center" };
+        row.getCell(8).alignment = { horizontal: "center" };
+        row.getCell(10).alignment = { horizontal: "center" };
+        row.getCell(11).alignment = { horizontal: "center" };
+        row.getCell(12).alignment = { horizontal: "center" };
+      });
+
+      // Auto-fit columns
+      sheet.columns.forEach((column) => {
+        let maxLength = 0;
+        column["eachCell"]({ includeEmpty: true }, (cell) => {
+          const columnLength = cell.value ? cell.value.toString().length : 10;
+          if (columnLength > maxLength) maxLength = columnLength;
+        });
+        column.width = maxLength < 10 ? 10 : maxLength + 2;
+      });
+
+      // Download file
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const date = new Date().toISOString().split("T")[0];
+      link.href = url;
+      link.download = `Data_Sertifikat_${date}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Gagal mengeksport data:", error);
+      alert("Terjadi kesalahan saat mengeksport data.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -183,9 +278,13 @@ export default function KelolaSertifikat() {
             Daftar Sertifikat
           </h3>
           <div className="flex gap-2.5">
-            <button className="flex items-center gap-1.5 text-sm font-bold text-[#167A61] border border-[#167A61] px-4 py-2 rounded-lg hover:bg-[#167A61] hover:text-white transition-all">
-              <Download size={14} />
-              Eksport Data
+            <button
+              onClick={handleExport}
+              disabled={isExporting}
+              className={`flex items-center gap-1.5 text-sm font-bold text-[#167A61] border border-[#167A61] px-4 py-2 rounded-lg hover:bg-[#167A61] hover:text-white transition-all ${isExporting ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+              {isExporting ? "Mengeksport..." : "Eksport Data"}
             </button>
             <button 
               onClick={() => setIsTemplateModalOpen(true)}
@@ -214,12 +313,16 @@ export default function KelolaSertifikat() {
           </div>
           <select
             value={fakultasFilter}
-            onChange={(e) => { setFakultasFilter(e.target.value); setCurrentPage(1); }}
+            onChange={(e) => { 
+              setFakultasFilter(e.target.value); 
+              setProdiFilter(""); 
+              setCurrentPage(1); 
+            }}
             className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] bg-white cursor-pointer"
           >
             <option value="">Semua Fakultas</option>
-            {fakultasOptions.map((f) => (
-              <option key={f} value={f}>{f}</option>
+            {fakultasData.map((f) => (
+              <option key={f.value} value={f.value}>{f.label}</option>
             ))}
           </select>
           <select
@@ -228,8 +331,13 @@ export default function KelolaSertifikat() {
             className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] bg-white cursor-pointer"
           >
             <option value="">Semua Prodi</option>
-            {prodiOptions.map((p) => (
-              <option key={p} value={p}>{p}</option>
+            {(fakultasFilter
+              ? fakultasData.find((f) => f.value === fakultasFilter)?.prodi || []
+              : [...new Set(fakultasData.flatMap((f) => f.prodi.map((p) => p.value)))].sort().map(value => ({ value, label: value }))
+            ).map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
             ))}
           </select>
           <select

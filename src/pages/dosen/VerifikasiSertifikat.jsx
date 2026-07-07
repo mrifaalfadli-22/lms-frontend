@@ -4,6 +4,7 @@ import api from "../../config/api";
 import Pagination from "../../components/common/Pagination";
 import VerifikasiSertifikatModal from "../../components/dosen/VerifikasiSertifikatModal";
 import { formatFakultas } from "../../utils/formatters";
+import { fakultasData } from "../../data/fakultasData";
 
 export default function VerifikasiSertifikat() {
   const [sertifikatList, setSertifikatList] = useState([]);
@@ -107,18 +108,8 @@ export default function VerifikasiSertifikat() {
     }
   };
 
-  // Extract unique options for filters
-  const uniqueFakultas = useMemo(() => {
-    return [...new Set(sertifikatList.map(item => item.fakultas).filter(Boolean))].sort();
-  }, [sertifikatList]);
-
-  const uniqueProdi = useMemo(() => {
-    // If fakultas is selected, only show prodi for that fakultas
-    const listToUse = fakultasFilter 
-      ? sertifikatList.filter(item => item.fakultas === fakultasFilter) 
-      : sertifikatList;
-    return [...new Set(listToUse.map(item => item.prodi).filter(Boolean))].sort();
-  }, [sertifikatList, fakultasFilter]);
+  // We don't need uniqueFakultas and uniqueProdi from data anymore
+  // as we use fakultasData directly
 
   return (
     <>
@@ -156,8 +147,8 @@ export default function VerifikasiSertifikat() {
             className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
           >
             <option value="">Semua Fakultas</option>
-            {uniqueFakultas.map(f => (
-              <option key={f} value={f}>{formatFakultas(f)}</option>
+            {fakultasData.map((f) => (
+              <option key={f.value} value={f.value}>{f.label}</option>
             ))}
           </select>
 
@@ -167,8 +158,13 @@ export default function VerifikasiSertifikat() {
             className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
           >
             <option value="">Semua Prodi</option>
-            {uniqueProdi.map(p => (
-              <option key={p} value={p}>{p}</option>
+            {(fakultasFilter
+              ? fakultasData.find((f) => f.value === fakultasFilter)?.prodi || []
+              : [...new Set(fakultasData.flatMap((f) => f.prodi.map((p) => p.value)))].sort().map(value => ({ value, label: value }))
+            ).map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
             ))}
           </select>
 

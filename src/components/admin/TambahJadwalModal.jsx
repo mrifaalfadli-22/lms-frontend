@@ -72,7 +72,7 @@ export default function TambahJadwalModal({ isOpen, onClose, onSuccess }) {
       sks: "",
       // Diisi manual
       tahun: "",
-      hari: "",
+      jumlah_sesi: "",
       tanggal_mulai: "",
       waktu_mulai: "",
       waktu_berakhir: "",
@@ -87,7 +87,7 @@ export default function TambahJadwalModal({ isOpen, onClose, onSuccess }) {
           id_dosen: values.id_dosen,
           tahun: values.tahun,
           semester: Number(values.semester),
-          hari: values.hari,
+          jumlah_sesi: Number(values.jumlah_sesi),
           tanggal_mulai: values.tanggal_mulai,
           waktu_mulai: values.waktu_mulai,
           waktu_berakhir: values.waktu_berakhir,
@@ -249,19 +249,25 @@ export default function TambahJadwalModal({ isOpen, onClose, onSuccess }) {
                 {/* Hari & Tanggal Mulai */}
                 <div className="flex gap-3">
                   <div className="flex-1">
-                    <SearchableSelect
-                      label="Hari"
-                      name="hari"
-                      value={formik.values.hari}
+                    <label className="block text-[13px] font-semibold text-[#1E293B] mb-1.5">
+                      Jumlah Sesi
+                    </label>
+                    <input
+                      type="number"
+                      name="jumlah_sesi"
+                      value={formik.values.jumlah_sesi}
                       onChange={formik.handleChange}
-                      onBlur={() => formik.setFieldTouched("hari", true)}
-                      options={HARI_OPTIONS.map((h) => ({ value: h, label: h }))}
-                      placeholder="Pilih Hari"
-                      error={formik.errors.hari}
-                      touched={formik.touched.hari}
+                      onBlur={formik.handleBlur}
                       disabled={formik.isSubmitting}
-                      searchable={false}
+                      placeholder="Contoh: 8"
+                      className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all disabled:opacity-50"
                     />
+                    {formik.touched.jumlah_sesi &&
+                      formik.errors.jumlah_sesi && (
+                        <p className="text-red-500 text-[11px] mt-1 leading-tight">
+                          {formik.errors.jumlah_sesi}
+                        </p>
+                      )}
                   </div>
                   <div className="flex-1">
                     <label className="block text-[13px] font-semibold text-[#1E293B] mb-1.5">

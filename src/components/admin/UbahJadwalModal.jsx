@@ -71,7 +71,7 @@ export default function UbahJadwalModal({ isOpen, onClose, onSuccess, data }) {
       sks: data?.sks !== "-" ? (data?.sks ? String(data.sks) : "") : "",
       // Manual
       tahun: data?.tahun !== "-" ? data?.tahun || "" : "",
-      hari: data?.hari || "",
+      jumlah_sesi: data?.jumlah_sesi || "",
       tanggal_mulai: data?.tanggal_mulai || "",
       waktu_mulai: cleanTime(data?.waktu_mulai),
       waktu_berakhir: cleanTime(data?.waktu_berakhir),
@@ -95,7 +95,7 @@ export default function UbahJadwalModal({ isOpen, onClose, onSuccess, data }) {
         id_dosen: formik.values.id_dosen,
         tahun: formik.values.tahun,
         semester: Number(formik.values.semester),
-        hari: formik.values.hari,
+        jumlah_sesi: Number(formik.values.jumlah_sesi),
         tanggal_mulai: formik.values.tanggal_mulai,
         waktu_mulai: formik.values.waktu_mulai,
         waktu_berakhir: formik.values.waktu_berakhir,
@@ -267,19 +267,25 @@ export default function UbahJadwalModal({ isOpen, onClose, onSuccess, data }) {
                   {/* Hari & Tanggal Mulai */}
                   <div className="flex gap-3">
                     <div className="flex-1">
-                      <SearchableSelect
-                        label="Hari"
-                        name="hari"
-                        value={formik.values.hari}
+                      <label className="block text-[13px] font-semibold text-[#1E293B] mb-1.5">
+                        Jumlah Sesi
+                      </label>
+                      <input
+                        type="number"
+                        name="jumlah_sesi"
+                        value={formik.values.jumlah_sesi}
                         onChange={formik.handleChange}
-                        onBlur={() => formik.setFieldTouched("hari", true)}
-                        options={HARI_OPTIONS.map((h) => ({ value: h, label: h }))}
-                        placeholder="Pilih Hari"
-                        error={formik.errors.hari}
-                        touched={formik.touched.hari}
+                        onBlur={formik.handleBlur}
                         disabled={formik.isSubmitting || confirmLoading}
-                        searchable={false}
+                        placeholder="Contoh: 8"
+                        className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all disabled:opacity-50"
                       />
+                      {formik.touched.jumlah_sesi &&
+                        formik.errors.jumlah_sesi && (
+                          <p className="text-red-500 text-[11px] mt-1 leading-tight">
+                            {formik.errors.jumlah_sesi}
+                          </p>
+                        )}
                     </div>
                     <div className="flex-1">
                       <label className="block text-[13px] font-semibold text-[#1E293B] mb-1.5">

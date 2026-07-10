@@ -8,6 +8,7 @@ export const HARI_OPTIONS = [
   "Kamis",
   "Jumat",
   "Sabtu",
+  "Minggu",
 ];
 
 // Generate opsi tahun ajaran: "2024/2025", "2025/2026", dst
@@ -52,10 +53,12 @@ export const jadwalSchema = yup.object({
     .max(14, "Semester maksimal 14.")
     .required("Semester wajib diisi."),
 
-  hari: yup
-    .string()
-    .oneOf(HARI_OPTIONS, "Hari tidak valid.")
-    .required("Hari wajib dipilih."),
+  jumlah_sesi: yup
+    .number()
+    .typeError("Jumlah sesi harus berupa angka.")
+    .integer("Jumlah sesi harus bilangan bulat.")
+    .min(1, "Minimal 1 sesi.")
+    .required("Jumlah sesi wajib diisi."),
 
   waktu_mulai: yup
     .string()

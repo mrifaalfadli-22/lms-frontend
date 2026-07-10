@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronRight, Edit2, Eye, Loader2, Copy, Check } from "lucid
 import Pagination from "../../components/common/Pagination";
 import UbahSesiModal from "../../components/dosen/UbahSesiModal";
 import { useSesiPertemuan } from "../../hooks/useSesiPertemuan";
+import api from "../../config/api";
 
 export default function DetailSesiKelas() {
   const { id, kelasId } = useParams();
@@ -15,6 +16,24 @@ export default function DetailSesiKelas() {
   const [perPage, setPerPage] = useState(10);
   const [editTarget, setEditTarget] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [isBebasAkses, setIsBebasAkses] = useState(classData?.akses_bebas === true || classData?.akses_bebas === 1);
+  const [isTogglingAkses, setIsTogglingAkses] = useState(false);
+
+  const handleToggleAkses = async () => {
+    try {
+      setIsTogglingAkses(true);
+      const res = await api.put(`/jadwal-perkuliahan/${classData?.id_jadwal}/akses-bebas`, {
+        akses_bebas: !isBebasAkses
+      });
+      if (res.data) {
+        setIsBebasAkses(!isBebasAkses);
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || "Terjadi kesalahan saat menghubungi server.");
+    } finally {
+      setIsTogglingAkses(false);
+    }
+  };
 
   const handleCopy = (text) => {
     if (!text) return;
@@ -126,6 +145,27 @@ export default function DetailSesiKelas() {
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Total Mahasiswa</span>
             <span className="text-[13px] font-bold text-[#167A61]">{classData?.total_mahasiswa || 0} Orang</span>
+          </div>
+          <div className="flex flex-col gap-2 col-span-1 md:col-span-2 lg:col-span-4 mt-2 border-t border-gray-100 pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[13px] font-bold text-[#1E293B] block mb-1">Akses Bebas Sesi Pertemuan</span>
+                <span className="text-[12px] text-[#64748B]">Jika diaktifkan, mahasiswa dapat mengakses semua sesi tanpa batasan tanggal pelaksanaan.</span>
+              </div>
+              <button
+                onClick={handleToggleAkses}
+                disabled={isTogglingAkses}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#167A61] focus:ring-offset-2 ${
+                  isBebasAkses ? 'bg-[#167A61]' : 'bg-gray-200'
+                } ${isTogglingAkses ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    isBebasAkses ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
           </div>
         </div>
       </div>

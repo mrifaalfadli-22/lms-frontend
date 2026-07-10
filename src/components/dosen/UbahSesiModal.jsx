@@ -41,7 +41,6 @@ export default function UbahSesiModal({ isOpen, onClose, onSaveSuccess, data }) 
       metode: data.metode_pertemuan === "-" ? "Asynchronous" : (data.metode_pertemuan || "Asynchronous"),
       tanggal_pelaksanaan: data.tanggal_pelaksanaan ? formatDateToLocal(data.tanggal_pelaksanaan) : "",
       materi: data.materi !== "-" ? data.materi : "",
-      tautan_cbt: data.url_cbt || "",
       tautan_zoom: data.link_kelas_daring || "",
     },
     enableReinitialize: true,
@@ -65,7 +64,6 @@ export default function UbahSesiModal({ isOpen, onClose, onSaveSuccess, data }) 
         metode_pertemuan: formik.values.metode.toLowerCase(),
         status: formik.values.status,
         materi: formik.values.materi,
-        url_cbt: formik.values.tautan_cbt,
         link_kelas_daring: formik.values.metode === "Synchronous" ? formik.values.tautan_zoom : null,
       };
 
@@ -162,15 +160,6 @@ export default function UbahSesiModal({ isOpen, onClose, onSaveSuccess, data }) 
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.materi}
-                  disabled={formik.isSubmitting}
-                />
-                <Input
-                  label="Tautan CBT (Opsional)"
-                  name="tautan_cbt"
-                  placeholder="https://cbt.uika.ac.id/..."
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  value={formik.values.tautan_cbt}
                   disabled={formik.isSubmitting}
                 />
                 <Input

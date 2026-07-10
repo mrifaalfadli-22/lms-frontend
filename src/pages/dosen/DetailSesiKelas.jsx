@@ -45,10 +45,10 @@ export default function DetailSesiKelas() {
   const { sesiList, loading, error, fetchByJadwal, refresh } = useSesiPertemuan();
 
   useEffect(() => {
-    if (id) {
-      fetchByJadwal(id);
+    if (kelasId) {
+      fetchByJadwal(kelasId);
     }
-  }, [id, fetchByJadwal]);
+  }, [kelasId, fetchByJadwal]);
 
   // Local pagination since fetchByJadwal returns all 16 items
   const startIndex = (currentPage - 1) * perPage;
@@ -63,7 +63,7 @@ export default function DetailSesiKelas() {
         onClose={() => setEditTarget(null)}
         onSaveSuccess={() => {
           setEditTarget(null);
-          fetchByJadwal(id);
+          fetchByJadwal(kelasId);
         }}
       />
 

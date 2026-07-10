@@ -6,7 +6,6 @@ import bgAside from "../../assets/images/bg-aside.svg";
 
 const menuItems = [
   { name: "Dashboard", path: "/admin/dashboard" },
-  { name: "Kelola Pengguna", path: "/admin/kelola-pengguna" },
   { name: "Kelola Kelas", path: "/admin/kelola-kelas" },
   { name: "Kelola Mata Kuliah", path: "/admin/kelola-mata-kuliah" },
   {
@@ -21,6 +20,7 @@ const menuItems = [
   { name: "Kelola Sertifikat", path: "/admin/kelola-sertifikat" },
   { name: "Kelola Evaluasi", path: "/admin/kelola-evaluasi" },
   { name: "Verifikasi Dosen", path: "/admin/verifikasi-dosen" },
+  { name: "Kelola Pengguna", path: "/admin/kelola-pengguna" },
 ];
 
 export default function Sidebar(role = "admin") {

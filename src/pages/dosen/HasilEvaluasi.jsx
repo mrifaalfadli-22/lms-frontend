@@ -206,6 +206,12 @@ export default function HasilEvaluasi() {
       return 0;
     });
 
+  // Hitung nilai kumulatif
+  const evaluatedClasses = data.filter(d => d.rata_rata_keseluruhan > 0);
+  const averageAll = evaluatedClasses.length > 0 
+    ? evaluatedClasses.reduce((acc, curr) => acc + curr.rata_rata_keseluruhan, 0) / evaluatedClasses.length 
+    : 0;
+
   return (
     <div className="flex flex-col gap-5">
       {/* Header */}
@@ -222,6 +228,37 @@ export default function HasilEvaluasi() {
           </div>
         </div>
       </div>
+
+      {/* Nilai Kumulatif Card */}
+      {!loading && data.length > 0 && (
+        <div className="bg-gradient-to-r from-[#167A61] to-[#0E5C46] rounded-2xl p-6 shadow-sm text-white flex flex-col md:flex-row items-center justify-between mx-0">
+          <div className="mb-4 md:mb-0 text-center md:text-left">
+            <h2 className="text-[17px] font-bold">Nilai Kumulatif Pengajaran</h2>
+            <p className="text-[13px] text-white/80 mt-1">Rata-rata dari seluruh kelas yang telah dievaluasi mahasiswa.</p>
+          </div>
+          <div className="flex items-center gap-4 bg-white/10 px-5 py-3 rounded-xl backdrop-blur-sm border border-white/10">
+            <div className="flex flex-col items-end">
+               <span className="text-[28px] font-black leading-none tracking-tight">{averageAll > 0 ? averageAll.toFixed(2) : "0.00"}</span>
+               <span className="text-[11px] text-white/80 font-medium uppercase tracking-wider mt-1">Skala 5.0</span>
+            </div>
+            <div className="h-12 w-px bg-white/20 mx-1"></div>
+            <div className="flex gap-1.5">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  size={22}
+                  className={`${averageAll >= star
+                      ? "fill-yellow-400 text-yellow-400"
+                      : averageAll >= star - 0.5
+                        ? "fill-yellow-400/50 text-yellow-400"
+                        : "fill-white/20 text-white/20"
+                    }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toolbar (Search, Filter, Sort) */}
       <div className="flex flex-wrap gap-3 px-1">

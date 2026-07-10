@@ -183,7 +183,7 @@ export default function UploadMateriModal({ isOpen, onClose, editData, pertemuan
                 className="hidden"
                 ref={fileInputRef}
                 onChange={handleFileChange}
-                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg"
               />
               <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center mb-3 group-hover:-translate-y-1 transition-transform border border-[#167A61]/10">
                 <UploadCloud className="text-[#167A61]" size={24} />
@@ -227,7 +227,7 @@ export default function UploadMateriModal({ isOpen, onClose, editData, pertemuan
               ) : (
                 <>
                   <p className="text-[14px] font-bold text-[#1E293B] mb-1">Klik untuk memilih file</p>
-                  <p className="text-[12px] text-gray-500">PDF, DOC, PPT, XLS (Multiple, Maks. 50MB/file)</p>
+                  <p className="text-[12px] text-gray-500">PDF, DOC, PPT, XLS, PNG, JPG (Multiple, Maks. 50MB/file)</p>
                 </>
               )}
             </div>

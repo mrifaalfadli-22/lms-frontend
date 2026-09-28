@@ -1,25 +1,5 @@
 import * as Yup from "yup";
 
-// Validasi untuk Portal Dosen
-export const dosenLoginSchema = Yup.object().shape({
-  identifier: Yup.string().required("NIDN or Email is required"),
-  password: Yup.string()
-    .min(8, "Password minimal 8 karakter")
-    .matches(/[a-zA-Z]/, "Password harus mengandung huruf")
-    .matches(/[0-9]/, "Password harus mengandung angka")
-    .required("Password is required"),
-});
-
-// Validasi untuk Portal Admin
-export const adminLoginSchema = Yup.object().shape({
-  identifier: Yup.string().required("Username or Email is required"),
-  password: Yup.string()
-    .min(8, "Password minimal 8 karakter")
-    .matches(/[a-zA-Z]/, "Password harus mengandung huruf")
-    .matches(/[0-9]/, "Password harus mengandung angka")
-    .required("Password is required"),
-});
-
 // --- Register Schema ---
 export const registerSchema = Yup.object().shape({
   nama_lengkap: Yup.string()

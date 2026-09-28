@@ -2,7 +2,6 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Navigate,
 } from "react-router-dom";
 // Import ProtectedRoute
 import ProtectedRoute from "./components/routes/ProtectedRoute";
@@ -10,11 +9,12 @@ import ProtectedRoute from "./components/routes/ProtectedRoute";
 import AuthLayout from "./layouts/auth/AuthLayout";
 import AdminDashboardLayout from "./layouts/admin/DashboardLayout";
 import DosenDashboardLayout from "./layouts/dosen/DashboardLayout";
-import LoginForm from "./components/auth/LoginForm";
 import RegisterForm from "./components/auth/RegistrasiForm";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
 import AuthCallback from "./pages/auth/AuthCallback";
+import SsoCallback from "./pages/auth/SsoCallback";
+import RedirectToEportal from "./pages/auth/RedirectToEportal";
 import DosenDashboard from "./pages/dosen/Dashboard";
 import KelolaSesiPertemuan from "./pages/dosen/KelolaSesiPertemuan";
 import DetailSesiKelas from "./pages/dosen/DetailSesiKelas";
@@ -45,17 +45,18 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* 1. Alur Otomatis ke Login */}
-        <Route path="/" element={<Navigate to="/login" />} />
+        {/* 1. Alur Otomatis ke E-Portal (login dilakukan sepenuhnya via SSO) */}
+        <Route path="/" element={<RedirectToEportal />} />
 
         {/* 2. Grouping Halaman Authentication (Public) */}
         <Route element={<AuthLayout />}>
-          <Route path="/login" element={<LoginForm role="dosen" />} />
-          <Route path="/login-admin" element={<LoginForm role="admin" />} />
+          <Route path="/login" element={<RedirectToEportal />} />
+          <Route path="/login-admin" element={<RedirectToEportal />} />
           <Route path="/register" element={<RegisterForm />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/sso/callback" element={<SsoCallback />} />
         </Route>
 
         {/* 3. Grouping Halaman Dashboard Dosen (Protected) */}
@@ -147,7 +148,7 @@ function App() {
         </Route>
 
         {/* Catch All - Jika user nyasar ke URL yang tidak ada */}
-        <Route path="*" element={<Navigate to="/login" />} />
+        <Route path="*" element={<RedirectToEportal />} />
       </Routes>
     </Router>
   );

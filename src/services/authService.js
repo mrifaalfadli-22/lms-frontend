@@ -28,56 +28,47 @@ export const authService = {
     }
   },
 
-  login: async (credentials, role) => {
-    try {
-      const inputIdentifier =
-        credentials.identifier ||
-        credentials.email ||
-        credentials.username ||
-        credentials.nomor_induk;
+  logout: () => {
+    localStorage.removeItem("user_token");
+    localStorage.removeItem("user_role");
+  },
 
-      const response = await api.post("/login", {
-        identifier: inputIdentifier,
-        password: credentials.password,
-        role: role,
+  ssoLogin: async ({ token, roleId, appModuleId }) => {
+    try {
+      const response = await api.get("/sso/callback", {
+        params: { token, role_id: roleId, appModule_id: appModuleId },
       });
 
       const resData = response.data;
 
       if (resData.status === "success") {
-        const { token, user } = resData.data;
-        const normalizedRole = (user.role || role).toLowerCase();
+        const { token: localToken, user } = resData.data;
+        const normalizedRole = user.role.toLowerCase();
 
-        localStorage.setItem("user_token", token);
+        localStorage.setItem("user_token", localToken);
         localStorage.setItem("user_role", normalizedRole);
 
         return { ...user, role: normalizedRole };
       } else {
-        throw new Error(resData.message || "Login gagal");
+        throw new Error(resData.message || "Login SSO gagal");
       }
     } catch (error) {
       if (error.response) {
-        // ✅ Bawa status code ke dalam error object
         const message =
           error.response.data?.message || "Terjadi kesalahan pada server";
         const err = new Error(message);
-        err.status = error.response.status; // <-- INI YANG KURANG
+        err.status = error.response.status;
         throw err;
       }
       if (error.code === "ERR_NETWORK") {
         const err = new Error(
           "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
         );
-        err.status = 0; // <-- Supaya useAuth bisa deteksi koneksi error
+        err.status = 0;
         throw err;
       }
       throw error;
     }
-  },
-
-  logout: () => {
-    localStorage.removeItem("user_token");
-    localStorage.removeItem("user_role");
   },
 
   getCurrentUser: async () => {

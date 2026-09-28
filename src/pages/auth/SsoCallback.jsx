@@ -23,6 +23,12 @@ export default function SsoCallback() {
 
       try {
         const user = await authService.ssoLogin({ token, roleId, appModuleId });
+
+        if (user.role === "mahasiswa") {
+          navigate("/mobile-only", { replace: true });
+          return;
+        }
+
         navigate(`/${user.role}/dashboard`, { replace: true });
       } catch (err) {
         navigate("/login", {

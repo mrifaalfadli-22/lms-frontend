@@ -29,7 +29,12 @@ export default function AuthCallback() {
           if (user && user.role) {
             const normalizedRole = user.role.toLowerCase();
             localStorage.setItem("user_role", normalizedRole);
-            
+
+            if (normalizedRole === "mahasiswa") {
+              navigate("/mobile-only", { replace: true });
+              return;
+            }
+
             // Redirect to appropriate dashboard
             navigate(`/${normalizedRole}/dashboard`, { replace: true });
           } else {

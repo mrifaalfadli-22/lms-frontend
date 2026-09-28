@@ -15,6 +15,7 @@ import ResetPassword from "./pages/auth/ResetPassword";
 import AuthCallback from "./pages/auth/AuthCallback";
 import SsoCallback from "./pages/auth/SsoCallback";
 import RedirectToEportal from "./pages/auth/RedirectToEportal";
+import MobileOnly from "./pages/auth/MobileOnly";
 import DosenDashboard from "./pages/dosen/Dashboard";
 import KelolaSesiPertemuan from "./pages/dosen/KelolaSesiPertemuan";
 import DetailSesiKelas from "./pages/dosen/DetailSesiKelas";
@@ -57,6 +58,7 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/sso/callback" element={<SsoCallback />} />
+          <Route path="/mobile-only" element={<MobileOnly />} />
         </Route>
 
         {/* 3. Grouping Halaman Dashboard Dosen (Protected) */}

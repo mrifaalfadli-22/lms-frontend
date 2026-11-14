@@ -262,7 +262,7 @@ export default function DetailPertemuanTabs() {
   const renderPresensi = () => (
     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="flex justify-between items-center mb-6">
-        <h4 className="text-[16px] font-bold text-[#1E293B]">Input Presensi Mahasiswa</h4>
+        <h4 className="text-[16px] font-bold text-[#1E293B]">Input Presensi Peserta</h4>
         {presensi.length > 0 && (
           <button
             onClick={() => setIsConfirmModalOpen(true)}
@@ -282,7 +282,7 @@ export default function DetailPertemuanTabs() {
       ) : presensi.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 bg-[#F8FAFC]/50 rounded-2xl border border-dashed border-[#E2E8F0]">
           <p className="text-[15px] font-bold text-[#64748B]">Tidak ada Data</p>
-          <p className="text-[13px] text-[#94A3B8] mt-1">Data presensi mahasiswa belum tersedia.</p>
+          <p className="text-[13px] text-[#94A3B8] mt-1">Data presensi peserta belum tersedia.</p>
         </div>
       ) : (
         <>
@@ -292,7 +292,7 @@ export default function DetailPertemuanTabs() {
                 <tr className="border-b border-[#E2E8F0]">
                   <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">No</th>
                   <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">NPM</th>
-                  <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Nama Mahasiswa</th>
+                  <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Nama Peserta</th>
                   <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Status Kehadiran</th>
                 </tr>
               </thead>
@@ -879,7 +879,7 @@ export default function DetailPertemuanTabs() {
               <p className="text-[15px] font-bold text-[#1E293B]">{localPertemuanData.materi || "-"}</p>
             </div>
             <div>
-              <p className="text-[13px] font-bold text-[#64748B] uppercase mb-1.5">Jumlah Mahasiswa</p>
+              <p className="text-[13px] font-bold text-[#64748B] uppercase mb-1.5">Jumlah Peserta</p>
               <p className="text-[15px] font-bold text-[#1E293B]">{presensi.length > 0 ? presensi.length : "-"}</p>
             </div>
           </div>
@@ -984,7 +984,7 @@ export default function DetailPertemuanTabs() {
           }
         }}
         title="Simpan Presensi"
-        message="Apakah Anda yakin ingin menyimpan data presensi ini? Data kehadiran mahasiswa akan diperbarui di sistem."
+        message="Apakah Anda yakin ingin menyimpan data presensi ini? Data kehadiran peserta akan diperbarui di sistem."
       />
 
       {isUploadMateriOpen && (

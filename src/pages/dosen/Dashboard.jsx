@@ -2,16 +2,13 @@ import StatCard from "../../layouts/auth/StatCard";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
-  MessageSquare,
-  ArrowUpRight,
   ExternalLink,
   Loader2,
 } from "lucide-react";
-import { formatFakultas } from "../../utils/formatters";
-import { useDosenDashboard } from "../../hooks/useDosenDashboard";
+import { usePengajarDashboard } from "../../hooks/usePengajarDashboard";
 
 export default function DosenDashboard() {
-  const { stats, sesiHariIni, forumTerbaru, loading, error, refetch } = useDosenDashboard();
+  const { stats, sesiHariIni, forumTerbaru, loading, error, refetch } = usePengajarDashboard();
 
   if (loading) {
     return (
@@ -37,8 +34,8 @@ export default function DosenDashboard() {
     <div className="space-y-9">
       {/* 1. Row Statistik */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-        <StatCard title="Total Mahasiswa Pendaftar" value={stats.total_mahasiswa} />
-        <StatCard title="Mata Kuliah Aktif" value={stats.mata_kuliah_aktif} />
+        <StatCard title="Total Peserta Pendaftar" value={stats.total_mahasiswa} />
+        <StatCard title="Kursus Aktif" value={stats.mata_kuliah_aktif} />
         <StatCard title="Kelas Aktif" value={stats.kelas_aktif} />
         <StatCard title="Sertifikat Perlu Verifikasi" value={stats.sertifikat_perlu_verifikasi} />
       </div>
@@ -57,10 +54,8 @@ export default function DosenDashboard() {
               <tr className="border-b border-[#E2E8F0]">
                 {[
                   "No",
-                  "Mata Kuliah",
+                  "Kursus",
                   "Kelas",
-                  "Fakultas",
-                  "Program Studi",
                   "Pertemuan",
                   "Waktu",
                   "Metode",
@@ -79,7 +74,7 @@ export default function DosenDashboard() {
             <tbody className="text-[14px] text-[#1E293B]">
               {sesiHariIni.length === 0 ? (
                 <tr>
-                  <td colSpan="10" className="py-16 text-center text-[14px] text-[#94A3B8]">
+                  <td colSpan="8" className="py-16 text-center text-[14px] text-[#94A3B8]">
                     Tidak ada jadwal pertemuan hari ini.
                   </td>
                 </tr>
@@ -97,12 +92,6 @@ export default function DosenDashboard() {
                     </td>
                     <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                       {s.jadwal_perkuliahan?.kelas?.nama_kelas || "-"}
-                    </td>
-                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {formatFakultas(s.jadwal_perkuliahan?.fakultas)}
-                    </td>
-                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {s.jadwal_perkuliahan?.prodi || "-"}
                     </td>
                     <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                       {s.judul_sesi || "Sesi " + s.urutan_sesi}
@@ -133,11 +122,6 @@ export default function DosenDashboard() {
                             id_mk: s.jadwal_perkuliahan?.id_mk,
                             nama_mk: s.jadwal_perkuliahan?.mata_kuliah?.nama_mk || "-",
                             kode_mk: s.jadwal_perkuliahan?.mata_kuliah?.kode_mk || "-",
-                            sks: s.jadwal_perkuliahan?.sks,
-                            semester: s.jadwal_perkuliahan?.semester,
-                            tahun: s.jadwal_perkuliahan?.tahun,
-                            fakultas: s.jadwal_perkuliahan?.fakultas,
-                            prodi: s.jadwal_perkuliahan?.prodi,
                             nidn: s.jadwal_perkuliahan?.nidn,
                           },
                           classData: {
@@ -182,7 +166,7 @@ export default function DosenDashboard() {
       <div className="bg-white rounded-2xl shadow-sm border py-7 border-gray-100">
         <div className="flex justify-between items-center px-7 pb-4">
           <h3 className="text-[17px] font-extrabold text-[#1E293B]">
-            Interaksi Forum Diskusi Mahasiswa
+            Interaksi Forum Diskusi Peserta
           </h3>
           <Link
             to="/dosen/forum-diskusi" // Sesuaikan dengan path routing verifikasi dosen milikmu
@@ -201,7 +185,7 @@ export default function DosenDashboard() {
                   "No",
                   "Pengguna",
                   "NPM",
-                  "Mata kuliah",
+                  "Kursus",
                   "Kelas",
                   "Pertemuan",
                   "Isi Pesan",

@@ -11,19 +11,14 @@ export default function DetailJadwalModal({ isOpen, onClose, data }) {
       : "-";
 
   const rows = [
-    { label: "Mata Kuliah", value: val(data.nama_mk) },
-    { label: "Kode MK", value: val(data.kode_mk) },
+    { label: "Kursus", value: val(data.nama_mk) },
+    { label: "Kode Kursus", value: val(data.kode_mk) },
     { label: "Kelas", value: val(data.kelas) },
     { label: "Kode Kelas", value: val(data.kode_kelas) },
-    { label: "Dosen Pengampu", value: val(data.nama_dosen) },
+    { label: "Pengajar", value: val(data.nama_dosen) },
     { label: "NIDN", value: val(data.nidn) },
-    { label: "Fakultas", value: val(data.fakultas) },
-    { label: "Program Studi", value: val(data.prodi) },
     { label: "Hari", value: val(data.hari) },
     { label: "Waktu", value: waktu },
-    { label: "SKS", value: data.sks && data.sks !== "-" ? `${data.sks} SKS` : "-" },
-    { label: "Semester", value: data.semester ? `Semester ${data.semester}` : "-" },
-    { label: "Tahun Ajaran", value: val(data.tahun) },
     { label: "Token Enrollment", value: val(data.token_enrollment) },
   ];
 
@@ -37,10 +32,10 @@ export default function DetailJadwalModal({ isOpen, onClose, data }) {
         <div className="px-6 pt-6 pb-2 flex items-start justify-between">
           <div>
             <h3 className="text-[18px] font-bold text-[#008B5E] leading-tight">
-              Detail Jadwal Kuliah
+              Detail Jadwal Kursus
             </h3>
             <p className="text-[13px] text-[#64748B] mt-1">
-              Informasi lengkap jadwal dan mata kuliah ini.
+              Informasi lengkap jadwal dan kursus ini.
             </p>
           </div>
           <button

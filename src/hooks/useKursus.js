@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef } from "react";
-import { mataKuliahService } from "../services/mataKuliahService";
+import { kursusService } from "../services/kursusService";
 
 const DEBOUNCE_MS = 400;
 
-export const useMataKuliah = () => {
+export const useKursus = () => {
   const [mataKuliah, setMataKuliah] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -22,7 +22,7 @@ export const useMataKuliah = () => {
     setError(null);
     lastParamsRef.current = params;
     try {
-      const result = await mataKuliahService.getPage(params);
+      const result = await kursusService.getPage(params);
       setMataKuliah(result.data);
       setPagination({
         current_page: result.current_page,
@@ -31,7 +31,7 @@ export const useMataKuliah = () => {
         per_page: result.per_page,
       });
     } catch {
-      setError("Gagal memuat data mata kuliah.");
+      setError("Gagal memuat data kursus.");
     } finally {
       setLoading(false);
     }
@@ -51,7 +51,7 @@ export const useMataKuliah = () => {
 
   const tambah = useCallback(
     async (values) => {
-      await mataKuliahService.tambah(values);
+      await kursusService.tambah(values);
       refetch();
     },
     [refetch],
@@ -59,7 +59,7 @@ export const useMataKuliah = () => {
 
   const update = useCallback(
     async (id, values) => {
-      await mataKuliahService.update(id, values);
+      await kursusService.update(id, values);
       refetch();
     },
     [refetch],
@@ -67,7 +67,7 @@ export const useMataKuliah = () => {
 
   const hapus = useCallback(
     async (id) => {
-      await mataKuliahService.hapus(id);
+      await kursusService.hapus(id);
       refetch();
     },
     [refetch],

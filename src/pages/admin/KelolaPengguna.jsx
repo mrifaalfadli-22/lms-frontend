@@ -13,9 +13,9 @@ import {
 import { usePengguna } from "../../hooks/usePengguna";
 import { penggunaService } from "../../services/penggunaService";
 import DeleteConfirmModal from "../../components/admin/DeleteConfirmModal";
-import TambahMahasiswaModal from "../../components/admin/TambahMahasiswaModal";
-import UbahMahasiswaModal from "../../components/admin/UbahMahasiswaModal";
-import UbahDosenModal from "../../components/admin/UbahDosenModal";
+import TambahPesertaModal from "../../components/admin/TambahPesertaModal";
+import UbahPesertaModal from "../../components/admin/UbahPesertaModal";
+import UbahPengajarModal from "../../components/admin/UbahPengajarModal";
 import Pagination from "../../components/common/Pagination";
 import { formatFakultas } from "../../utils/formatters";
 import { fakultasData } from "../../data/fakultasData";
@@ -25,8 +25,8 @@ import { saveAs } from "file-saver";
 const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
 
 const TABS = [
-  { key: "mahasiswa", label: "Mahasiswa", icon: GraduationCap },
-  { key: "dosen", label: "Dosen", icon: BookOpen },
+  { key: "mahasiswa", label: "Peserta", icon: GraduationCap },
+  { key: "dosen", label: "Pengajar", icon: BookOpen },
 ];
 
 function EmptyState({ message, hasFilter }) {
@@ -512,7 +512,7 @@ export default function KelolaPengguna() {
       await deleteDosen(deleteDosenTarget.id_user);
       setDeleteDosenTarget(null);
     } catch {
-      alert("Gagal menghapus data dosen.");
+      alert("Gagal menghapus data pengajar.");
     } finally {
       setDeleteDosenLoading(false);
     }
@@ -525,7 +525,7 @@ export default function KelolaPengguna() {
       let filename = "";
       
       const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet(isMahasiswa ? "Data Mahasiswa" : "Data Dosen");
+      const worksheet = workbook.addWorksheet(isMahasiswa ? "Data Peserta" : "Data Pengajar");
       
       if (isMahasiswa) {
         const response = await penggunaService.getMahasiswa({ 
@@ -543,7 +543,7 @@ export default function KelolaPengguna() {
           status: m.status_aktif ? "Aktif" : "Nonaktif"
         }));
         
-        filename = `Data_Mahasiswa_${new Date().toISOString().split("T")[0]}.xlsx`;
+        filename = `Data_Peserta_${new Date().toISOString().split("T")[0]}.xlsx`;
 
         worksheet.columns = [
           { header: "No", key: "no", width: 5 },
@@ -572,7 +572,7 @@ export default function KelolaPengguna() {
           status: d.status_aktif ? "Aktif" : "Nonaktif"
         }));
         
-        filename = `Data_Dosen_${new Date().toISOString().split("T")[0]}.xlsx`;
+        filename = `Data_Pengajar_${new Date().toISOString().split("T")[0]}.xlsx`;
 
         worksheet.columns = [
           { header: "No", key: "no", width: 5 },
@@ -649,23 +649,23 @@ export default function KelolaPengguna() {
 
   return (
     <>
-      {/* Modal Tambah Mahasiswa */}
-      <TambahMahasiswaModal
+      {/* Modal Tambah Peserta */}
+      <TambahPesertaModal
         isOpen={showTambah}
         onClose={() => setShowTambah(false)}
         onSuccess={handleTambahSuccess}
       />
 
-      {/* Modal Ubah Mahasiswa */}
-      <UbahMahasiswaModal
+      {/* Modal Ubah Peserta */}
+      <UbahPesertaModal
         isOpen={!!editMahasiswaTarget}
         data={editMahasiswaTarget}
         onClose={() => setEditMahasiswaTarget(null)}
         onSuccess={handleEditMahasiswaSuccess}
       />
 
-      {/* Modal Ubah Dosen */}
-      <UbahDosenModal
+      {/* Modal Ubah Pengajar */}
+      <UbahPengajarModal
         isOpen={!!editDosenTarget}
         data={editDosenTarget}
         onClose={() => setEditDosenTarget(null)}
@@ -675,7 +675,7 @@ export default function KelolaPengguna() {
       {/* Modal Hapus Mahasiswa */}
       <DeleteConfirmModal
         data={deleteTarget}
-        title="Hapus Data Mahasiswa"
+        title="Hapus Data Peserta"
         fields={[
           { label: "Nama", key: "nama_lengkap" },
           { label: "NPM", key: "nomor_induk" },
@@ -689,7 +689,7 @@ export default function KelolaPengguna() {
       {/* Modal Hapus Dosen */}
       <DeleteConfirmModal
         data={deleteDosenTarget}
-        title="Hapus Data Dosen"
+        title="Hapus Data Pengajar"
         fields={[
           { label: "Nama", key: "nama_lengkap" },
           { label: "NIDN", key: "nomor_induk" },
@@ -724,7 +724,7 @@ export default function KelolaPengguna() {
                 className="flex items-center gap-1.5 text-sm font-bold text-white bg-[#167A61] border border-[#167A61] px-4 py-2 rounded-lg hover:bg-[#0E5C46] transition-all"
               >
                 <Plus size={14} />
-                Tambah Mahasiswa
+                Tambah Peserta
               </button>
             )}
           </div>
@@ -768,7 +768,7 @@ export default function KelolaPengguna() {
             tahunLabel="Tahun Angkatan"
             loading={loading}
             error={error}
-            emptyMessage="Belum ada data mahasiswa."
+            emptyMessage="Belum ada data peserta."
             onEdit={handleEdit}
             onDelete={setDeleteTarget}
             pagination={paginationMhs}
@@ -793,7 +793,7 @@ export default function KelolaPengguna() {
             tahunLabel="Tahun Bergabung"
             loading={loading}
             error={error}
-            emptyMessage="Belum ada data dosen aktif."
+            emptyMessage="Belum ada data pengajar aktif."
             onEdit={handleEdit}
             onDelete={setDeleteDosenTarget}
             pagination={paginationDosen}

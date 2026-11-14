@@ -11,18 +11,11 @@ export const HARI_OPTIONS = [
   "Minggu",
 ];
 
-// Generate opsi tahun ajaran: "2024/2025", "2025/2026", dst
-export const TAHUN_AJARAN_OPTIONS = Array.from({ length: 7 }, (_, i) => {
-  const start = new Date().getFullYear() - 2 + i;
-  const label = `${start}/${start + 1}`;
-  return { value: label, label };
-});
-
 export const jadwalSchema = yup.object({
   id_mk: yup
     .string()
-    .required("Mata kuliah wajib dipilih.")
-    .test("not-empty", "Mata kuliah wajib dipilih.", (val) => !!val),
+    .required("Kursus wajib dipilih.")
+    .test("not-empty", "Kursus wajib dipilih.", (val) => !!val),
 
   id_kelas: yup
     .string()
@@ -31,27 +24,8 @@ export const jadwalSchema = yup.object({
 
   id_dosen: yup
     .string()
-    .required("Dosen wajib dipilih.")
-    .test("not-empty", "Dosen wajib dipilih.", (val) => !!val),
-
-  // Diisi otomatis dari relasi mata kuliah, tetap wajib dikirim ke BE
-  fakultas: yup.string().notRequired(),
-  prodi: yup.string().notRequired(),
-
-  // Tahun ajaran format "2025/2026"
-  tahun: yup
-    .string()
-    .required("Tahun ajaran wajib dipilih.")
-    .matches(/^\d{4}\/\d{4}$/, "Format tahun ajaran tidak valid."),
-
-  // Semester urutan integer 1-14
-  semester: yup
-    .number()
-    .typeError("Semester harus berupa angka.")
-    .integer("Semester harus bilangan bulat.")
-    .min(1, "Semester minimal 1.")
-    .max(14, "Semester maksimal 14.")
-    .required("Semester wajib diisi."),
+    .required("Pengajar wajib dipilih.")
+    .test("not-empty", "Pengajar wajib dipilih.", (val) => !!val),
 
   jumlah_sesi: yup
     .number()

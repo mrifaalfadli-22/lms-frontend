@@ -12,8 +12,6 @@ const mapJadwal = (item) => ({
   id_mk: item.id_mk,
   nama_mk: item.mata_kuliah?.nama_mk ?? "-",
   kode_mk: item.mata_kuliah?.kode_mk ?? "-",
-  // SKS & semester diambil dari field langsung di jadwal (BE sudah set otomatis)
-  sks: item.sks ?? item.mata_kuliah?.sks ?? "-",
   // Relasi kelas
   id_kelas: item.id_kelas,
   kelas: item.kelas?.nama_kelas ?? "-",
@@ -30,12 +28,6 @@ const mapJadwal = (item) => ({
     item.waktu_mulai && item.waktu_berakhir
       ? `${item.waktu_mulai.substring(0, 5)} - ${item.waktu_berakhir.substring(0, 5)}`
       : "-",
-  // Semester (integer 1-14), tahun ajaran (string "2025/2026")
-  semester: item.semester ?? null,
-  tahun: item.tahun ?? "-",
-  // Fakultas & Prodi (field langsung di jadwal)
-  fakultas: item.fakultas ?? "-",
-  prodi: item.prodi ?? "-",
   // Token
   token_enrollment: item.token_enrollment,
   tanggal_mulai: item.tanggal_mulai,
@@ -71,14 +63,9 @@ const jadwalService = {
         id_dosen:     item.id_dosen,
         kode_mk:      item.kode_mk ?? "-",
         nama_mk:      item.nama_mk ?? "-",
-        sks:          item.sks ?? "-",
         deskripsi:    item.deskripsi ?? "",
         nama_dosen:   item.nama_dosen ?? "-",
         nidn:         item.nidn ?? "-",
-        fakultas:     item.fakultas ?? "-",
-        prodi:        item.prodi ?? "-",
-        semester:     item.semester ?? null,
-        tahun:        item.tahun ?? "-",
         jumlah_kelas: item.jumlah_kelas ?? 0,
         kelas_list:   item.kelas_list ?? [],
       })),
@@ -110,14 +97,9 @@ const jadwalService = {
       id_dosen:     found.id_dosen,
       kode_mk:      found.kode_mk ?? "-",
       nama_mk:      found.nama_mk ?? "-",
-      sks:          found.sks ?? "-",
       deskripsi:    found.deskripsi ?? "",
       nama_dosen:   found.nama_dosen ?? "-",
       nidn:         found.nidn ?? "-",
-      fakultas:     found.fakultas ?? "-",
-      prodi:        found.prodi ?? "-",
-      semester:     found.semester ?? null,
-      tahun:        found.tahun ?? "-",
       jumlah_kelas: found.jumlah_kelas ?? 0,
       kelas_list:   found.kelas_list ?? [],
     };
@@ -132,7 +114,6 @@ const jadwalService = {
   /**
    * Tambah jadwal baru.
    * sks & token_enrollment TIDAK dikirim — otomatis dari BE.
-   * semester = integer (1-14), tahun = string "2025/2026"
    */
   create: async (payload) => {
     const res = await api.post(BASE, payload);
@@ -141,7 +122,6 @@ const jadwalService = {
 
   /**
    * Update jadwal.
-   * Jika id_mk berubah, BE otomatis update sks.
    */
   update: async (id, payload) => {
     const res = await api.put(`${BASE}/${id}`, payload);
@@ -165,10 +145,6 @@ const jadwalService = {
       return allItems.map((mk) => ({
         value: mk.id_mk,
         label: `${mk.kode_mk} - ${mk.nama_mk} (${mk.sks} SKS)`,
-        sks: mk.sks,
-        semester: mk.semester,
-        fakultas: mk.fakultas,
-        prodi: mk.prodi,
       }));
     } catch (error) {
       console.error("Gagal memuat data mata kuliah:", error);

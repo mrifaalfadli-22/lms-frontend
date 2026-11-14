@@ -1,10 +1,10 @@
 import { useFormik } from "formik";
 import { fakultasData } from "../../data/fakultasData";
-import { mahasiswaSchema } from "../../schemas/mahasiswaSchema";
+import { pesertaSchema } from "../../schemas/pesertaSchema";
 import Input from "../ui/Input";
 import SearchableSelect from "../ui/SearchableSelect";
 
-export default function TambahMahasiswaModal({ isOpen, onClose, onSuccess }) {
+export default function TambahPesertaModal({ isOpen, onClose, onSuccess }) {
   if (!isOpen) return null;
 
   const formik = useFormik({
@@ -15,7 +15,7 @@ export default function TambahMahasiswaModal({ isOpen, onClose, onSuccess }) {
       prodi: "",
       angkatan: "",
     },
-    validationSchema: mahasiswaSchema,
+    validationSchema: pesertaSchema,
     onSubmit: async (values, { setSubmitting }) => {
       try {
         await onSuccess({
@@ -53,7 +53,7 @@ export default function TambahMahasiswaModal({ isOpen, onClose, onSuccess }) {
         {/* Header */}
         <div className="flex items-center justify-between px-7 py-5 border-b border-gray-100">
           <h3 className="text-[17px] font-bold text-[#1E293B]">
-            Tambah Data Mahasiswa
+            Tambah Data Peserta
           </h3>
         </div>
 

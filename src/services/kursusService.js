@@ -1,9 +1,9 @@
 import api from "../config/api";
 
-export const mataKuliahService = {
+export const kursusService = {
   /**
-   * Ambil data mata kuliah dengan server-side pagination, search, dan filter.
-   * @param {Object} params - { page, search, semester, sks, per_page }
+   * Ambil data kursus dengan server-side pagination dan search.
+   * @param {Object} params - { page, search, per_page }
    */
   getPage: async (params = {}) => {
     const response = await api.get("/mata-kuliah", { params });
@@ -25,11 +25,7 @@ export const mataKuliahService = {
     const payload = {
       kode_mk: data.kode_mk,
       nama_mk: data.nama_mk,
-      sks: data.sks,
       deskripsi: data.deskripsi || null,
-      fakultas: data.fakultas,
-      prodi: data.prodi,
-      semester: data.semester,
     };
     const response = await api.post("/mata-kuliah", payload);
     return response.data;
@@ -39,11 +35,7 @@ export const mataKuliahService = {
     const payload = {
       kode_mk: data.kode_mk,
       nama_mk: data.nama_mk,
-      sks: data.sks,
       deskripsi: data.deskripsi || null,
-      fakultas: data.fakultas,
-      prodi: data.prodi,
-      semester: data.semester,
     };
     const response = await api.put(`/mata-kuliah/${id}`, payload);
     return response.data;

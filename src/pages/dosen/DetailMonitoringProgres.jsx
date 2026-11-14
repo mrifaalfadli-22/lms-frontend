@@ -8,7 +8,7 @@ import DetailProgressModal from "../../components/dosen/DetailProgressModal";
 export default function DetailMonitoringProgres() {
   const { id, kelasId } = useParams();
   const location = useLocation();
-  const jadwal = location.state?.groupData || { nama_mk: "Mata Kuliah" };
+  const jadwal = location.state?.groupData || { nama_mk: "Kursus" };
   const classData = location.state?.classData || { nama_kelas: "Kelas" };
 
   const [page, setPage] = useState(1);
@@ -71,7 +71,7 @@ export default function DetailMonitoringProgres() {
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 py-7 px-8">
         <h3 className="text-[17px] font-extrabold text-[#1E293B] mb-6">
-          Aktivitas dan Nilai Mahasiswa - {classData.nama_kelas}
+          Aktivitas dan Nilai Peserta - {classData.nama_kelas}
         </h3>
 
         <div className="overflow-x-auto">
@@ -80,7 +80,7 @@ export default function DetailMonitoringProgres() {
               <tr className="border-b border-[#E2E8F0]">
                 <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">No</th>
                 <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">NPM</th>
-                <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Nama Mahasiswa</th>
+                <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Nama Peserta</th>
                 <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Aktivitas Log</th>
                 <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Nilai Tugas</th>
                 <th className="py-4 px-4 text-[13px] font-bold text-[#64748B] uppercase">Progres Belajar</th>
@@ -98,7 +98,7 @@ export default function DetailMonitoringProgres() {
               ) : paginatedMahasiswa.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="py-8 text-center text-gray-500 text-[13px] font-medium">
-                    Belum ada mahasiswa yang terdaftar di kelas ini.
+                    Belum ada peserta yang terdaftar di kelas ini.
                   </td>
                 </tr>
               ) : (

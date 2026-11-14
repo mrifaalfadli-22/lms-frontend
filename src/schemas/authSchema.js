@@ -1,5 +1,21 @@
 import * as Yup from "yup";
 
+// Validasi untuk Portal Pengajar
+export const dosenLoginSchema = Yup.object().shape({
+  identifier: Yup.string().required("NIDN atau Email wajib diisi"),
+  password: Yup.string()
+    .min(8, "Password minimal 8 karakter")
+    .required("Password wajib diisi"),
+});
+
+// Validasi untuk Portal Admin
+export const adminLoginSchema = Yup.object().shape({
+  identifier: Yup.string().required("Username atau Email wajib diisi"),
+  password: Yup.string()
+    .min(8, "Password minimal 8 karakter")
+    .required("Password wajib diisi"),
+});
+
 // --- Register Schema ---
 export const registerSchema = Yup.object().shape({
   nama_lengkap: Yup.string()

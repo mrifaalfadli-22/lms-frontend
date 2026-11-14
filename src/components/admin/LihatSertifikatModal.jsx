@@ -84,7 +84,7 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
       case "nomor_sertifikat": return data?.noSertifikat || el.label;
       case "nama_kelas":
       case "mata_kuliah_kelas": return (data?.mataKuliah ? `${data.mataKuliah}` : el.label);
-      case "nama_dosen": return data?.dosen || "Nama Dosen";
+      case "nama_dosen": return data?.dosen || "Nama Pengajar";
       case "nilai_tugas": {
         let nilai = parseFloat(data?.nilaiAkhir || 0);
         

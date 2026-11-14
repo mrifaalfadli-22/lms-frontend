@@ -8,11 +8,6 @@ export const kelasSchema = Yup.object().shape({
   kode_kelas: Yup.string()
     .max(10, "Kode kelas maksimal 10 karakter")
     .required("Kode kelas wajib diisi"),
-  tahun_angkatan: Yup.string()
-    .matches(/^[0-9]{4}$/, "Tahun angkatan harus 4 digit angka")
-    .required("Tahun angkatan wajib diisi"),
-  fakultas: Yup.string().required("Fakultas wajib dipilih"),
-  prodi: Yup.string().required("Program studi wajib dipilih"),
 });
 
 export const kelasEditSchema = kelasSchema;

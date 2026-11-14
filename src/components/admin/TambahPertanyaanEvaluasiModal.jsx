@@ -4,7 +4,7 @@ import * as Yup from "yup";
 import { X, HelpCircle, ListOrdered } from "lucide-react";
 
 const KATEGORI_OPTIONS = [
-  { value: "Kinerja Dosen", label: "Kinerja Dosen" },
+  { value: "Kinerja Dosen", label: "Kinerja Pengajar" },
   { value: "Kualitas Pembelajaran", label: "Kualitas Pembelajaran" },
   { value: "Lainnya", label: "Lainnya (Kustom)" },
 ];
@@ -200,7 +200,7 @@ export default function TambahPertanyaanEvaluasiModal({ isOpen, onClose, onSucce
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   disabled={formik.isSubmitting}
-                  placeholder="Contoh: Seberapa jelas dosen dalam menyampaikan materi?"
+                  placeholder="Contoh: Seberapa jelas pengajar dalam menyampaikan materi?"
                   className={fieldClass("teks_pertanyaan") + " resize-none"}
                 />
                 {formik.touched.teks_pertanyaan && formik.errors.teks_pertanyaan && (
@@ -267,7 +267,7 @@ export default function TambahPertanyaanEvaluasiModal({ isOpen, onClose, onSucce
               <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
                 <p className="text-[12px] text-amber-700 leading-relaxed">
                   <span className="font-bold">💡 Petunjuk:</span> Pertanyaan akan ditampilkan
-                  ke mahasiswa sesuai <strong>urutan</strong> yang ditetapkan, dikelompokkan
+                  ke peserta sesuai <strong>urutan</strong> yang ditetapkan, dikelompokkan
                   per kategori. Pastikan urutan setiap kategori tidak bertabrakan agar tampilan
                   rapi.
                 </p>

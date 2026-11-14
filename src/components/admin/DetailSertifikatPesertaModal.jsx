@@ -2,7 +2,7 @@ import { useState } from "react";
 import { X, Eye, FileText, Download } from "lucide-react";
 import LihatSertifikatModal from "./LihatSertifikatModal";
 
-export default function DetailSertifikatMahasiswaModal({ isOpen, onClose, data }) {
+export default function DetailSertifikatPesertaModal({ isOpen, onClose, data }) {
   const [viewSertifikat, setViewSertifikat] = useState(null);
 
   if (!isOpen || !data) return null;
@@ -15,7 +15,7 @@ export default function DetailSertifikatMahasiswaModal({ isOpen, onClose, data }
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
             <div>
-              <h3 className="text-lg font-extrabold text-[#1E293B]">Daftar Sertifikat Mahasiswa</h3>
+              <h3 className="text-lg font-extrabold text-[#1E293B]">Daftar Sertifikat Peserta</h3>
               <p className="text-sm text-gray-500 mt-0.5">
                 {data.mahasiswa} - {data.npm}
               </p>
@@ -83,7 +83,7 @@ export default function DetailSertifikatMahasiswaModal({ isOpen, onClose, data }
               </div>
             ) : (
               <div className="text-center py-10">
-                <p className="text-[#64748B] text-[14px]">Belum ada sertifikat yang terbit untuk mahasiswa ini.</p>
+                <p className="text-[#64748B] text-[14px]">Belum ada sertifikat yang terbit untuk peserta ini.</p>
               </div>
             )}
           </div>

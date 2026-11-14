@@ -99,7 +99,7 @@ export default function ForumDiskusiMahasiswa() {
         {/* Header */}
         <div className="flex justify-between items-center px-7 pb-5 flex-wrap gap-3">
           <h3 className="text-[17px] font-extrabold text-[#1E293B]">
-            Forum Diskusi Mahasiswa
+            Forum Diskusi Peserta
           </h3>
         </div>
 
@@ -115,7 +115,7 @@ export default function ForumDiskusiMahasiswa() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari nama, NPM, mata kuliah, atau isi pesan..."
+              placeholder="Cari nama, NPM, kursus, atau isi pesan..."
               className="w-full pl-9 pr-4 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] placeholder:text-[#94A3B8] outline-none focus:border-[#167A61] transition-all bg-white"
             />
           </div>
@@ -151,7 +151,7 @@ export default function ForumDiskusiMahasiswa() {
               <p className="text-[13px] text-[#94A3B8] mt-1">
                 {search || statusFilter
                   ? "Coba ubah kata kunci atau filter pencarian."
-                  : "Diskusi akan muncul setelah mahasiswa bertanya."}
+                  : "Diskusi akan muncul setelah peserta bertanya."}
               </p>
             </div>
           ) : (
@@ -162,7 +162,7 @@ export default function ForumDiskusiMahasiswa() {
                     "No",
                     "Pengguna",
                     "NPM",
-                    "Mata kuliah",
+                    "Kursus",
                     "Kelas",
                     "Pertemuan",
                     "Isi Pesan",

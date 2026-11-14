@@ -31,12 +31,12 @@ function EmptyState({ hasFilter }) {
         <Users size={28} className="text-[#94A3B8]" />
       </div>
       <p className="text-[14px] font-bold text-[#64748B]">
-        {hasFilter ? "Data tidak ditemukan." : "Belum ada pengajuan dosen."}
+        {hasFilter ? "Data tidak ditemukan." : "Belum ada pengajuan pengajar."}
       </p>
       <p className="text-[13px] text-[#94A3B8] mt-1">
         {hasFilter
           ? "Coba ubah kata kunci atau filter pencarian."
-          : "Data akan muncul saat dosen melakukan registrasi."}
+          : "Data akan muncul saat pengajar melakukan registrasi."}
       </p>
     </div>
   );
@@ -59,7 +59,7 @@ function ErrorState({ message }) {
   );
 }
 
-export default function VerifikasiDosen() {
+export default function VerifikasiPengajar() {
   const { dosen, loading, error, pagination, fetchDosen, debouncedFetch, prosesVerifikasi } =
     useVerifikasi();
 
@@ -121,7 +121,7 @@ export default function VerifikasiDosen() {
       setConfirmTarget(null);
     } catch {
       alert(
-        `Gagal ${confirmTarget.aksi === "Disetujui" ? "menyetujui" : "menolak"} dosen.`,
+        `Gagal ${confirmTarget.aksi === "Disetujui" ? "menyetujui" : "menolak"} pengajar.`,
       );
     } finally {
       setConfirmLoading(false);
@@ -142,7 +142,7 @@ export default function VerifikasiDosen() {
         {/* Header */}
         <div className="flex justify-between items-center px-7 pb-5 flex-wrap gap-3">
           <h3 className="text-[17px] font-extrabold text-[#1E293B]">
-            Daftar Pengajuan Dosen
+            Daftar Pengajuan Pengajar
           </h3>
           <div className="flex gap-2">
             <span className="bg-[#F1F5F9] text-[#64748B] text-[12px] font-black px-3 py-1.5 rounded-full">

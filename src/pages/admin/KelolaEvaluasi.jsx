@@ -188,7 +188,9 @@ function KategoriCard({ kategori, pertanyaans, onEdit, onDelete, onToggle, onMov
             <Icon size={18} className="text-white" />
           </div>
           <div>
-            <h4 className="text-[15px] font-bold text-white">{kategori}</h4>
+            <h4 className="text-[15px] font-bold text-white">
+              {kategori === "Kinerja Dosen" ? "Kinerja Pengajar" : kategori}
+            </h4>
             <p className="text-[12px] text-white/70 mt-0.5">
               {pertanyaans.length} pertanyaan &bull; {aktifCount} aktif
             </p>
@@ -485,7 +487,7 @@ export default function KelolaEvaluasi() {
                 Template Pertanyaan Evaluasi
               </h3>
               <p className="text-[13px] text-gray-400 mt-0.5">
-                Pertanyaan yang aktif akan ditampilkan ke mahasiswa setelah pembelajaran selesai.
+                Pertanyaan yang aktif akan ditampilkan ke peserta setelah pembelajaran selesai.
               </p>
             </div>
             <button
@@ -521,7 +523,7 @@ export default function KelolaEvaluasi() {
               <option value="">Semua Kategori</option>
               {allKategoris.map((k) => (
                 <option key={k} value={k}>
-                  {k}
+                  {k === "Kinerja Dosen" ? "Kinerja Pengajar" : k}
                 </option>
               ))}
             </select>
@@ -576,8 +578,8 @@ export default function KelolaEvaluasi() {
                     <span className="text-[10px] font-bold text-blue-600">i</span>
                   </div>
                   <p className="text-[12px] text-blue-700 leading-relaxed">
-                    Mahasiswa akan mengisi evaluasi secara berurutan — mulai dari kategori{" "}
-                    <strong>Kinerja Dosen</strong> lalu <strong>Kualitas Pembelajaran</strong>,
+                    Peserta akan mengisi evaluasi secara berurutan — mulai dari kategori{" "}
+                    <strong>Kinerja Pengajar</strong> lalu <strong>Kualitas Pembelajaran</strong>,
                     dalam satu layar tanpa pindah halaman. Gunakan tombol ↑↓ untuk mengatur
                     urutan pertanyaan dalam setiap kategori.
                   </p>

@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { useFormik } from "formik";
 import { kelasEditSchema } from "../../schemas/kelasSchema";
-import { fakultasData } from "../../data/fakultasData";
 import Input from "../ui/Input";
-import SearchableSelect from "../ui/SearchableSelect";
 import ConfirmSaveModal from "./ConfirmSaveModal";
 
 export default function UbahKelasModal({ isOpen, onClose, onSuccess, data }) {
@@ -17,9 +15,6 @@ export default function UbahKelasModal({ isOpen, onClose, onSuccess, data }) {
     initialValues: {
       nama_kelas: data.nama_kelas || "",
       kode_kelas: data.kode_kelas || "",
-      tahun_angkatan: data.tahun_angkatan || "",
-      fakultas: data.fakultas || "",
-      prodi: data.prodi || "",
     },
     validationSchema: kelasEditSchema,
     enableReinitialize: true,
@@ -38,9 +33,6 @@ export default function UbahKelasModal({ isOpen, onClose, onSuccess, data }) {
       await onSuccess(data.id_kelas, {
         nama_kelas: formik.values.nama_kelas,
         kode_kelas: formik.values.kode_kelas,
-        tahun_angkatan: formik.values.tahun_angkatan,
-        fakultas: formik.values.fakultas || null,
-        prodi: formik.values.prodi || null,
       });
       setShowConfirm(false);
       onClose();
@@ -51,16 +43,6 @@ export default function UbahKelasModal({ isOpen, onClose, onSuccess, data }) {
     } finally {
       setConfirmLoading(false);
     }
-  };
-
-  const selectedFakultas = fakultasData.find(
-    (f) => f.value === formik.values.fakultas,
-  );
-  const prodiOptions = selectedFakultas?.prodi || [];
-
-  const handleFakultasChange = (e) => {
-    formik.setFieldValue("fakultas", e.target.value);
-    formik.setFieldValue("prodi", "");
   };
 
   const handleClose = () => {
@@ -113,47 +95,6 @@ export default function UbahKelasModal({ isOpen, onClose, onSuccess, data }) {
                   error={formik.errors.kode_kelas}
                   touched={formik.touched.kode_kelas}
                   disabled={formik.isSubmitting}
-                />
-                <Input
-                  label="Tahun Angkatan"
-                  name="tahun_angkatan"
-                  placeholder="Contoh: 2024"
-                  maxLength={4}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  value={formik.values.tahun_angkatan}
-                  error={formik.errors.tahun_angkatan}
-                  touched={formik.touched.tahun_angkatan}
-                  disabled={formik.isSubmitting}
-                />
-                <SearchableSelect
-                  label="Fakultas"
-                  name="fakultas"
-                  value={formik.values.fakultas}
-                  onChange={handleFakultasChange}
-                  onBlur={() => formik.setFieldTouched("fakultas", true)}
-                  options={fakultasData}
-                  placeholder="Pilih Fakultas (opsional)"
-                  error={formik.errors.fakultas}
-                  touched={formik.touched.fakultas}
-                  disabled={formik.isSubmitting}
-                />
-                <SearchableSelect
-                  label="Program Studi"
-                  name="prodi"
-                  value={formik.values.prodi}
-                  onChange={formik.handleChange}
-                  onBlur={() => formik.setFieldTouched("prodi", true)}
-                  options={prodiOptions}
-                  placeholder="Pilih Program Studi (opsional)"
-                  disabled={!formik.values.fakultas || formik.isSubmitting}
-                  disabledMessage={
-                    !formik.values.fakultas
-                      ? "Pilih fakultas terlebih dahulu"
-                      : ""
-                  }
-                  error={formik.errors.prodi}
-                  touched={formik.touched.prodi}
                 />
               </div>
 

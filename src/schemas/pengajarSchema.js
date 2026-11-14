@@ -1,6 +1,6 @@
 import * as Yup from "yup";
 
-export const dosenEditSchema = Yup.object().shape({
+export const pengajarEditSchema = Yup.object().shape({
   nama_lengkap: Yup.string()
     .min(3, "Nama terlalu pendek")
     .required("Nama lengkap wajib diisi"),

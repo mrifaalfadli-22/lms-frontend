@@ -7,7 +7,7 @@ export default function MonitoringProgres() {
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-gray-500 text-sm animate-pulse">Memuat data dosen...</p>
+        <p className="text-gray-500 text-sm animate-pulse">Memuat data pengajar...</p>
       </div>
     );
   }

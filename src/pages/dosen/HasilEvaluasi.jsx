@@ -13,8 +13,6 @@ import {
 } from "lucide-react";
 import evaluasiService from "../../services/evaluasiService";
 import { useProfile } from "../../hooks/useProfile";
-import { formatFakultas } from "../../utils/formatters";
-import { fakultasData } from "../../data/fakultasData";
 
 function RatingStars({ rating }) {
   return (
@@ -61,19 +59,6 @@ function DetailKelas({ jadwal }) {
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[11px] font-bold tracking-wide">
-                Semester {jadwal.semester}
-              </span>
-              {jadwal.fakultas && (
-                <span className="px-2 py-0.5 bg-green-50 text-green-600 border border-green-100 rounded text-[11px] font-bold">
-                  {formatFakultas(jadwal.fakultas)}
-                </span>
-              )}
-              {jadwal.prodi && (
-                <span className="px-2 py-0.5 bg-purple-50 text-purple-600 border border-purple-100 rounded text-[11px] font-bold">
-                  {jadwal.prodi}
-                </span>
-              )}
               <span className="px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-100 rounded text-[11px] font-bold">
                 Kelas {jadwal.kelas}
               </span>
@@ -162,8 +147,6 @@ export default function HasilEvaluasi() {
 
   // States for filter & sort
   const [search, setSearch] = useState("");
-  const [filterFakultas, setFilterFakultas] = useState("");
-  const [filterProdi, setFilterProdi] = useState("");
   const [sortOrder, setSortOrder] = useState(""); // "terendah" | "tertinggi" | ""
 
   useEffect(() => {
@@ -184,18 +167,13 @@ export default function HasilEvaluasi() {
     }
   };
 
-  // We don't need listFakultas and listProdi from data anymore
-  // as we use fakultasData directly
-
   // Apply filters and sort
   const processedData = data
     .filter((d) => {
       const matchSearch =
         d.mata_kuliah.toLowerCase().includes(search.toLowerCase()) ||
         d.kelas.toLowerCase().includes(search.toLowerCase());
-      const matchFakultas = !filterFakultas || d.fakultas === filterFakultas;
-      const matchProdi = !filterProdi || d.prodi === filterProdi;
-      return matchSearch && matchFakultas && matchProdi;
+      return matchSearch;
     })
     .sort((a, b) => {
       if (sortOrder === "terendah") {
@@ -221,9 +199,9 @@ export default function HasilEvaluasi() {
             <ClipboardList size={24} />
           </div>
           <div>
-            <h1 className="text-[19px] font-extrabold text-[#1E293B]">Hasil Evaluasi Mahasiswa</h1>
+            <h1 className="text-[19px] font-extrabold text-[#1E293B]">Hasil Evaluasi Peserta</h1>
             <p className="text-[13px] text-gray-500 mt-1">
-              Pantau rekapitulasi penilaian anonim dari mahasiswa untuk mata kuliah yang Anda ajar.
+              Pantau rekapitulasi penilaian anonim dari peserta untuk kursus yang Anda ajar.
             </p>
           </div>
         </div>
@@ -234,7 +212,7 @@ export default function HasilEvaluasi() {
         <div className="bg-gradient-to-r from-[#167A61] to-[#0E5C46] rounded-2xl p-6 shadow-sm text-white flex flex-col md:flex-row items-center justify-between mx-0">
           <div className="mb-4 md:mb-0 text-center md:text-left">
             <h2 className="text-[17px] font-bold">Nilai Kumulatif Pengajaran</h2>
-            <p className="text-[13px] text-white/80 mt-1">Rata-rata dari seluruh kelas yang telah dievaluasi mahasiswa.</p>
+            <p className="text-[13px] text-white/80 mt-1">Rata-rata dari seluruh kelas yang telah dievaluasi peserta.</p>
           </div>
           <div className="flex items-center gap-4 bg-white/10 px-5 py-3 rounded-xl backdrop-blur-sm border border-white/10">
             <div className="flex flex-col items-end">
@@ -260,7 +238,7 @@ export default function HasilEvaluasi() {
         </div>
       )}
 
-      {/* Toolbar (Search, Filter, Sort) */}
+      {/* Toolbar (Search, Sort) */}
       <div className="flex flex-wrap gap-3 px-1">
         <div className="relative flex-1 min-w-[220px]">
           <Search
@@ -271,40 +249,10 @@ export default function HasilEvaluasi() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari mata kuliah atau kelas..."
+            placeholder="Cari kursus atau kelas..."
             className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-[13px] text-[#1E293B] placeholder:text-[#94A3B8] outline-none focus:border-[#167A61] transition-all bg-white"
           />
         </div>
-        <select
-          value={filterFakultas}
-          onChange={(e) => {
-            setFilterFakultas(e.target.value);
-            setFilterProdi(""); // Reset prodi
-          }}
-          className="px-4 py-2.5 border border-gray-200 rounded-xl text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] bg-white min-w-[150px] cursor-pointer"
-        >
-          <option value="">Semua Fakultas</option>
-          {fakultasData.map((f) => (
-            <option key={f.value} value={f.value}>
-              {f.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={filterProdi}
-          onChange={(e) => setFilterProdi(e.target.value)}
-          className="px-4 py-2.5 border border-gray-200 rounded-xl text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] bg-white min-w-[150px] cursor-pointer"
-        >
-          <option value="">Semua Prodi</option>
-          {(filterFakultas
-            ? fakultasData.find((f) => f.value === filterFakultas)?.prodi || []
-            : [...new Set(fakultasData.flatMap((f) => f.prodi.map((p) => p.value)))].sort().map(value => ({ value, label: value }))
-          ).map((p) => (
-            <option key={p.value} value={p.value}>
-              {p.label}
-            </option>
-          ))}
-        </select>
         <select
           value={sortOrder}
           onChange={(e) => setSortOrder(e.target.value)}

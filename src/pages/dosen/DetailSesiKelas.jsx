@@ -89,14 +89,14 @@ export default function DetailSesiKelas() {
         <span className="text-[#1E293B] font-semibold">{classData?.nama_kelas || "Memuat..."}</span>
       </div>
 
-      {/* Info Jadwal Perkuliahan Header Box */}
+      {/* Info Jadwal Kursus Header Box */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-7 mb-6 border-t-4 border-t-[#167A61]">
         <h3 className="text-[17px] font-extrabold text-[#1E293B] mb-5">
-          Informasi Jadwal Perkuliahan
+          Informasi Jadwal Kursus
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Mata Kuliah</span>
+            <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Kursus</span>
             <span className="text-[13px] font-semibold text-[#1E293B]">
               [{jadwal?.kode_mk || "-"}] - {jadwal?.nama_mk || "-"}
             </span>
@@ -118,14 +118,6 @@ export default function DetailSesiKelas() {
             </span>
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">SKS</span>
-            <span className="text-[13px] font-semibold text-[#1E293B]">{jadwal?.sks || "-"}</span>
-          </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Tahun Ajaran</span>
-            <span className="text-[13px] font-semibold text-[#1E293B]">{jadwal?.tahun || "-"}</span>
-          </div>
-          <div className="flex flex-col gap-1">
             <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Token Enrollment</span>
             <div className="flex items-center gap-2">
               <span className="text-[13px] font-mono font-bold text-[#167A61] bg-[#F0FAF6] px-2 py-1 rounded">
@@ -143,14 +135,14 @@ export default function DetailSesiKelas() {
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Total Mahasiswa</span>
+            <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Total Peserta</span>
             <span className="text-[13px] font-bold text-[#167A61]">{classData?.total_mahasiswa || 0} Orang</span>
           </div>
-          <div className="flex flex-col gap-2 col-span-1 md:col-span-2 lg:col-span-4 mt-2 border-t border-gray-100 pt-4">
+          <div className="flex flex-col gap-2 col-span-1 md:col-span-2 lg:col-span-3 mt-2 border-t border-gray-100 pt-4">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-[13px] font-bold text-[#1E293B] block mb-1">Akses Bebas Sesi Pertemuan</span>
-                <span className="text-[12px] text-[#64748B]">Jika diaktifkan, mahasiswa dapat mengakses semua sesi tanpa batasan tanggal pelaksanaan.</span>
+                <span className="text-[12px] text-[#64748B]">Jika diaktifkan, peserta dapat mengakses semua sesi tanpa batasan tanggal pelaksanaan.</span>
               </div>
               <button
                 onClick={handleToggleAkses}

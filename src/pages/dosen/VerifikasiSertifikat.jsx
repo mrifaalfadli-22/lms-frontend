@@ -3,15 +3,11 @@ import { Search, Layout, CheckCircle, Eye, Edit2, Loader2 } from "lucide-react";
 import api from "../../config/api";
 import Pagination from "../../components/common/Pagination";
 import VerifikasiSertifikatModal from "../../components/dosen/VerifikasiSertifikatModal";
-import { formatFakultas } from "../../utils/formatters";
-import { fakultasData } from "../../data/fakultasData";
 
 export default function VerifikasiSertifikat() {
   const [sertifikatList, setSertifikatList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [fakultasFilter, setFakultasFilter] = useState("");
-  const [prodiFilter, setProdiFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
   // Modal states
@@ -73,13 +69,11 @@ export default function VerifikasiSertifikat() {
         (item.nim && item.nim.toLowerCase().includes(search.toLowerCase())) ||
         (item.mataKuliah && item.mataKuliah.toLowerCase().includes(search.toLowerCase()));
 
-      const matchFakultas = fakultasFilter ? item.fakultas === fakultasFilter : true;
-      const matchProdi = prodiFilter ? item.prodi === prodiFilter : true;
       const matchStatus = statusFilter ? item.status === statusFilter : true;
 
-      return matchSearch && matchFakultas && matchProdi && matchStatus;
+      return matchSearch && matchStatus;
     });
-  }, [sertifikatList, search, fakultasFilter, prodiFilter, statusFilter]);
+  }, [sertifikatList, search, statusFilter]);
 
   // Pagination Logic
   const totalItems = filteredData.length;
@@ -93,7 +87,7 @@ export default function VerifikasiSertifikat() {
   // Reset page when filters change
   useMemo(() => {
     setCurrentPage(1);
-  }, [search, fakultasFilter, prodiFilter, statusFilter]);
+  }, [search, statusFilter]);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -133,40 +127,10 @@ export default function VerifikasiSertifikat() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari NPM, nama mahasiswa, atau mata kuliah..."
+              placeholder="Cari NPM, nama peserta, atau kursus..."
               className="w-full pl-9 pr-4 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] placeholder:text-[#94A3B8] outline-none focus:border-[#167A61] transition-all bg-white"
             />
           </div>
-
-          <select
-            value={fakultasFilter}
-            onChange={(e) => {
-              setFakultasFilter(e.target.value);
-              setProdiFilter(""); // reset prodi when fakultas changes
-            }}
-            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
-          >
-            <option value="">Semua Fakultas</option>
-            {fakultasData.map((f) => (
-              <option key={f.value} value={f.value}>{f.label}</option>
-            ))}
-          </select>
-
-          <select
-            value={prodiFilter}
-            onChange={(e) => setProdiFilter(e.target.value)}
-            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
-          >
-            <option value="">Semua Prodi</option>
-            {(fakultasFilter
-              ? fakultasData.find((f) => f.value === fakultasFilter)?.prodi || []
-              : [...new Set(fakultasData.flatMap((f) => f.prodi.map((p) => p.value)))].sort().map(value => ({ value, label: value }))
-            ).map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </select>
 
           <select
             value={statusFilter}
@@ -193,14 +157,14 @@ export default function VerifikasiSertifikat() {
                 <Layout size={28} className="text-[#94A3B8]" />
               </div>
               <p className="text-[14px] font-bold text-[#64748B]">
-                {search || fakultasFilter || prodiFilter || statusFilter
+                {search || statusFilter
                   ? "Data tidak ditemukan."
                   : "Belum ada pengajuan sertifikat."}
               </p>
               <p className="text-[13px] text-[#94A3B8] mt-1">
-                {search || fakultasFilter || prodiFilter || statusFilter
+                {search || statusFilter
                   ? "Coba ubah kata kunci atau filter pencarian."
-                  : "Pengajuan sertifikat mahasiswa akan muncul di sini."}
+                  : "Pengajuan sertifikat peserta akan muncul di sini."}
               </p>
             </div>
           ) : (
@@ -210,10 +174,8 @@ export default function VerifikasiSertifikat() {
                   {[
                     "No",
                     "NPM",
-                    "Nama Mahasiswa",
-                    "Fakultas",
-                    "Prodi",
-                    "Mata Kuliah",
+                    "Nama Peserta",
+                    "Kursus",
                     "Kehadiran",
                     "Nilai Akhir",
                     "Status",
@@ -248,12 +210,6 @@ export default function VerifikasiSertifikat() {
                       </td>
                       <td className="py-4 px-4 font-bold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                         {item.nama}
-                      </td>
-                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                        {formatFakultas(item.fakultas)}
-                      </td>
-                      <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                        {item.prodi}
                       </td>
                       <td className="py-4 px-4 font-bold text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                         {item.mataKuliah}

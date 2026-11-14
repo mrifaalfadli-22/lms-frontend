@@ -70,7 +70,7 @@ export default function AdminDashboard() {
       setConfirmTarget(null);
     } catch {
       alert(
-        `Gagal ${confirmTarget.aksi === "Disetujui" ? "menyetujui" : "menolak"} dosen.`,
+        `Gagal ${confirmTarget.aksi === "Disetujui" ? "menyetujui" : "menolak"} pengajar.`,
       );
     } finally {
       setConfirmLoading(false);
@@ -108,11 +108,11 @@ export default function AdminDashboard() {
         {/* 1. Row Statistik */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-5">
           <StatCard
-            title="Total Mahasiswa"
+            title="Total Peserta"
             value={statsLoading ? "..." : stats.mahasiswa}
           />
           <StatCard
-            title="Dosen Aktif"
+            title="Pengajar Aktif"
             value={dosenLoading ? "..." : stats.dosen}
           />
           <StatCard
@@ -120,7 +120,7 @@ export default function AdminDashboard() {
             value={statsLoading ? "..." : stats.kelas}
           />
           <StatCard
-            title="Mata Kuliah"
+            title="Kursus"
             value={statsLoading ? "..." : stats.mataKuliah}
           />
           <StatCard title="Sertifikat Terbit" value={statsLoading ? "..." : stats.sertifikat} />
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-2xl shadow-sm border py-7 border-gray-100">
           <div className="flex justify-between items-center px-7 pb-4">
             <h3 className="text-[17px] font-extrabold text-[#1E293B]">
-              Pengajuan Verifikasi Dosen Terbaru
+              Pengajuan Verifikasi Pengajar Terbaru
             </h3>
             <Link
               to="/admin/verifikasi-dosen"
@@ -145,7 +145,7 @@ export default function AdminDashboard() {
             {dosenLoading ? (
               <div className="flex items-center justify-center py-16 gap-3 text-[#94A3B8]">
                 <Loader2 size={20} className="animate-spin" />
-                <span className="text-[13px]">Memuat data dosen...</span>
+                <span className="text-[13px]">Memuat data pengajar...</span>
               </div>
             ) : dosenError ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -163,7 +163,7 @@ export default function AdminDashboard() {
             ) : dosenList.length === 0 ? (
               <div className="flex justify-center py-16">
                 <p className="text-[14px] text-[#94A3B8]">
-                  Belum ada pengajuan dosen.
+                  Belum ada pengajuan pengajar.
                 </p>
               </div>
             ) : (
@@ -278,7 +278,7 @@ export default function AdminDashboard() {
                     "Pengguna",
                     "NPM/NIDN",
                     "Role",
-                    "Matakuliah",
+                    "Kursus",
                     "Kelas",
                     "Pertemuan",
                     "Topik",

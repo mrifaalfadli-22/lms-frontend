@@ -7,7 +7,7 @@ import { profileService } from "../../services/profileService";
 import NotificationPopup from "../../components/ui/NotificationPopup";
 import { Loader2 } from "lucide-react";
 
-export default function ProfilDosen() {
+export default function ProfilPengajar() {
   const { user, updateUser, loading } = useProfile();
   const [showUbahSandi, setShowUbahSandi] = useState(false);
   const [showConfirmSave, setShowConfirmSave] = useState(false);
@@ -42,7 +42,7 @@ export default function ProfilDosen() {
   }, [user]);
 
   // Dynamic values based on user profile context
-  const fullName = formData.nama_lengkap || "Dosen Pengajar";
+  const fullName = formData.nama_lengkap || "Pengajar";
   const initials = fullName
     .split(" ")
     .filter(Boolean)
@@ -166,7 +166,7 @@ export default function ProfilDosen() {
           {loading ? "Memuat..." : fullName}
         </h2>
         <span className="px-4 py-1.5 bg-[#F0FAF6] text-[#167A61] rounded-full text-[12px] font-bold mb-8">
-          Dosen
+          Pengajar
         </span>
         <button
           onClick={() => fileInputRef.current?.click()}

@@ -6,13 +6,13 @@ const pageTitles = {
   "/admin/dashboard": "Dashboard Admin",
   "/admin/kelola-pengguna": "Kelola Data Pengguna",
   "/admin/kelola-kelas": "Kelola Data Kelas",
-  "/admin/kelola-mata-kuliah": "Kelola Mata Kuliah",
-  "/admin/kelola-jadwal-perkuliahan": "Kelola Jadwal Perkuliahan",
-  "/admin/kelola-materi-perkuliahan": "Kelola Materi Perkuliahan",
+  "/admin/kelola-mata-kuliah": "Kelola Kursus",
+  "/admin/kelola-jadwal-perkuliahan": "Kelola Jadwal Kursus",
+  "/admin/kelola-materi-perkuliahan": "Kelola Materi Kursus",
   "/admin/forum-diskusi": "Kelola Forum Diskusi",
   "/admin/kelola-sertifikat": "Kelola Sertifikat",
   "/admin/kelola-evaluasi": "Kelola Evaluasi",
-  "/admin/verifikasi-dosen": "Verifikasi Dosen",
+  "/admin/verifikasi-dosen": "Verifikasi Pengajar",
   "/admin/profil": "Profil Admin",
 };
 

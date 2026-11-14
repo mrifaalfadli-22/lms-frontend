@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { useFormik } from "formik";
-import { fakultasData } from "../../data/fakultasData";
-import { mataKuliahSchema } from "../../schemas/mataKuliahSchema";
+import { kursusSchema } from "../../schemas/kursusSchema";
 import Input from "../ui/Input";
-import SearchableSelect from "../ui/SearchableSelect";
 
-export default function TambahMataKuliahModal({ isOpen, onClose, onSuccess }) {
+export default function TambahKursusModal({ isOpen, onClose, onSuccess }) {
   if (!isOpen) return null;
 
   const [submitError, setSubmitError] = useState(null);
@@ -14,13 +12,9 @@ export default function TambahMataKuliahModal({ isOpen, onClose, onSuccess }) {
     initialValues: {
       kode_mk: "",
       nama_mk: "",
-      fakultas: "",
-      prodi: "",
-      semester: "",
-      sks: "",
       deskripsi: "",
     },
-    validationSchema: mataKuliahSchema,
+    validationSchema: kursusSchema,
     onSubmit: async (values, { setSubmitting }) => {
       setSubmitError(null);
       try {
@@ -29,7 +23,7 @@ export default function TambahMataKuliahModal({ isOpen, onClose, onSuccess }) {
         onClose();
       } catch (err) {
         const msg =
-          err?.response?.data?.message || "Gagal menyimpan data mata kuliah.";
+          err?.response?.data?.message || "Gagal menyimpan data kursus.";
         setSubmitError(msg);
       } finally {
         setSubmitting(false);
@@ -37,15 +31,6 @@ export default function TambahMataKuliahModal({ isOpen, onClose, onSuccess }) {
     },
   });
 
-  const selectedFakultas = fakultasData.find(
-    (f) => f.value === formik.values.fakultas,
-  );
-  const prodiOptions = selectedFakultas?.prodi || [];
-
-  const handleFakultasChange = (e) => {
-    formik.setFieldValue("fakultas", e.target.value);
-    formik.setFieldValue("prodi", "");
-  };
 
   const handleClose = () => {
     formik.resetForm();
@@ -58,7 +43,7 @@ export default function TambahMataKuliahModal({ isOpen, onClose, onSuccess }) {
       <div className="bg-white rounded-2xl w-full max-w-[500px] shadow-xl overflow-hidden">
         <div className="px-7 py-5 border-b border-gray-100">
           <h3 className="text-[17px] font-bold text-[#1E293B]">
-            Tambah Mata Kuliah
+            Tambah Kursus
           </h3>
         </div>
 
@@ -66,9 +51,9 @@ export default function TambahMataKuliahModal({ isOpen, onClose, onSuccess }) {
           <form onSubmit={formik.handleSubmit} id="tambah-mk-form">
             <div className="px-7 pt-6 pb-4 flex flex-col gap-0">
               <Input
-                label="Kode Mata Kuliah"
+                label="Kode Kursus"
                 name="kode_mk"
-                placeholder="Contoh: IF101"
+                placeholder="Contoh: SC101"
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
                 value={formik.values.kode_mk}
@@ -77,7 +62,7 @@ export default function TambahMataKuliahModal({ isOpen, onClose, onSuccess }) {
                 disabled={formik.isSubmitting}
               />
               <Input
-                label="Nama Mata Kuliah"
+                label="Nama Kursus"
                 name="nama_mk"
                 placeholder="Contoh: Algoritma dan Pemrograman"
                 onChange={formik.handleChange}
@@ -87,69 +72,6 @@ export default function TambahMataKuliahModal({ isOpen, onClose, onSuccess }) {
                 touched={formik.touched.nama_mk}
                 disabled={formik.isSubmitting}
               />
-              <SearchableSelect
-                label="Fakultas"
-                name="fakultas"
-                value={formik.values.fakultas}
-                onChange={handleFakultasChange}
-                onBlur={() => formik.setFieldTouched("fakultas", true)}
-                options={fakultasData}
-                placeholder="Pilih Fakultas"
-                error={formik.errors.fakultas}
-                touched={formik.touched.fakultas}
-                disabled={formik.isSubmitting}
-              />
-              <SearchableSelect
-                label="Program Studi"
-                name="prodi"
-                value={formik.values.prodi}
-                onChange={formik.handleChange}
-                onBlur={() => formik.setFieldTouched("prodi", true)}
-                options={prodiOptions}
-                placeholder="Pilih Program Studi"
-                disabled={!formik.values.fakultas || formik.isSubmitting}
-                disabledMessage={
-                  !formik.values.fakultas
-                    ? "Pilih fakultas terlebih dahulu"
-                    : ""
-                }
-                error={formik.errors.prodi}
-                touched={formik.touched.prodi}
-              />
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <SearchableSelect
-                    label="Semester"
-                    name="semester"
-                    value={formik.values.semester}
-                    onChange={formik.handleChange}
-                    onBlur={() => formik.setFieldTouched("semester", true)}
-                    options={Array.from({ length: 14 }, (_, i) => ({
-                      value: String(i + 1),
-                      label: `Semester ${i + 1}`,
-                    }))}
-                    placeholder="Pilih Semester"
-                    error={formik.errors.semester}
-                    touched={formik.touched.semester}
-                    disabled={formik.isSubmitting}
-                    searchable={false}
-                  />
-                </div>
-                <div className="flex-1">
-                  <Input
-                    label="SKS"
-                    name="sks"
-                    type="number"
-                    placeholder="Contoh: 3"
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.sks}
-                    error={formik.errors.sks}
-                    touched={formik.touched.sks}
-                    disabled={formik.isSubmitting}
-                  />
-                </div>
-              </div>
               <div className="mb-4">
                 <label className="block text-[13px] font-semibold text-[#1E293B] mb-1.5">
                   Deskripsi{" "}
@@ -158,7 +80,7 @@ export default function TambahMataKuliahModal({ isOpen, onClose, onSuccess }) {
                 <textarea
                   name="deskripsi"
                   rows={3}
-                  placeholder="Tuliskan deskripsi singkat mata kuliah ini..."
+                  placeholder="Tuliskan deskripsi singkat kursus ini..."
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.deskripsi}

@@ -1,35 +1,10 @@
 // src/components/admin/TambahJadwalModal.jsx
 import { useState, useEffect } from "react";
 import { useFormik } from "formik";
-import {
-  jadwalSchema,
-  HARI_OPTIONS,
-  TAHUN_AJARAN_OPTIONS,
-} from "../../schemas/jadwalSchema";
+import { jadwalSchema } from "../../schemas/jadwalSchema";
 import jadwalService from "../../services/jadwalService";
 import SearchableSelect from "../ui/SearchableSelect";
 import { Loader2 } from "lucide-react";
-
-const SEMESTER_OPTIONS = Array.from({ length: 14 }, (_, i) => ({
-  value: String(i + 1),
-  label: `Semester ${i + 1}`,
-}));
-
-// Field read-only untuk menampilkan info dari mata kuliah yang dipilih
-const ReadOnlyField = ({ label, value }) => (
-  <div className="mb-4">
-    <label className="block text-[13px] font-semibold text-[#1E293B] mb-1.5">
-      {label}
-    </label>
-    <div className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-lg text-[13px] bg-[#F8FAFC] text-[#64748B] min-h-[42px]">
-      {value || (
-        <span className="text-[#CBD5E1] italic">
-          Pilih mata kuliah terlebih dahulu
-        </span>
-      )}
-    </div>
-  </div>
-);
 
 export default function TambahJadwalModal({ isOpen, onClose, onSuccess }) {
   const [submitError, setSubmitError] = useState(null);
@@ -65,13 +40,7 @@ export default function TambahJadwalModal({ isOpen, onClose, onSuccess }) {
       id_mk: "",
       id_kelas: "",
       id_dosen: "",
-      // Diisi otomatis dari master mata kuliah — tidak diedit user
-      fakultas: "",
-      prodi: "",
-      semester: "",
-      sks: "",
       // Diisi manual
-      tahun: "",
       jumlah_sesi: "",
       tanggal_mulai: "",
       waktu_mulai: "",
@@ -85,14 +54,10 @@ export default function TambahJadwalModal({ isOpen, onClose, onSuccess }) {
           id_mk: values.id_mk,
           id_kelas: values.id_kelas,
           id_dosen: values.id_dosen,
-          tahun: values.tahun,
-          semester: Number(values.semester),
           jumlah_sesi: Number(values.jumlah_sesi),
           tanggal_mulai: values.tanggal_mulai,
           waktu_mulai: values.waktu_mulai,
           waktu_berakhir: values.waktu_berakhir,
-          ...(values.fakultas ? { fakultas: values.fakultas } : {}),
-          ...(values.prodi ? { prodi: values.prodi } : {}),
         };
         await onSuccess(payload);
         formik.resetForm();
@@ -106,25 +71,6 @@ export default function TambahJadwalModal({ isOpen, onClose, onSuccess }) {
       }
     },
   });
-
-  // Auto-fill dari master mata kuliah saat dipilih
-  const handleMkChange = (e) => {
-    const selectedId = e.target.value;
-    formik.setFieldValue("id_mk", selectedId);
-
-    const mk = mkOptions.find((m) => m.value === selectedId);
-    if (mk) {
-      formik.setFieldValue("semester", mk.semester ? String(mk.semester) : "");
-      formik.setFieldValue("sks", mk.sks ? String(mk.sks) : "");
-      formik.setFieldValue("fakultas", mk.fakultas || "");
-      formik.setFieldValue("prodi", mk.prodi || "");
-    } else {
-      formik.setFieldValue("semester", "");
-      formik.setFieldValue("sks", "");
-      formik.setFieldValue("fakultas", "");
-      formik.setFieldValue("prodi", "");
-    }
-  };
 
   // ✅ Early return SETELAH semua hooks
   if (!isOpen) return null;
@@ -140,7 +86,7 @@ export default function TambahJadwalModal({ isOpen, onClose, onSuccess }) {
       <div className="bg-white rounded-2xl w-full max-w-[540px] shadow-xl overflow-hidden">
         <div className="px-7 py-5 border-b border-gray-100">
           <h3 className="text-[17px] font-bold text-[#1E293B]">
-            Tambah Jadwal Kuliah
+            Tambah Jadwal Kursus
           </h3>
         </div>
 
@@ -153,55 +99,19 @@ export default function TambahJadwalModal({ isOpen, onClose, onSuccess }) {
           ) : (
             <form onSubmit={formik.handleSubmit}>
               <div className="px-7 pt-6 pb-4 flex flex-col gap-0">
-                {/* Mata Kuliah — trigger auto-fill */}
+                {/* Kursus */}
                 <SearchableSelect
-                  label="Mata Kuliah"
+                  label="Kursus"
                   name="id_mk"
                   value={formik.values.id_mk}
-                  onChange={handleMkChange}
+                  onChange={formik.handleChange}
                   onBlur={() => formik.setFieldTouched("id_mk", true)}
                   options={mkOptions}
-                  placeholder="Pilih Mata Kuliah"
+                  placeholder="Pilih Kursus"
                   error={formik.errors.id_mk}
                   touched={formik.touched.id_mk}
                   disabled={formik.isSubmitting}
                 />
-
-                {/* Read-only fields dari master mata kuliah — 2 kolom */}
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <ReadOnlyField
-                      label="Fakultas"
-                      value={formik.values.fakultas}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <ReadOnlyField
-                      label="Program Studi"
-                      value={formik.values.prodi}
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <ReadOnlyField
-                      label="Semester"
-                      value={
-                        formik.values.semester
-                          ? `Semester ${formik.values.semester}`
-                          : ""
-                      }
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <ReadOnlyField
-                      label="SKS"
-                      value={
-                        formik.values.sks ? `${formik.values.sks} SKS` : ""
-                      }
-                    />
-                  </div>
-                </div>
 
                 {/* Kelas */}
                 <SearchableSelect
@@ -217,33 +127,18 @@ export default function TambahJadwalModal({ isOpen, onClose, onSuccess }) {
                   disabled={formik.isSubmitting}
                 />
 
-                {/* Dosen Pengampu */}
+                {/* Pengajar */}
                 <SearchableSelect
-                  label="Dosen Pengampu"
+                  label="Pengajar"
                   name="id_dosen"
                   value={formik.values.id_dosen}
                   onChange={formik.handleChange}
                   onBlur={() => formik.setFieldTouched("id_dosen", true)}
                   options={dosenOptions}
-                  placeholder="Pilih Dosen Pengampu"
+                  placeholder="Pilih Pengajar"
                   error={formik.errors.id_dosen}
                   touched={formik.touched.id_dosen}
                   disabled={formik.isSubmitting}
-                />
-
-                {/* Tahun Ajaran */}
-                <SearchableSelect
-                  label="Tahun Ajaran"
-                  name="tahun"
-                  value={formik.values.tahun}
-                  onChange={formik.handleChange}
-                  onBlur={() => formik.setFieldTouched("tahun", true)}
-                  options={TAHUN_AJARAN_OPTIONS}
-                  placeholder="Pilih Tahun Ajaran"
-                  error={formik.errors.tahun}
-                  touched={formik.touched.tahun}
-                  disabled={formik.isSubmitting}
-                  searchable={false}
                 />
 
                 {/* Hari & Tanggal Mulai */}

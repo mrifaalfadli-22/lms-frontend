@@ -43,7 +43,7 @@ export const usePengguna = (activeTab) => {
         per_page: result.per_page,
       });
     } catch {
-      setError("Gagal memuat data mahasiswa.");
+      setError("Gagal memuat data peserta.");
     } finally {
       setLoadingMhs(false);
     }
@@ -63,7 +63,7 @@ export const usePengguna = (activeTab) => {
         per_page: result.per_page,
       });
     } catch {
-      setError("Gagal memuat data dosen.");
+      setError("Gagal memuat data pengajar.");
     } finally {
       setLoadingDosen(false);
     }

@@ -1,12 +1,13 @@
+// components/admin/UbahPesertaModal.jsx
 import { useState } from "react";
 import { useFormik } from "formik";
 import { fakultasData } from "../../data/fakultasData";
-import { mataKuliahEditSchema } from "../../schemas/mataKuliahSchema";
+import { pesertaEditSchema } from "../../schemas/pesertaSchema";
 import Input from "../ui/Input";
 import SearchableSelect from "../ui/SearchableSelect";
 import ConfirmSaveModal from "./ConfirmSaveModal";
 
-export default function UbahMataKuliahModal({
+export default function UbahPesertaModal({
   isOpen,
   onClose,
   onSuccess,
@@ -16,40 +17,32 @@ export default function UbahMataKuliahModal({
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
-  const [submitError, setSubmitError] = useState(null);
 
   const formik = useFormik({
     initialValues: {
-      kode_mk: data.kode_mk || "",
-      nama_mk: data.nama_mk || "",
+      nama_lengkap: data.nama_lengkap || "",
+      nomor_induk: data.nomor_induk || "",
       fakultas: data.fakultas || "",
       prodi: data.prodi || "",
-      semester: data.semester ? String(data.semester) : "",
-      sks: data.sks || "",
-      deskripsi: data.deskripsi || "",
+      angkatan: data.angkatan || "",
+      status_aktif: data.status_aktif ?? true,
     },
-    validationSchema: mataKuliahEditSchema,
+    validationSchema: pesertaEditSchema,
     enableReinitialize: true,
-    onSubmit: async (values, { setSubmitting }) => {
+    onSubmit: async () => {
       // Saat form valid, tampilkan modal konfirmasi — jangan simpan dulu
-      setSubmitError(null);
       setShowConfirm(true);
-      setSubmitting(false);
     },
   });
 
   const handleConfirmSave = async () => {
     setConfirmLoading(true);
-    setSubmitError(null);
     try {
-      await onSuccess(data.id_mk, formik.values);
+      await onSuccess(data.id_user, formik.values);
       setShowConfirm(false);
       onClose();
-    } catch (err) {
-      setShowConfirm(false);
-      const msg =
-        err?.response?.data?.message || "Gagal menyimpan data mata kuliah.";
-      setSubmitError(msg);
+    } catch {
+      // error ditangani di parent
     } finally {
       setConfirmLoading(false);
     }
@@ -68,7 +61,6 @@ export default function UbahMataKuliahModal({
   const handleClose = () => {
     formik.resetForm();
     setShowConfirm(false);
-    setSubmitError(null);
     onClose();
   };
 
@@ -81,41 +73,42 @@ export default function UbahMataKuliahModal({
         onCancel={() => setShowConfirm(false)}
         loading={confirmLoading}
         title="Simpan Perubahan?"
-        description={`Data mata kuliah ${data.nama_mk} akan diperbarui. Apakah Anda yakin ingin menyimpan perubahan ini?`}
+        description={`Data peserta ${data.nama_lengkap} akan diperbarui. Apakah Anda yakin ingin menyimpan perubahan ini?`}
       />
 
       {/* Modal form utama */}
       <div className="fixed inset-0 z-[998] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
         <div className="bg-white rounded-2xl w-full max-w-[500px] shadow-xl overflow-hidden">
-          <div className="px-7 py-5 border-b border-gray-100">
+          {/* Header */}
+          <div className="flex items-center justify-between px-7 py-5 border-b border-gray-100">
             <h3 className="text-[17px] font-bold text-[#1E293B]">
-              Ubah Mata Kuliah
+              Ubah Data Peserta
             </h3>
           </div>
 
           <div className="overflow-y-auto max-h-[80vh]">
-            <form onSubmit={formik.handleSubmit} id="ubah-mk-form">
+            <form onSubmit={formik.handleSubmit} id="ubah-mahasiswa-form">
               <div className="px-7 pt-6 pb-4 flex flex-col gap-0">
                 <Input
-                  label="Kode Mata Kuliah"
-                  name="kode_mk"
-                  placeholder="Contoh: IF101"
+                  label="Nama Lengkap"
+                  name="nama_lengkap"
+                  placeholder="Masukkan nama lengkap"
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  value={formik.values.kode_mk}
-                  error={formik.errors.kode_mk}
-                  touched={formik.touched.kode_mk}
+                  value={formik.values.nama_lengkap}
+                  error={formik.errors.nama_lengkap}
+                  touched={formik.touched.nama_lengkap}
                   disabled={formik.isSubmitting}
                 />
                 <Input
-                  label="Nama Mata Kuliah"
-                  name="nama_mk"
-                  placeholder="Contoh: Algoritma dan Pemrograman"
+                  label="NPM (Nomor Pokok Mahasiswa)"
+                  name="nomor_induk"
+                  placeholder="Contoh: 2210631170001"
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
-                  value={formik.values.nama_mk}
-                  error={formik.errors.nama_mk}
-                  touched={formik.touched.nama_mk}
+                  value={formik.values.nomor_induk}
+                  error={formik.errors.nomor_induk}
+                  touched={formik.touched.nomor_induk}
                   disabled={formik.isSubmitting}
                 />
                 <SearchableSelect
@@ -147,78 +140,54 @@ export default function UbahMataKuliahModal({
                   error={formik.errors.prodi}
                   touched={formik.touched.prodi}
                 />
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <SearchableSelect
-                      label="Semester"
-                      name="semester"
-                      value={formik.values.semester}
-                      onChange={formik.handleChange}
-                      onBlur={() => formik.setFieldTouched("semester", true)}
-                      options={Array.from({ length: 14 }, (_, i) => ({
-                        value: String(i + 1),
-                        label: `Semester ${i + 1}`,
-                      }))}
-                      placeholder="Pilih Semester"
-                      error={formik.errors.semester}
-                      touched={formik.touched.semester}
-                      disabled={formik.isSubmitting}
-                      searchable={false}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <Input
-                      label="SKS"
-                      name="sks"
-                      type="number"
-                      placeholder="Contoh: 3"
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      value={formik.values.sks}
-                      error={formik.errors.sks}
-                      touched={formik.touched.sks}
-                      disabled={formik.isSubmitting}
-                    />
-                  </div>
-                </div>
-                <div className="mb-4">
-                  <label className="block text-[13px] font-semibold text-[#1E293B] mb-1.5">
-                    Deskripsi{" "}
-                    <span className="text-[#94A3B8] font-normal">
-                      (opsional)
-                    </span>
-                  </label>
-                  <textarea
-                    name="deskripsi"
-                    rows={3}
-                    placeholder="Tuliskan deskripsi singkat mata kuliah ini..."
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.deskripsi}
-                    disabled={formik.isSubmitting}
-                    className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] placeholder:text-[#94A3B8] outline-none focus:border-[#167A61] transition-all resize-none disabled:opacity-50"
-                  />
-                </div>
+                <Input
+                  label="Angkatan"
+                  name="angkatan"
+                  placeholder="Contoh: 2024"
+                  maxLength={4}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  value={formik.values.angkatan}
+                  error={formik.errors.angkatan}
+                  touched={formik.touched.angkatan}
+                  disabled={formik.isSubmitting}
+                />
+                <SearchableSelect
+                  label="Status Akun"
+                  name="status_aktif"
+                  value={formik.values.status_aktif === true ? "true" : "false"}
+                  onChange={(e) =>
+                    formik.setFieldValue(
+                      "status_aktif",
+                      e.target.value === "true",
+                    )
+                  }
+                  onBlur={() => formik.setFieldTouched("status_aktif", true)}
+                  options={[
+                    { value: "true", label: "Aktif" },
+                    { value: "false", label: "Nonaktif" },
+                  ]}
+                  placeholder="Pilih Status"
+                  error={formik.errors.status_aktif}
+                  touched={formik.touched.status_aktif}
+                  disabled={formik.isSubmitting}
+                  searchable={false}
+                />
               </div>
 
-              {submitError && (
-                <p className="text-red-500 text-[13px] text-center px-7 pb-3">
-                  {submitError}
-                </p>
-              )}
-
+              {/* Footer */}
               <div className="px-7 py-5 border-t border-gray-100 flex gap-3 sticky bottom-0 bg-white">
                 <button
                   type="button"
                   onClick={handleClose}
-                  disabled={formik.isSubmitting || confirmLoading}
+                  disabled={formik.isSubmitting}
                   className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 text-[13px] font-semibold rounded-xl transition-colors disabled:opacity-50"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  disabled={formik.isSubmitting || confirmLoading}
+                  disabled={formik.isSubmitting}
                   className="flex-1 py-3 bg-[#167A61] hover:bg-[#0E5C46] text-white text-[13px] font-semibold rounded-xl transition-colors disabled:opacity-50"
                 >
                   Simpan Perubahan

@@ -78,7 +78,7 @@ export default function RegisterForm() {
             u-Cademy
           </h1>
           <p className="text-sm font-medium text-gray-400 mt-1">
-            Registrasi Akun Dosen
+            Registrasi Akun Pengajar
           </p>
         </div>
 

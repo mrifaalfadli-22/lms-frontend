@@ -1,7 +1,7 @@
 import * as Yup from "yup";
 
 // Schema untuk TAMBAH (tanpa status_aktif)
-export const mahasiswaSchema = Yup.object().shape({
+export const pesertaSchema = Yup.object().shape({
   nama_lengkap: Yup.string()
     .min(3, "Nama terlalu pendek")
     .required("Nama lengkap wajib diisi"),
@@ -15,7 +15,7 @@ export const mahasiswaSchema = Yup.object().shape({
 });
 
 // Schema untuk EDIT (sama + status_aktif)
-export const mahasiswaEditSchema = Yup.object().shape({
+export const pesertaEditSchema = Yup.object().shape({
   nama_lengkap: Yup.string()
     .min(3, "Nama terlalu pendek")
     .required("Nama lengkap wajib diisi"),

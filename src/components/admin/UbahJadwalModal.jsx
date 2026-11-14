@@ -1,32 +1,13 @@
 // src/components/admin/UbahJadwalModal.jsx
 import { useState, useEffect } from "react";
 import { useFormik } from "formik";
-import {
-  jadwalSchema,
-  HARI_OPTIONS,
-  TAHUN_AJARAN_OPTIONS,
-} from "../../schemas/jadwalSchema";
+import { jadwalSchema } from "../../schemas/jadwalSchema";
 import jadwalService from "../../services/jadwalService";
 import SearchableSelect from "../ui/SearchableSelect";
 import ConfirmSaveModal from "./ConfirmSaveModal";
 import { Loader2 } from "lucide-react";
 
 const cleanTime = (time) => (time ? time.substring(0, 5) : "");
-
-const ReadOnlyField = ({ label, value }) => (
-  <div className="mb-4">
-    <label className="block text-[13px] font-semibold text-[#1E293B] mb-1.5">
-      {label}
-    </label>
-    <div className="w-full px-4 py-2.5 border border-[#E2E8F0] rounded-lg text-[13px] bg-[#F8FAFC] text-[#64748B] min-h-[42px]">
-      {value || (
-        <span className="text-[#CBD5E1] italic">
-          Pilih mata kuliah terlebih dahulu
-        </span>
-      )}
-    </div>
-  </div>
-);
 
 export default function UbahJadwalModal({ isOpen, onClose, onSuccess, data }) {
   const [showConfirm, setShowConfirm] = useState(false);
@@ -64,13 +45,6 @@ export default function UbahJadwalModal({ isOpen, onClose, onSuccess, data }) {
       id_mk: data?.id_mk || "",
       id_kelas: data?.id_kelas || "",
       id_dosen: data?.id_dosen || "",
-      // Auto-filled dari relasi mata kuliah
-      fakultas: data?.fakultas !== "-" ? data?.fakultas || "" : "",
-      prodi: data?.prodi !== "-" ? data?.prodi || "" : "",
-      semester: data?.semester ? String(data.semester) : "",
-      sks: data?.sks !== "-" ? (data?.sks ? String(data.sks) : "") : "",
-      // Manual
-      tahun: data?.tahun !== "-" ? data?.tahun || "" : "",
       jumlah_sesi: data?.jumlah_sesi || "",
       tanggal_mulai: data?.tanggal_mulai || "",
       waktu_mulai: cleanTime(data?.waktu_mulai),
@@ -93,14 +67,10 @@ export default function UbahJadwalModal({ isOpen, onClose, onSuccess, data }) {
         id_mk: formik.values.id_mk,
         id_kelas: formik.values.id_kelas,
         id_dosen: formik.values.id_dosen,
-        tahun: formik.values.tahun,
-        semester: Number(formik.values.semester),
         jumlah_sesi: Number(formik.values.jumlah_sesi),
         tanggal_mulai: formik.values.tanggal_mulai,
         waktu_mulai: formik.values.waktu_mulai,
         waktu_berakhir: formik.values.waktu_berakhir,
-        ...(formik.values.fakultas ? { fakultas: formik.values.fakultas } : {}),
-        ...(formik.values.prodi ? { prodi: formik.values.prodi } : {}),
       };
       await onSuccess(data.id_jadwal, payload);
       setShowConfirm(false);
@@ -112,25 +82,6 @@ export default function UbahJadwalModal({ isOpen, onClose, onSuccess, data }) {
       setSubmitError(msg);
     } finally {
       setConfirmLoading(false);
-    }
-  };
-
-  // Auto-fill saat mata kuliah diubah
-  const handleMkChange = (e) => {
-    const selectedId = e.target.value;
-    formik.setFieldValue("id_mk", selectedId);
-
-    const mk = mkOptions.find((m) => m.value === selectedId);
-    if (mk) {
-      formik.setFieldValue("semester", mk.semester ? String(mk.semester) : "");
-      formik.setFieldValue("sks", mk.sks ? String(mk.sks) : "");
-      formik.setFieldValue("fakultas", mk.fakultas || "");
-      formik.setFieldValue("prodi", mk.prodi || "");
-    } else {
-      formik.setFieldValue("semester", "");
-      formik.setFieldValue("sks", "");
-      formik.setFieldValue("fakultas", "");
-      formik.setFieldValue("prodi", "");
     }
   };
 
@@ -151,14 +102,14 @@ export default function UbahJadwalModal({ isOpen, onClose, onSuccess, data }) {
         onCancel={() => setShowConfirm(false)}
         loading={confirmLoading}
         title="Simpan Perubahan?"
-        description={`Apakah Anda yakin ingin menyimpan perubahan data jadwal mata kuliah ${data.nama_mk || ""}?`}
+        description={`Apakah Anda yakin ingin menyimpan perubahan data jadwal kursus ${data.nama_mk || ""}?`}
       />
 
       <div className="fixed inset-0 z-[998] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
         <div className="bg-white rounded-2xl w-full max-w-[540px] shadow-xl overflow-hidden">
           <div className="px-7 py-5 border-b border-gray-100">
             <h3 className="text-[17px] font-bold text-[#1E293B]">
-              Ubah Jadwal Kuliah
+              Ubah Jadwal Kursus
             </h3>
           </div>
 
@@ -171,55 +122,19 @@ export default function UbahJadwalModal({ isOpen, onClose, onSuccess, data }) {
             ) : (
               <form onSubmit={formik.handleSubmit}>
                 <div className="px-7 pt-6 pb-4 flex flex-col gap-0">
-                  {/* Mata Kuliah */}
+                  {/* Kursus */}
                   <SearchableSelect
-                    label="Mata Kuliah"
+                    label="Kursus"
                     name="id_mk"
                     value={formik.values.id_mk}
-                    onChange={handleMkChange}
+                    onChange={formik.handleChange}
                     onBlur={() => formik.setFieldTouched("id_mk", true)}
                     options={mkOptions}
-                    placeholder="Pilih Mata Kuliah"
+                    placeholder="Pilih Kursus"
                     error={formik.errors.id_mk}
                     touched={formik.touched.id_mk}
                     disabled={formik.isSubmitting || confirmLoading}
                   />
-
-                  {/* Read-only dari master mata kuliah */}
-                  <div className="flex gap-3">
-                    <div className="flex-1">
-                      <ReadOnlyField
-                        label="Fakultas"
-                        value={formik.values.fakultas}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <ReadOnlyField
-                        label="Program Studi"
-                        value={formik.values.prodi}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="flex-1">
-                      <ReadOnlyField
-                        label="Semester"
-                        value={
-                          formik.values.semester
-                            ? `Semester ${formik.values.semester}`
-                            : ""
-                        }
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <ReadOnlyField
-                        label="SKS"
-                        value={
-                          formik.values.sks ? `${formik.values.sks} SKS` : ""
-                        }
-                      />
-                    </div>
-                  </div>
 
                   {/* Kelas */}
                   <SearchableSelect
@@ -235,33 +150,18 @@ export default function UbahJadwalModal({ isOpen, onClose, onSuccess, data }) {
                     disabled={formik.isSubmitting || confirmLoading}
                   />
 
-                  {/* Dosen */}
+                  {/* Pengajar */}
                   <SearchableSelect
-                    label="Dosen Pengampu"
+                    label="Pengajar"
                     name="id_dosen"
                     value={formik.values.id_dosen}
                     onChange={formik.handleChange}
                     onBlur={() => formik.setFieldTouched("id_dosen", true)}
                     options={dosenOptions}
-                    placeholder="Pilih Dosen Pengampu"
+                    placeholder="Pilih Pengajar"
                     error={formik.errors.id_dosen}
                     touched={formik.touched.id_dosen}
                     disabled={formik.isSubmitting || confirmLoading}
-                  />
-
-                  {/* Tahun Ajaran */}
-                  <SearchableSelect
-                    label="Tahun Ajaran"
-                    name="tahun"
-                    value={formik.values.tahun}
-                    onChange={formik.handleChange}
-                    onBlur={() => formik.setFieldTouched("tahun", true)}
-                    options={TAHUN_AJARAN_OPTIONS}
-                    placeholder="Pilih Tahun Ajaran"
-                    error={formik.errors.tahun}
-                    touched={formik.touched.tahun}
-                    disabled={formik.isSubmitting || confirmLoading}
-                    searchable={false}
                   />
 
                   {/* Hari & Tanggal Mulai */}

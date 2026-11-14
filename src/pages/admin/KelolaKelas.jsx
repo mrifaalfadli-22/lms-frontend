@@ -15,8 +15,6 @@ import TambahKelasModal from "../../components/admin/TambahKelasModal";
 import UbahKelasModal from "../../components/admin/UbahKelasModal";
 import DetailKelasModal from "../../components/admin/DetailKelasModal";
 import Pagination from "../../components/common/Pagination";
-import { formatFakultas } from "../../utils/formatters";
-import { fakultasData } from "../../data/fakultasData";
 import { kelasService } from "../../services/kelasService";
 import ExcelJS from "exceljs";
 
@@ -27,9 +25,6 @@ export default function KelolaKelas() {
     useKelas();
 
   const [search, setSearch] = useState("");
-  const [tahunFilter, setTahunFilter] = useState("");
-  const [fakultasFilter, setFakultasFilter] = useState("");
-  const [prodiFilter, setProdiFilter] = useState("");
 
   const [showTambah, setShowTambah] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -45,12 +40,9 @@ export default function KelolaKelas() {
     (page = 1, limit = itemsPerPage) => {
       const params = { page, per_page: limit };
       if (search) params.search = search;
-      if (tahunFilter) params.tahun_angkatan = tahunFilter;
-      if (fakultasFilter) params.fakultas = fakultasFilter;
-      if (prodiFilter) params.prodi = prodiFilter;
       return params;
     },
-    [search, tahunFilter, fakultasFilter, prodiFilter, itemsPerPage],
+    [search, itemsPerPage],
   );
 
   // Fetch awal saat mount
@@ -64,45 +56,9 @@ export default function KelolaKelas() {
     setSearch(value);
     const params = { page: 1 };
     if (value) params.search = value;
-    if (tahunFilter) params.tahun_angkatan = tahunFilter;
-    if (fakultasFilter) params.fakultas = fakultasFilter;
-    if (prodiFilter) params.prodi = prodiFilter;
     debouncedFetch(params);
   };
 
-  const handleTahunChange = (e) => {
-    const value = e.target.value;
-    setTahunFilter(value);
-    const params = { page: 1 };
-    if (search) params.search = search;
-    if (value) params.tahun_angkatan = value;
-    if (fakultasFilter) params.fakultas = fakultasFilter;
-    if (prodiFilter) params.prodi = prodiFilter;
-    fetchPage(params);
-  };
-
-  const handleFakultasChange = (e) => {
-    const value = e.target.value;
-    setFakultasFilter(value);
-    // Reset prodi saat fakultas berubah
-    setProdiFilter("");
-    const params = { page: 1 };
-    if (search) params.search = search;
-    if (tahunFilter) params.tahun_angkatan = tahunFilter;
-    if (value) params.fakultas = value;
-    fetchPage(params);
-  };
-
-  const handleProdiChange = (e) => {
-    const value = e.target.value;
-    setProdiFilter(value);
-    const params = { page: 1 };
-    if (search) params.search = search;
-    if (tahunFilter) params.tahun_angkatan = tahunFilter;
-    if (fakultasFilter) params.fakultas = fakultasFilter;
-    if (value) params.prodi = value;
-    fetchPage(params);
-  };
 
   const handlePageChange = (page) => {
     fetchPage(buildParams(page));
@@ -159,7 +115,7 @@ export default function KelolaKelas() {
       const sheet = workbook.addWorksheet("Data Kelas");
 
       // Styling Header
-      const headerRow = sheet.addRow(["No", "Kode Kelas", "Nama Kelas", "Fakultas", "Program Studi", "Tahun Angkatan"]);
+      const headerRow = sheet.addRow(["No", "Kode Kelas", "Nama Kelas"]);
       headerRow.eachCell((cell) => {
         cell.fill = {
           type: "pattern",
@@ -186,9 +142,6 @@ export default function KelolaKelas() {
           index + 1,
           item.kode_kelas || "-",
           item.nama_kelas || "-",
-          formatFakultas(item.fakultas) || "-",
-          item.prodi || "-",
-          item.tahun_angkatan || "-",
         ]);
 
         row.eachCell((cell) => {
@@ -201,10 +154,9 @@ export default function KelolaKelas() {
           };
         });
         
-        // Center alignment for No, Kode Kelas, and Tahun
+        // Center alignment for No, and Kode Kelas
         row.getCell(1).alignment = { horizontal: "center" };
         row.getCell(2).alignment = { horizontal: "center" };
-        row.getCell(6).alignment = { horizontal: "center" };
       });
 
       // Auto-fit columns
@@ -261,9 +213,6 @@ export default function KelolaKelas() {
         fields={[
           { label: "Kode Kelas", key: "kode_kelas" },
           { label: "Nama Kelas", key: "nama_kelas" },
-          { label: "Tahun Angkatan", key: "tahun_angkatan" },
-          { label: "Fakultas", key: "fakultas" },
-          { label: "Program Studi", key: "prodi" },
         ]}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTarget(null)}
@@ -307,64 +256,16 @@ export default function KelolaKelas() {
               type="text"
               value={search}
               onChange={handleSearchChange}
-              placeholder="Cari nama, kode, fakultas, atau prodi..."
+              placeholder="Cari nama atau kode kelas..."
               className="w-full pl-9 pr-4 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] placeholder:text-[#94A3B8] outline-none focus:border-[#167A61] transition-all"
             />
           </div>
 
-          {/* Filter Tahun Angkatan */}
-          <select
-            value={tahunFilter}
-            onChange={handleTahunChange}
-            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
-          >
-            <option value="">Semua Tahun Angkatan</option>
-            {[2020, 2021, 2022, 2023, 2024, 2025, 2026].map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-
-          {/* Filter Fakultas */}
-          <select
-            value={fakultasFilter}
-            onChange={handleFakultasChange}
-            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
-          >
-            <option value="">Semua Fakultas</option>
-            {fakultasData.map((f) => (
-              <option key={f.value} value={f.value}>
-                {f.label}
-              </option>
-            ))}
-          </select>
-
-          {/* Filter Program Studi */}
-          <select
-            value={prodiFilter}
-            onChange={handleProdiChange}
-            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
-          >
-            <option value="">Semua Program Studi</option>
-            {(fakultasFilter
-              ? fakultasData.find((f) => f.value === fakultasFilter)?.prodi || []
-              : [...new Set(fakultasData.flatMap((f) => f.prodi.map((p) => p.value)))].sort().map(value => ({ value, label: value }))
-            ).map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-
           {/* Tombol Reset Filter */}
-          {(fakultasFilter || prodiFilter || tahunFilter || search) && (
+          {search && (
             <button
               onClick={() => {
                 setSearch("");
-                setTahunFilter("");
-                setFakultasFilter("");
-                setProdiFilter("");
                 fetchPage({ page: 1, per_page: itemsPerPage });
               }}
               className="flex items-center gap-1.5 text-[13px] font-semibold text-red-500 border border-red-200 px-3 py-2 rounded-lg hover:bg-red-50 transition-all whitespace-nowrap"
@@ -391,12 +292,12 @@ export default function KelolaKelas() {
                 <Layout size={28} className="text-[#94A3B8]" />
               </div>
               <p className="text-[14px] font-bold text-[#64748B]">
-                {search || tahunFilter || fakultasFilter || prodiFilter
+                {search
                   ? "Data tidak ditemukan."
                   : "Belum ada data kelas."}
               </p>
               <p className="text-[13px] text-[#94A3B8] mt-1">
-                {search || tahunFilter || fakultasFilter || prodiFilter
+                {search
                   ? "Coba ubah kata kunci atau filter pencarian."
                   : "Data akan muncul setelah ditambahkan ke sistem."}
               </p>
@@ -409,9 +310,6 @@ export default function KelolaKelas() {
                     "No",
                     "Kode Kelas",
                     "Nama Kelas",
-                    "Fakultas",
-                    "Program Studi",
-                    "Tahun Angkatan",
                     "Aksi",
                   ].map((h) => (
                     <th
@@ -439,17 +337,6 @@ export default function KelolaKelas() {
                     </td>
                     <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                       {val(k.nama_kelas)}
-                    </td>
-                    <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {formatFakultas(val(k.fakultas))}
-                    </td>
-                    <td className="py-4 px-4 text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {val(k.prodi)}
-                    </td>
-                    <td className="py-4 px-4 whitespace-nowrap">
-                      <span className="bg-[#DCFCE7] text-[#008B5E] px-3 py-1.5 rounded-full text-[12px] font-black uppercase">
-                        {val(k.tahun_angkatan)}
-                      </span>
                     </td>
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-2">

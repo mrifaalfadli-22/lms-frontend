@@ -17,9 +17,6 @@ export default function DetailKelasModal({ isOpen, onClose, data }) {
   const rows = [
     { label: "Nama Kelas", value: val(data.nama_kelas) },
     { label: "Kode Kelas", value: val(data.kode_kelas) },
-    { label: "Tahun Angkatan", value: val(data.tahun_angkatan) },
-    { label: "Fakultas", value: val(data.fakultas) },
-    { label: "Program Studi", value: val(data.prodi) },
     { label: "Dibuat Pada", value: formatDate(data.created_at) },
     { label: "Diperbarui Pada", value: formatDate(data.updated_at) },
   ];

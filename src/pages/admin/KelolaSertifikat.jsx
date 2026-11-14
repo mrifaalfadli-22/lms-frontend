@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
-import { Search, Download, Settings2, Eye, Trash2, Loader2 } from "lucide-react";
+import { Search, Download, Settings2, Eye, Loader2 } from "lucide-react";
 import Pagination from "../../components/common/Pagination";
 import DeleteConfirmModal from "../../components/admin/DeleteConfirmModal";
 import AturTemplateModal from "../../components/admin/AturTemplateModal";
-import DetailSertifikatMahasiswaModal from "../../components/admin/DetailSertifikatMahasiswaModal";
-import { formatFakultas } from "../../utils/formatters";
-import { fakultasData } from "../../data/fakultasData";
+import DetailSertifikatPesertaModal from "../../components/admin/DetailSertifikatPesertaModal";
 import api from "../../config/api";
 import ExcelJS from "exceljs";
 
@@ -15,10 +13,6 @@ export default function KelolaSertifikat() {
 
   // Filter and search
   const [search, setSearch] = useState("");
-  const [tahunFilter, setTahunFilter] = useState("");
-  const [semesterFilter, setSemesterFilter] = useState("");
-  const [fakultasFilter, setFakultasFilter] = useState("");
-  const [prodiFilter, setProdiFilter] = useState("");
 
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -39,7 +33,7 @@ export default function KelolaSertifikat() {
       const res = await api.get('/sertifikat/grouped?per_page=500');
       if (res.data.status === 'success') {
         const formatted = res.data.data.data.map(item => {
-          const mk = item.jadwal?.mata_kuliah?.nama_mk || 'Mata Kuliah';
+          const mk = item.jadwal?.mata_kuliah?.nama_mk || 'Kursus';
           const kls = item.jadwal?.kelas?.nama_kelas || 'Kelas';
           
           return {
@@ -47,12 +41,8 @@ export default function KelolaSertifikat() {
             mahasiswa: item.mahasiswa?.nama_lengkap || 'Tanpa Nama',
             npm: item.mahasiswa?.nomor_induk || '-',
             mataKuliah: `${mk} - ${kls}`,
-            semester: `Semester ${item.jadwal?.mata_kuliah?.semester || '-'}`,
-            tahun: item.jadwal?.mata_kuliah?.semester || '-', // Ini bisa disesuaikan
             dosen: item.jadwal?.dosen?.nama_lengkap || '-',
             nidn: item.jadwal?.dosen?.nomor_induk || '-',
-            fakultas: item.jadwal?.fakultas || '-',
-            prodi: item.jadwal?.prodi || '-',
             jumlahSertifikat: item.sertifikat?.length || 0,
             sertifikats: item.sertifikat || [],
             statusKelulusan: item.status_kelayakan === 'Disetujui' ? 'LULUS' : '-',
@@ -121,21 +111,14 @@ export default function KelolaSertifikat() {
     }
   };
 
-  const tahunOptions = [...new Set(sertifikatList.map((s) => s.tahun))].filter(Boolean).sort((a, b) => b - a);
-
   const filtered = sertifikatList.filter((s) => {
     const q = search.toLowerCase();
-    const matchSearch =
+    return (
       !q ||
       [s.mahasiswa, s.npm, s.mataKuliah, s.dosen, s.nidn].some(
         (v) => v?.toLowerCase().includes(q),
-      );
-    const matchTahun = !tahunFilter || String(s.tahun) === String(tahunFilter);
-    const matchSemester = !semesterFilter || String(s.semester) === String(semesterFilter);
-    const matchFakultas = !fakultasFilter || s.fakultas === fakultasFilter;
-    const matchProdi = !prodiFilter || s.prodi === prodiFilter;
-    
-    return matchSearch && matchTahun && matchSemester && matchFakultas && matchProdi;
+      )
+    );
   });
 
   const total = filtered.length;
@@ -164,7 +147,7 @@ export default function KelolaSertifikat() {
       const sheet = workbook.addWorksheet("Data Sertifikat");
 
       // Styling Header
-      const headerRow = sheet.addRow(["No", "NPM", "Mahasiswa", "Mata Kuliah", "Fakultas", "Program Studi", "Semester", "NIDN", "Dosen", "Jumlah Sertifikat", "Nilai Akhir", "Status Kelulusan"]);
+      const headerRow = sheet.addRow(["No", "NPM", "Peserta", "Kursus", "NIDN", "Pengajar", "Jumlah Sertifikat", "Nilai Akhir", "Status Kelulusan"]);
       headerRow.eachCell((cell) => {
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF167A61" } };
         cell.font = { color: { argb: "FFFFFFFF" }, bold: true };
@@ -185,9 +168,6 @@ export default function KelolaSertifikat() {
           item.npm || "-",
           item.mahasiswa || "-",
           item.mataKuliah || "-",
-          formatFakultas(item.fakultas) || "-",
-          item.prodi || "-",
-          item.semester || "-",
           item.nidn || "-",
           item.dosen || "-",
           item.jumlahSertifikat || 0,
@@ -207,11 +187,10 @@ export default function KelolaSertifikat() {
         
         row.getCell(1).alignment = { horizontal: "center" };
         row.getCell(2).alignment = { horizontal: "center" };
+        row.getCell(5).alignment = { horizontal: "center" };
         row.getCell(7).alignment = { horizontal: "center" };
         row.getCell(8).alignment = { horizontal: "center" };
-        row.getCell(10).alignment = { horizontal: "center" };
-        row.getCell(11).alignment = { horizontal: "center" };
-        row.getCell(12).alignment = { horizontal: "center" };
+        row.getCell(9).alignment = { horizontal: "center" };
       });
 
       // Auto-fit columns
@@ -246,7 +225,7 @@ export default function KelolaSertifikat() {
 
   return (
     <>
-      <DetailSertifikatMahasiswaModal
+      <DetailSertifikatPesertaModal
         isOpen={!!viewTarget}
         onClose={() => setViewTarget(null)}
         data={viewTarget}
@@ -263,8 +242,8 @@ export default function KelolaSertifikat() {
         title="Hapus Sertifikat"
         fields={[
           { label: "No. Sertifikat", key: "noSertifikat" },
-          { label: "Mahasiswa", key: "mahasiswa" },
-          { label: "Mata Kuliah", key: "mataKuliah" },
+          { label: "Peserta", key: "mahasiswa" },
+          { label: "Kursus", key: "mataKuliah" },
         ]}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTarget(null)}
@@ -307,63 +286,10 @@ export default function KelolaSertifikat() {
               type="text"
               value={search}
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-              placeholder="Cari mahasiswa, NPM, mata kuliah, atau dosen..."
+              placeholder="Cari peserta, NPM, kursus, atau pengajar..."
               className="w-full pl-9 pr-4 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] placeholder:text-[#94A3B8] outline-none focus:border-[#167A61] transition-all"
             />
           </div>
-          <select
-            value={fakultasFilter}
-            onChange={(e) => { 
-              setFakultasFilter(e.target.value); 
-              setProdiFilter(""); 
-              setCurrentPage(1); 
-            }}
-            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] bg-white cursor-pointer"
-          >
-            <option value="">Semua Fakultas</option>
-            {fakultasData.map((f) => (
-              <option key={f.value} value={f.value}>{f.label}</option>
-            ))}
-          </select>
-          <select
-            value={prodiFilter}
-            onChange={(e) => { setProdiFilter(e.target.value); setCurrentPage(1); }}
-            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] bg-white cursor-pointer"
-          >
-            <option value="">Semua Prodi</option>
-            {(fakultasFilter
-              ? fakultasData.find((f) => f.value === fakultasFilter)?.prodi || []
-              : [...new Set(fakultasData.flatMap((f) => f.prodi.map((p) => p.value)))].sort().map(value => ({ value, label: value }))
-            ).map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-          <select
-            value={tahunFilter}
-            onChange={(e) => { setTahunFilter(e.target.value); setCurrentPage(1); }}
-            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] bg-white cursor-pointer"
-          >
-            <option value="">Semua Tahun</option>
-            {tahunOptions.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-          <select
-            value={semesterFilter}
-            onChange={(e) => { setSemesterFilter(e.target.value); setCurrentPage(1); }}
-            className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] outline-none focus:border-[#167A61] bg-white cursor-pointer"
-          >
-            <option value="">Semua Semester</option>
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
-              <option key={s} value={`Semester ${s}`}>
-                Semester {s}
-              </option>
-            ))}
-          </select>
         </div>
 
         {/* Table */}
@@ -373,11 +299,10 @@ export default function KelolaSertifikat() {
               <tr className="border-b border-[#E2E8F0]">
                 {[
                   "No",
-                  "Mahasiswa",
+                  "Peserta",
                   "NPM",
-                  "Mata Kuliah",
-                  "Semester",
-                  "Dosen",
+                  "Kursus",
+                  "Pengajar",
                   "NIDN",
                   "Jumlah Sertifikat",
                   "Aksi",
@@ -394,14 +319,14 @@ export default function KelolaSertifikat() {
             <tbody className="text-[14px] text-[#1E293B]">
               {loading ? (
                 <tr>
-                  <td colSpan={10} className="py-10 text-center">
+                  <td colSpan={8} className="py-10 text-center">
                     <Loader2 size={24} className="animate-spin text-[#167A61] mx-auto" />
                   </td>
                 </tr>
               ) : paginatedData.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={10}
+                    colSpan={8}
                     className="py-10 text-center text-[#94A3B8] text-[13px]"
                   >
                     Tidak ada data yang ditemukan.
@@ -424,9 +349,6 @@ export default function KelolaSertifikat() {
                     </td>
                     <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                       {s.mataKuliah}
-                    </td>
-                    <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
-                      {s.semester}
                     </td>
                     <td className="py-4 px-4 font-normal text-[#1E293B] group-hover:text-[#0E5C46] whitespace-nowrap">
                       {s.dosen}

@@ -7,19 +7,19 @@ import bgAside from "../../assets/images/bg-aside.svg";
 const menuItems = [
   { name: "Dashboard", path: "/admin/dashboard" },
   { name: "Kelola Kelas", path: "/admin/kelola-kelas" },
-  { name: "Kelola Mata Kuliah", path: "/admin/kelola-mata-kuliah" },
+  { name: "Kelola Kursus", path: "/admin/kelola-mata-kuliah" },
   {
-    name: "Kelola Jadwal Perkuliahan",
+    name: "Kelola Jadwal Kursus",
     path: "/admin/kelola-jadwal-perkuliahan",
   },
   {
-    name: "Kelola Materi Perkuliahan",
+    name: "Kelola Materi Kursus",
     path: "/admin/kelola-materi-perkuliahan",
   },
   { name: "Forum Diskusi", path: "/admin/forum-diskusi" },
   { name: "Kelola Sertifikat", path: "/admin/kelola-sertifikat" },
   { name: "Kelola Evaluasi", path: "/admin/kelola-evaluasi" },
-  { name: "Verifikasi Dosen", path: "/admin/verifikasi-dosen" },
+  { name: "Verifikasi Pengajar", path: "/admin/verifikasi-dosen" },
   { name: "Kelola Pengguna", path: "/admin/kelola-pengguna" },
 ];
 

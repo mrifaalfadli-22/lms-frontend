@@ -2,6 +2,7 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
+  Navigate,
 } from "react-router-dom";
 // Import ProtectedRoute
 import ProtectedRoute from "./components/routes/ProtectedRoute";
@@ -9,6 +10,7 @@ import ProtectedRoute from "./components/routes/ProtectedRoute";
 import AuthLayout from "./layouts/auth/AuthLayout";
 import AdminDashboardLayout from "./layouts/admin/DashboardLayout";
 import DosenDashboardLayout from "./layouts/dosen/DashboardLayout";
+import LoginForm from "./components/auth/LoginForm";
 import RegisterForm from "./components/auth/RegistrasiForm";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import ResetPassword from "./pages/auth/ResetPassword";
@@ -25,17 +27,17 @@ import DetailMonitoringProgres from "./pages/dosen/DetailMonitoringProgres";
 import ForumDiskusiMahasiswa from "./pages/dosen/ForumDiskusi";
 import VerifikasiSertifikat from "./pages/dosen/VerifikasiSertifikat";
 import HasilEvaluasi from "./pages/dosen/HasilEvaluasi";
-import ProfilDosen from "./pages/dosen/ProfilDosen";
+import ProfilPengajar from "./pages/dosen/ProfilPengajar";
 
 import AdminDashboard from "./pages/admin/Dashboard";
 import KelolaPengguna from "./pages/admin/KelolaPengguna";
 import KelolaKelas from "./pages/admin/KelolaKelas";
-import KelolaMataKuliah from "./pages/admin/KelolaMataKuliah";
-import KelolaJadwalKuliah from "./pages/admin/KelolaJadwalKuliah";
-import KelolaMateriPerkuliahan from "./pages/admin/KelolaMateriPerkuliahan";
+import KelolaKursus from "./pages/admin/KelolaKursus";
+import KelolaJadwalKursus from "./pages/admin/KelolaJadwalKursus";
+import KelolaMateriKursus from "./pages/admin/KelolaMateriKursus";
 import ForumDiskusi from "./pages/admin/ForumDiskusi";
 import KelolaSertifikat from "./pages/admin/KelolaSertifikat";
-import VerifikasiDosen from "./pages/admin/VerifikasiDosen";
+import VerifikasiPengajar from "./pages/admin/VerifikasiPengajar";
 import ProfilAdmin from "./pages/admin/ProfilAdmin";
 import KelolaEvaluasi from "./pages/admin/KelolaEvaluasi";
 import DetailKelasDummy from "./components/admin/DetailKelasDummy";
@@ -46,13 +48,14 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* 1. Alur Otomatis ke E-Portal (login dilakukan sepenuhnya via SSO) */}
-        <Route path="/" element={<RedirectToEportal />} />
+        {/* 1. Alur Otomatis ke Login Admin */}
+        <Route path="/" element={<Navigate to="/login-admin" replace />} />
 
         {/* 2. Grouping Halaman Authentication (Public) */}
         <Route element={<AuthLayout />}>
-          <Route path="/login" element={<RedirectToEportal />} />
-          <Route path="/login-admin" element={<RedirectToEportal />} />
+          <Route path="/login" element={<LoginForm role="dosen" />} />
+          <Route path="/login-admin" element={<LoginForm role="admin" />} />
+          <Route path="/sso-redirect" element={<RedirectToEportal />} />
           <Route path="/register" element={<RegisterForm />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
@@ -77,7 +80,7 @@ function App() {
           />
           <Route
             path="kelola-sesi-pertemuan/:id"
-            element={<DetailKelasDummy title="Detail Kelas Mata Kuliah" backTo="/dosen/kelola-sesi-pertemuan" />}
+            element={<DetailKelasDummy title="Detail Kelas Kursus" backTo="/dosen/kelola-sesi-pertemuan" />}
           />
           <Route
             path="kelola-sesi-pertemuan/:id/kelas/:kelasId"
@@ -90,7 +93,7 @@ function App() {
           <Route path="monitoring-progres" element={<MonitoringProgres />} />
           <Route
             path="monitoring-progres/:id"
-            element={<DetailKelasDummy title="Detail Kelas Mata Kuliah" backTo="/dosen/monitoring-progres" />}
+            element={<DetailKelasDummy title="Detail Kelas Kursus" backTo="/dosen/monitoring-progres" />}
           />
           <Route
             path="monitoring-progres/:id/kelas/:kelasId"
@@ -102,7 +105,7 @@ function App() {
             element={<VerifikasiSertifikat />}
           />
           <Route path="hasil-evaluasi" element={<HasilEvaluasi />} />
-          <Route path="profil" element={<ProfilDosen />} />
+          <Route path="profil" element={<ProfilPengajar />} />
         </Route>
 
         {/* 4. Grouping Halaman Admin (Protected) */}
@@ -117,18 +120,18 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="kelola-pengguna" element={<KelolaPengguna />} />
           <Route path="kelola-kelas" element={<KelolaKelas />} />
-          <Route path="kelola-mata-kuliah" element={<KelolaMataKuliah />} />
+          <Route path="kelola-mata-kuliah" element={<KelolaKursus />} />
           <Route
             path="kelola-jadwal-perkuliahan"
-            element={<KelolaJadwalKuliah />}
+            element={<KelolaJadwalKursus />}
           />
           <Route
             path="kelola-materi-perkuliahan"
-            element={<KelolaMateriPerkuliahan />}
+            element={<KelolaMateriKursus />}
           />
           <Route
             path="kelola-materi-perkuliahan/:id"
-            element={<DetailKelasDummy title="Kelola Materi Perkuliahan" backTo="/admin/kelola-materi-perkuliahan" />}
+            element={<DetailKelasDummy title="Kelola Materi Kursus" backTo="/admin/kelola-materi-perkuliahan" />}
           />
           <Route
             path="kelola-materi-perkuliahan/:id/kelas/:kelasId"
@@ -145,12 +148,12 @@ function App() {
           />
           <Route path="kelola-sertifikat" element={<KelolaSertifikat />} />
           <Route path="kelola-evaluasi" element={<KelolaEvaluasi />} />
-          <Route path="verifikasi-dosen" element={<VerifikasiDosen />} />
+          <Route path="verifikasi-dosen" element={<VerifikasiPengajar />} />
           <Route path="profil" element={<ProfilAdmin />} />
         </Route>
 
         {/* Catch All - Jika user nyasar ke URL yang tidak ada */}
-        <Route path="*" element={<RedirectToEportal />} />
+        <Route path="*" element={<Navigate to="/login-admin" replace />} />
       </Routes>
     </Router>
   );

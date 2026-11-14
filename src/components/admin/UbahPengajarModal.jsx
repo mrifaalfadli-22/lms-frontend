@@ -1,48 +1,49 @@
-// components/admin/UbahMahasiswaModal.jsx
+// components/admin/UbahPengajarModal.jsx
 import { useState } from "react";
 import { useFormik } from "formik";
 import { fakultasData } from "../../data/fakultasData";
-import { mahasiswaEditSchema } from "../../schemas/mahasiswaSchema";
+import { pengajarEditSchema } from "../../schemas/pengajarSchema";
 import Input from "../ui/Input";
 import SearchableSelect from "../ui/SearchableSelect";
 import ConfirmSaveModal from "./ConfirmSaveModal";
 
-export default function UbahMahasiswaModal({
-  isOpen,
-  onClose,
-  onSuccess,
-  data,
-}) {
+export default function UbahPengajarModal({ isOpen, onClose, onSuccess, data }) {
   if (!isOpen || !data) return null;
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
   const formik = useFormik({
     initialValues: {
       nama_lengkap: data.nama_lengkap || "",
       nomor_induk: data.nomor_induk || "",
+      email: data.email || "",
       fakultas: data.fakultas || "",
       prodi: data.prodi || "",
-      angkatan: data.angkatan || "",
       status_aktif: data.status_aktif ?? true,
+      status_persetujuan: data.status_persetujuan || "Disetujui",
     },
-    validationSchema: mahasiswaEditSchema,
+    validationSchema: pengajarEditSchema,
     enableReinitialize: true,
     onSubmit: async () => {
       // Saat form valid, tampilkan modal konfirmasi — jangan simpan dulu
+      setSubmitError(null);
       setShowConfirm(true);
     },
   });
 
   const handleConfirmSave = async () => {
     setConfirmLoading(true);
+    setSubmitError(null);
     try {
       await onSuccess(data.id_user, formik.values);
       setShowConfirm(false);
       onClose();
-    } catch {
-      // error ditangani di parent
+    } catch (err) {
+      setShowConfirm(false);
+      const msg = err?.response?.data?.message || "Gagal menyimpan data pengajar.";
+      setSubmitError(msg);
     } finally {
       setConfirmLoading(false);
     }
@@ -61,6 +62,7 @@ export default function UbahMahasiswaModal({
   const handleClose = () => {
     formik.resetForm();
     setShowConfirm(false);
+    setSubmitError(null);
     onClose();
   };
 
@@ -73,7 +75,7 @@ export default function UbahMahasiswaModal({
         onCancel={() => setShowConfirm(false)}
         loading={confirmLoading}
         title="Simpan Perubahan?"
-        description={`Data mahasiswa ${data.nama_lengkap} akan diperbarui. Apakah Anda yakin ingin menyimpan perubahan ini?`}
+        description={`Data pengajar ${data.nama_lengkap} akan diperbarui. Apakah Anda yakin ingin menyimpan perubahan ini?`}
       />
 
       {/* Modal form utama */}
@@ -82,12 +84,12 @@ export default function UbahMahasiswaModal({
           {/* Header */}
           <div className="flex items-center justify-between px-7 py-5 border-b border-gray-100">
             <h3 className="text-[17px] font-bold text-[#1E293B]">
-              Ubah Data Mahasiswa
+              Ubah Data Pengajar
             </h3>
           </div>
 
           <div className="overflow-y-auto max-h-[80vh]">
-            <form onSubmit={formik.handleSubmit} id="ubah-mahasiswa-form">
+            <form onSubmit={formik.handleSubmit} id="ubah-dosen-form">
               <div className="px-7 pt-6 pb-4 flex flex-col gap-0">
                 <Input
                   label="Nama Lengkap"
@@ -101,14 +103,25 @@ export default function UbahMahasiswaModal({
                   disabled={formik.isSubmitting}
                 />
                 <Input
-                  label="NPM (Nomor Pokok Mahasiswa)"
+                  label="NIDN (Nomor Induk Dosen Nasional)"
                   name="nomor_induk"
-                  placeholder="Contoh: 2210631170001"
+                  placeholder="Contoh: 0012345678"
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   value={formik.values.nomor_induk}
                   error={formik.errors.nomor_induk}
                   touched={formik.touched.nomor_induk}
+                  disabled={formik.isSubmitting}
+                />
+                <Input
+                  label="Email"
+                  name="email"
+                  placeholder="Contoh: dosen@univ.ac.id"
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  value={formik.values.email}
+                  error={formik.errors.email}
+                  touched={formik.touched.email}
                   disabled={formik.isSubmitting}
                 />
                 <SearchableSelect
@@ -140,18 +153,6 @@ export default function UbahMahasiswaModal({
                   error={formik.errors.prodi}
                   touched={formik.touched.prodi}
                 />
-                <Input
-                  label="Angkatan"
-                  name="angkatan"
-                  placeholder="Contoh: 2024"
-                  maxLength={4}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  value={formik.values.angkatan}
-                  error={formik.errors.angkatan}
-                  touched={formik.touched.angkatan}
-                  disabled={formik.isSubmitting}
-                />
                 <SearchableSelect
                   label="Status Akun"
                   name="status_aktif"
@@ -174,6 +175,13 @@ export default function UbahMahasiswaModal({
                   searchable={false}
                 />
               </div>
+
+              {/* Error message */}
+              {submitError && (
+                <p className="text-red-500 text-[13px] text-center px-7 pb-3">
+                  {submitError}
+                </p>
+              )}
 
               {/* Footer */}
               <div className="px-7 py-5 border-t border-gray-100 flex gap-3 sticky bottom-0 bg-white">

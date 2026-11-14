@@ -34,7 +34,7 @@ export default function DetailProgressModal({ isOpen, onClose, data, mataKuliah,
           currentIdMahasiswa = found.id_mahasiswa;
           data.id_mahasiswa = currentIdMahasiswa; // Mutasi reference object agar save() juga mendapatkannya
         } else {
-          throw new Error("ID Mahasiswa tidak ditemukan, silahkan refresh halaman");
+          throw new Error("ID Peserta tidak ditemukan, silahkan refresh halaman");
         }
       }
 

@@ -2,16 +2,12 @@ import { X } from "lucide-react";
 
 const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
 
-export default function DetailMataKuliahModal({ isOpen, onClose, data }) {
+export default function DetailKursusModal({ isOpen, onClose, data }) {
   if (!isOpen || !data) return null;
 
   const rows = [
-    { label: "Kode MK", value: val(data.kode_mk) },
-    { label: "Nama Mata Kuliah", value: val(data.nama_mk) },
-    { label: "Fakultas", value: val(data.fakultas) },
-    { label: "Program Studi", value: val(data.prodi) },
-    { label: "SKS", value: data.sks ? `${data.sks} SKS` : "-" },
-    { label: "Semester", value: data.semester ? `Semester ${data.semester}` : "-" },
+    { label: "Kode Kursus", value: val(data.kode_mk) },
+    { label: "Nama Kursus", value: val(data.nama_mk) },
     { label: "Deskripsi", value: val(data.deskripsi) },
   ];
 
@@ -25,10 +21,10 @@ export default function DetailMataKuliahModal({ isOpen, onClose, data }) {
         <div className="px-6 pt-6 pb-2 flex items-start justify-between">
           <div>
             <h3 className="text-[18px] font-bold text-[#008B5E] leading-tight">
-              Detail Mata Kuliah
+              Detail Kursus
             </h3>
             <p className="text-[13px] text-[#64748B] mt-1">
-              Informasi lengkap mengenai mata kuliah ini.
+              Informasi lengkap mengenai kursus ini.
             </p>
           </div>
           <button

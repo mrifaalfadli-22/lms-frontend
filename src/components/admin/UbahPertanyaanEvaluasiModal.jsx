@@ -4,7 +4,7 @@ import * as Yup from "yup";
 import { X, HelpCircle, ListOrdered } from "lucide-react";
 
 const KATEGORI_OPTIONS = [
-  { value: "Kinerja Dosen", label: "Kinerja Dosen" },
+  { value: "Kinerja Dosen", label: "Kinerja Pengajar" },
   { value: "Kualitas Pembelajaran", label: "Kualitas Pembelajaran" },
   { value: "Lainnya", label: "Lainnya (Kustom)" },
 ];
@@ -204,7 +204,7 @@ export default function UbahPertanyaanEvaluasiModal({ isOpen, onClose, onSuccess
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   disabled={formik.isSubmitting}
-                  placeholder="Contoh: Seberapa jelas dosen dalam menyampaikan materi?"
+                  placeholder="Contoh: Seberapa jelas pengajar dalam menyampaikan materi?"
                   className={fieldClass("teks_pertanyaan") + " resize-none"}
                 />
                 {formik.touched.teks_pertanyaan && formik.errors.teks_pertanyaan && (

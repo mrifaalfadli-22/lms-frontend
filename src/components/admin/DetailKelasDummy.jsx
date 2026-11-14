@@ -47,7 +47,7 @@ export default function DetailKelasDummy({ title, backTo }) {
           className="flex items-center gap-2 px-3 py-1.5 border border-[#167A61] text-[#167A61] rounded-xl bg-transparent hover:bg-[#F0FAF6] transition-all font-bold text-[13px]"
         >
           <ArrowLeft size={14} strokeWidth={2.5} />
-          <span>Kembali ke Mata Kuliah</span>
+          <span>Kembali ke Kursus</span>
         </Link>
         <ChevronRight size={14} />
         <span className="text-[#1E293B] font-semibold">{jadwal?.nama_mk || "Memuat..."}</span>
@@ -119,13 +119,13 @@ export default function DetailKelasDummy({ title, backTo }) {
                       Jadwal: {c.hari || "-"}, {formatWaktu(c.waktu_mulai, c.waktu_berakhir)}
                     </p>
                     <p className="text-[13px] text-[#64748B]">
-                      Dosen: {jadwal?.nama_dosen || "-"}
+                      Pengajar: {jadwal?.nama_dosen || "-"}
                     </p>
                     <p className="text-[13px] text-[#64748B]">
                       NIDN: {jadwal?.nidn || "-"}
                     </p>
                     <p className="text-[13px] text-[#167A61] font-bold pt-1">
-                      Total Mahasiswa: {c.total_mahasiswa || 0} Orang
+                      Total Peserta: {c.total_mahasiswa || 0} Orang
                     </p>
                   </div>
                 </CardWrapper>

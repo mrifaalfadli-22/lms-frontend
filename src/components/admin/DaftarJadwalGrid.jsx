@@ -1,23 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Search, Loader2, CalendarDays } from "lucide-react";
-import { useJadwalKuliah } from "../../hooks/useJadwalKuliah";
+import { useJadwalKursus } from "../../hooks/useJadwalKursus";
 import Pagination from "../common/Pagination";
-
-import { fakultasData } from "../../data/fakultasData";
-import { formatFakultas } from "../../utils/formatters";
-
-// Generate flat options for Prodi from fakultasData
-const PRODI_OPTIONS = [...new Set(fakultasData.flatMap(f => f.prodi.map(p => p.value)))].sort();
-
-const SEMESTER_OPTIONS = Array.from({ length: 8 }, (_, i) => i + 1);
-
-// Generate tahun ajaran: dari 3 tahun lalu hingga 2 tahun ke depan
-const currentYear = new Date().getFullYear();
-const TAHUN_OPTIONS = Array.from({ length: 6 }, (_, i) => {
-  const y = currentYear - 3 + i;
-  return `${y}/${y + 1}`;
-});
 
 export default function DaftarJadwalGrid({ title, basePath, dosenNidn, isDosenView }) {
   const {
@@ -25,16 +10,11 @@ export default function DaftarJadwalGrid({ title, basePath, dosenNidn, isDosenVi
     loading,
     error,
     pagination,
-    fetchPage,
     fetchGrouped,
     debouncedFetchGrouped,
-  } = useJadwalKuliah();
+  } = useJadwalKursus();
 
   const [search, setSearch] = useState("");
-  const [fakultasFilter, setFakultasFilter] = useState("");
-  const [prodiFilter, setProdiFilter] = useState("");
-  const [semesterFilter, setSemesterFilter] = useState("");
-  const [tahunFilter, setTahunFilter] = useState("");
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
@@ -42,14 +22,10 @@ export default function DaftarJadwalGrid({ title, basePath, dosenNidn, isDosenVi
     (page = 1, limit = itemsPerPage) => {
       const params = { page, per_page: limit };
       if (search) params.search = search;
-      if (fakultasFilter) params.fakultas = fakultasFilter;
-      if (prodiFilter) params.prodi = prodiFilter;
-      if (semesterFilter) params.semester = semesterFilter;
-      if (tahunFilter) params.tahun = tahunFilter;
       if (dosenNidn) params.nidn = dosenNidn;
       return params;
     },
-    [search, fakultasFilter, prodiFilter, semesterFilter, tahunFilter, itemsPerPage, dosenNidn],
+    [search, itemsPerPage, dosenNidn],
   );
 
   // Fetch awal — pakai endpoint grouped
@@ -65,28 +41,8 @@ export default function DaftarJadwalGrid({ title, basePath, dosenNidn, isDosenVi
     setSearch(value);
     const params = { page: 1 };
     if (value) params.search = value;
-    if (fakultasFilter) params.fakultas = fakultasFilter;
-    if (prodiFilter) params.prodi = prodiFilter;
-    if (semesterFilter) params.semester = semesterFilter;
-    if (tahunFilter) params.tahun = tahunFilter;
     if (dosenNidn) params.nidn = dosenNidn;
     debouncedFetchGrouped(params);
-  };
-
-  const handleFilterChange = (setter, key) => (e) => {
-    const value = e.target.value;
-    setter(value);
-    const params = { page: 1 };
-    if (search) params.search = search;
-    if (fakultasFilter) params.fakultas = fakultasFilter;
-    if (prodiFilter) params.prodi = prodiFilter;
-    if (semesterFilter) params.semester = semesterFilter;
-    if (tahunFilter) params.tahun = tahunFilter;
-    if (dosenNidn) params.nidn = dosenNidn;
-
-    if (value) params[key] = value;
-    else delete params[key];
-    fetchGrouped(params);
   };
 
   const handlePageChange = (page) => {
@@ -101,10 +57,6 @@ export default function DaftarJadwalGrid({ title, basePath, dosenNidn, isDosenVi
   const val = (v) => (v === null || v === undefined || v === "" ? "-" : v);
 
   const filteredJadwal = jadwal.filter((j) => {
-    if (fakultasFilter && j.fakultas !== fakultasFilter) return false;
-    if (prodiFilter && j.prodi !== prodiFilter) return false;
-    if (semesterFilter && String(j.semester) !== String(semesterFilter)) return false;
-    if (tahunFilter && j.tahun !== tahunFilter) return false;
     if (dosenNidn && j.nidn !== dosenNidn) return false; // Antisipasi jika BE belum memfilter dengan parameter nidn
     return true;
   });
@@ -129,62 +81,10 @@ export default function DaftarJadwalGrid({ title, basePath, dosenNidn, isDosenVi
             type="text"
             value={search}
             onChange={handleSearchChange}
-            placeholder="Cari mata kuliah, kelas, atau dosen..."
+            placeholder="Cari kursus, kelas, atau pengajar..."
             className="w-full pl-9 pr-4 py-2 border border-[#E2E8F0] rounded-lg text-[13px] text-[#1E293B] placeholder:text-[#94A3B8] outline-none focus:border-[#167A61] transition-all"
           />
         </div>
-
-        <select
-          value={fakultasFilter}
-          onChange={handleFilterChange(setFakultasFilter, "fakultas")}
-          className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
-        >
-          <option value="">Semua Fakultas</option>
-          {fakultasData.map((f) => (
-            <option key={f.value} value={f.value}>
-              {f.label}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={prodiFilter}
-          onChange={handleFilterChange(setProdiFilter, "prodi")}
-          className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
-        >
-          <option value="">Semua Program Studi</option>
-          {PRODI_OPTIONS.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={semesterFilter}
-          onChange={handleFilterChange(setSemesterFilter, "semester")}
-          className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
-        >
-          <option value="">Semua Semester</option>
-          {SEMESTER_OPTIONS.map((s) => (
-            <option key={s} value={String(s)}>
-              Semester {s}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={tahunFilter}
-          onChange={handleFilterChange(setTahunFilter, "tahun")}
-          className="pl-3 pr-8 py-2 border border-[#E2E8F0] rounded-lg text-[14px] text-[#1E293B] outline-none focus:border-[#167A61] transition-all bg-white cursor-pointer"
-        >
-          <option value="">Semua Tahun Ajaran</option>
-          {TAHUN_OPTIONS.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
       </div>
 
       {/* Content Grid */}
@@ -210,12 +110,12 @@ export default function DaftarJadwalGrid({ title, basePath, dosenNidn, isDosenVi
               <CalendarDays size={28} className="text-[#94A3B8]" />
             </div>
             <p className="text-[14px] font-bold text-[#64748B]">
-              {search || fakultasFilter || prodiFilter || semesterFilter
+              {search
                 ? "Data tidak ditemukan."
                 : "Belum ada data."}
             </p>
             <p className="text-[13px] text-[#94A3B8] mt-1">
-              {search || fakultasFilter || prodiFilter || semesterFilter
+              {search
                 ? "Coba ubah kata kunci atau filter pencarian."
                 : "Data akan muncul setelah ditambahkan ke sistem."}
             </p>
@@ -238,26 +138,14 @@ export default function DaftarJadwalGrid({ title, basePath, dosenNidn, isDosenVi
 
                 <div className="space-y-1.5 mb-4">
                   <p className="text-[13px] text-[#64748B] truncate" title={val(j.nama_dosen)}>
-                    Dosen: {val(j.nama_dosen)}
+                    Pengajar: {val(j.nama_dosen)}
                   </p>
                   <p className="text-[13px] text-[#64748B] truncate">
                     NIDN: {j.nidn ? j.nidn : "-"}
                   </p>
-                  <p className="text-[13px] text-[#64748B] truncate">
-                    T.A: {val(j.tahun)}
-                  </p>
                   <p className="text-[13px] font-bold text-[#167A61] pt-1">
                     {j.jumlah_kelas} Kelas
                   </p>
-                </div>
-
-                <div className="flex flex-col gap-1 mt-auto">
-                  <span className="text-[13px] font-bold text-[#167A61] truncate" title={formatFakultas(val(j.fakultas))}>
-                    {formatFakultas(val(j.fakultas))}
-                  </span>
-                  <span className="text-[13px] font-bold text-[#167A61] truncate" title={`${val(j.prodi)} - Semester ${val(j.semester)}`}>
-                    {val(j.prodi)} - Semester {val(j.semester)}
-                  </span>
                 </div>
               </Link>
             ))}

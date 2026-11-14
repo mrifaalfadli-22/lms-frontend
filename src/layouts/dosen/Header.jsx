@@ -3,12 +3,12 @@ import { useProfile } from "../../hooks/useProfile";
 import { usePrayerTimes } from "../../hooks/usePrayerTimes";
 
 const pageTitles = {
-  "/dosen/dashboard": "Dashboard Dosen",
+  "/dosen/dashboard": "Dashboard Pengajar",
   "/dosen/kelola-sesi-pertemuan": "Kelola Sesi Pertemuan",
   "/dosen/monitoring-progres": "Monitoring Progres",
   "/dosen/forum-diskusi": "Berinteraksi dalam Forum",
   "/dosen/verifikasi-sertifikat": "Verifikasi Kelayakan Sertifikat",
-  "/dosen/profil": "Profil Dosen",
+  "/dosen/profil": "Profil Pengajar",
 };
 
 export default function Header() {
@@ -58,14 +58,14 @@ export default function Header() {
               : "Tidak tersedia"}
         </div>
 
-        {/* Profil Dosen */}
+        {/* Profil Pengajar */}
         <div
           onClick={() => navigate("/dosen/profil")}
           className="flex items-center gap-2.5 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
         >
           <div className="text-right">
             <p className="text-sm font-bold text-[#1E293B] leading-none">
-              Dosen
+              Pengajar
             </p>
             <p className="text-xs text-[#64748B] mt-0.5">
               {fullName || "Memuat..."}

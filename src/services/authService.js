@@ -1,6 +1,52 @@
 import api from "../config/api";
 
 export const authService = {
+  login: async (credentials, role) => {
+    try {
+      const inputIdentifier =
+        credentials.identifier ||
+        credentials.email ||
+        credentials.username ||
+        credentials.nomor_induk;
+
+      const response = await api.post("/login", {
+        identifier: inputIdentifier,
+        password: credentials.password,
+        role: role,
+      });
+
+      const resData = response.data;
+
+      if (resData.status === "success") {
+        const { token, user } = resData.data;
+        const normalizedRole = (user.role || role).toLowerCase();
+
+        localStorage.setItem("user_token", token);
+        localStorage.setItem("user_role", normalizedRole);
+
+        return { ...user, role: normalizedRole };
+      } else {
+        throw new Error(resData.message || "Login gagal");
+      }
+    } catch (error) {
+      if (error.response) {
+        const message =
+          error.response.data?.message || "Terjadi kesalahan pada server";
+        const err = new Error(message);
+        err.status = error.response.status;
+        throw err;
+      }
+      if (error.code === "ERR_NETWORK") {
+        const err = new Error(
+          "Tidak dapat terhubung ke server. Periksa koneksi backend Anda.",
+        );
+        err.status = 0;
+        throw err;
+      }
+      throw error;
+    }
+  },
+
   registerDosen: async (data) => {
     try {
       const response = await api.post("/register/dosen", data);
@@ -103,3 +149,4 @@ export const authService = {
     return response.data;
   }
 };
+

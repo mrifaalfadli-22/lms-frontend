@@ -39,7 +39,7 @@ export default function Sidebar(role = "dosen") {
         <div className="mb-6 px-2">
           <h1 className="text-3xl font-black tracking-tight">u-Cademy</h1>
           <p className="text-sm text-[#FCEEA7] font-normal uppercase mt-[2px]">
-            Dosen
+            Pengajar
           </p>
         </div>
 

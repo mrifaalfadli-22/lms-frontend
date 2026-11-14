@@ -3,7 +3,7 @@ import api from "../config/api";
 export const kelasService = {
   /**
    * Ambil data kelas dengan server-side pagination, search, dan filter.
-   * @param {Object} params - { page, search, tahun_angkatan, per_page }
+   * @param {Object} params - { page, search, per_page }
    */
   getPage: async (params = {}) => {
     const response = await api.get("/kelas", { params });
@@ -25,9 +25,6 @@ export const kelasService = {
     const response = await api.post("/kelas", {
       nama_kelas: data.nama_kelas,
       kode_kelas: data.kode_kelas,
-      tahun_angkatan: data.tahun_angkatan,
-      fakultas: data.fakultas || null,
-      prodi: data.prodi || null,
     });
     return response.data;
   },
@@ -36,9 +33,6 @@ export const kelasService = {
     const response = await api.put(`/kelas/${id}`, {
       nama_kelas: data.nama_kelas,
       kode_kelas: data.kode_kelas,
-      tahun_angkatan: data.tahun_angkatan,
-      fakultas: data.fakultas || null,
-      prodi: data.prodi || null,
     });
     return response.data;
   },

@@ -1,10 +1,10 @@
-// src/hooks/useJadwalKuliah.js
+// src/hooks/useJadwalKursus.js
 import { useState, useCallback, useRef } from "react";
 import jadwalService from "../services/jadwalService";
 
 const DEBOUNCE_MS = 400;
 
-export function useJadwalKuliah() {
+export function useJadwalKursus() {
   const [jadwal, setJadwal] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

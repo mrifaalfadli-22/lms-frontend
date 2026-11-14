@@ -31,7 +31,7 @@ export const useVerifikasi = () => {
         per_page: result.per_page,
       });
     } catch {
-      setError("Gagal memuat data pengajuan dosen.");
+      setError("Gagal memuat data pengajuan pengajar.");
     } finally {
       setLoading(false);
     }

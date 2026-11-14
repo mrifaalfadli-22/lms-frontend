@@ -150,13 +150,13 @@ export default function VerifikasiSertifikatModal({ isOpen, onClose, data, mode 
             isAllMet ? (
               <div className="bg-[#ECFDF5] border border-[#ECFDF5] rounded-xl px-5 py-3.5">
                 <p className="text-[13px] font-semibold text-[#008B5E] leading-relaxed">
-                  Mahasiswa ini memenuhi seluruh persyaratan untuk mendapatkan sertifikat.
+                  Peserta ini memenuhi seluruh persyaratan untuk mendapatkan sertifikat.
                 </p>
               </div>
             ) : (
               <div className="bg-[#FDF2F2] border border-[#FDF2F2] rounded-xl px-5 py-3.5">
                 <p className="text-[13px] font-semibold text-[#EF4444] leading-relaxed">
-                  Mahasiswa ini tidak memenuhi seluruh persyaratan untuk mendapatkan sertifikat.
+                  Peserta ini tidak memenuhi seluruh persyaratan untuk mendapatkan sertifikat.
                 </p>
               </div>
             )

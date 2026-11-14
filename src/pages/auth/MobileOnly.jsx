@@ -9,7 +9,7 @@ export default function MobileOnly() {
         Gunakan Aplikasi Mobile
       </h1>
       <p className="text-sm text-gray-500 mt-2">
-        Untuk Mahasiswa, u-Cademy diakses lewat aplikasi mobile, bukan lewat website ini.
+        Untuk Peserta, u-Cademy diakses lewat aplikasi mobile, bukan lewat website ini.
         Silakan buka aplikasi u-Cademy di perangkat Anda.
       </p>
       <a

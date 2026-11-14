@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import api from "../config/api";
 import { useProfile } from "./useProfile";
 
-export const useDosenDashboard = () => {
+export const usePengajarDashboard = () => {
   const { user } = useProfile();
   const [stats, setStats] = useState({
     total_mahasiswa: "-",

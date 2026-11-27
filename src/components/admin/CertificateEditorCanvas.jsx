@@ -66,21 +66,28 @@ export default function CertificateEditorCanvas({
 }) {
   const wrapperRef = useRef(null);
   const cardRefs = useRef({});
-  const dragVirtualPosRef = useRef({ x: 0, y: 0 });
+  const activeGuidesRef = useRef({ x: null, y: null });
+  const dragCleanupRef = useRef(null);
   const [fitScale, setFitScale] = useState(0.85);
   const [customScale, setCustomScale] = useState(null);
   const [expandedIds, setExpandedIds] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [showGuides, setShowGuides] = useState(true);
   const [activeGuides, setActiveGuides] = useState({ x: null, y: null });
+  const [dragPos, setDragPos] = useState(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [previewPdfUrl, setPreviewPdfUrl] = useState(null);
 
   const MIN_SCALE = 0.4;
   const MAX_SCALE = 2.0;
   const ZOOM_STEP = 0.1;
-  const CENTER_SNAP_THRESHOLD = 10;
-  const ELEMENT_SNAP_THRESHOLD = 6;
+  const SAFE_MARGIN = 56;
+  const CENTER_SNAP_ENTER = 18;
+  const CENTER_SNAP_EXIT = 28;
+  const ELEMENT_SNAP_ENTER = 10;
+  const ELEMENT_SNAP_EXIT = 17;
+  const MARGIN_SNAP_ENTER = 12;
+  const MARGIN_SNAP_EXIT = 20;
 
   const scale = customScale ?? fitScale;
 
@@ -203,9 +210,9 @@ export default function CertificateEditorCanvas({
 
   /**
    * Position Assist (Magnetic Snap) — seperti Figma / Canva / Photoshop
-   * Mendeteksi titik tengah vertikal/horizontal canvas serta perataan dengan elemen lain.
+   * Menggunakan hysteresis (ambang masuk & ambang lepas) agar magnet terasa melekat kuat.
    */
-  const computeSnap = (draggedEl, rawX, rawY) => {
+  const computeSnap = (draggedEl, rawX, rawY, prevGuides = { x: null, y: null }) => {
     let snappedX = Math.round(rawX);
     let snappedY = Math.round(rawY);
     let guideX = null;
@@ -213,22 +220,57 @@ export default function CertificateEditorCanvas({
 
     const canvasCenterX = A4_WIDTH / 2;
     const canvasCenterY = A4_HEIGHT / 2;
-
     const elCenterX = rawX + draggedEl.width / 2;
     const elCenterY = rawY + draggedEl.height / 2;
 
-    // 1. Snap Sumbu X (Garis Vertikal Tengah Canvas & Elemen Lain)
-    if (Math.abs(elCenterX - canvasCenterX) <= CENTER_SNAP_THRESHOLD) {
+    const prevX = prevGuides?.x;
+    const prevY = prevGuides?.y;
+
+    // 1. Snap Sumbu X (Garis Vertikal Tengah Canvas -> Elemen Lain -> Batas Margin)
+    const centerEnterX =
+      prevX?.type === "canvas-center" && prevX?.anchor === "center"
+        ? CENTER_SNAP_EXIT
+        : CENTER_SNAP_ENTER;
+    const edgeCenterEnterX =
+      prevX?.type === "canvas-center" && prevX?.anchor !== "center"
+        ? ELEMENT_SNAP_EXIT
+        : ELEMENT_SNAP_ENTER;
+
+    if (Math.abs(elCenterX - canvasCenterX) <= centerEnterX) {
       snappedX = Math.round(canvasCenterX - draggedEl.width / 2);
-      guideX = { pos: canvasCenterX, type: "canvas-center", label: "Tengah Vertikal" };
-    } else if (Math.abs(rawX - canvasCenterX) <= ELEMENT_SNAP_THRESHOLD) {
+      guideX = {
+        pos: canvasCenterX,
+        type: "canvas-center",
+        anchor: "center",
+        offset: draggedEl.width / 2,
+        label: "Tengah Vertikal",
+      };
+    } else if (Math.abs(rawX - canvasCenterX) <= edgeCenterEnterX) {
       snappedX = Math.round(canvasCenterX);
-      guideX = { pos: canvasCenterX, type: "canvas-center", label: "Tengah Vertikal" };
-    } else if (Math.abs(rawX + draggedEl.width - canvasCenterX) <= ELEMENT_SNAP_THRESHOLD) {
+      guideX = {
+        pos: canvasCenterX,
+        type: "canvas-center",
+        anchor: "left",
+        offset: 0,
+        label: "Tengah Vertikal",
+      };
+    } else if (Math.abs(rawX + draggedEl.width - canvasCenterX) <= edgeCenterEnterX) {
       snappedX = Math.round(canvasCenterX - draggedEl.width);
-      guideX = { pos: canvasCenterX, type: "canvas-center", label: "Tengah Vertikal" };
+      guideX = {
+        pos: canvasCenterX,
+        type: "canvas-center",
+        anchor: "right",
+        offset: draggedEl.width,
+        label: "Tengah Vertikal",
+      };
+    } else if (
+      prevX?.type === "element" &&
+      Math.abs(rawX + prevX.offset - prevX.pos) <= ELEMENT_SNAP_EXIT
+    ) {
+      snappedX = Math.round(prevX.pos - prevX.offset);
+      guideX = prevX;
     } else {
-      let minDiffX = ELEMENT_SNAP_THRESHOLD + 1;
+      let minDiffX = ELEMENT_SNAP_ENTER + 1;
       elements.forEach((other) => {
         if (other.id === draggedEl.id || other.isHidden) return;
         const otherCenterX = other.x + other.width / 2;
@@ -242,24 +284,96 @@ export default function CertificateEditorCanvas({
           if (diff < minDiffX) {
             minDiffX = diff;
             snappedX = Math.round(target - offset);
-            guideX = { pos: Math.round(target), type: "element" };
+            guideX = {
+              pos: Math.round(target),
+              type: "element",
+              offset,
+              label: "Sejajar",
+            };
           }
         });
       });
+
+      if (!guideX) {
+        const leftMarginThresh =
+          prevX?.type === "margin" && prevX?.anchor === "left"
+            ? MARGIN_SNAP_EXIT
+            : MARGIN_SNAP_ENTER;
+        const rightMarginThresh =
+          prevX?.type === "margin" && prevX?.anchor === "right"
+            ? MARGIN_SNAP_EXIT
+            : MARGIN_SNAP_ENTER;
+
+        if (Math.abs(rawX - SAFE_MARGIN) <= leftMarginThresh) {
+          snappedX = SAFE_MARGIN;
+          guideX = {
+            pos: SAFE_MARGIN,
+            type: "margin",
+            anchor: "left",
+            offset: 0,
+            label: "Margin Kiri",
+          };
+        } else if (
+          Math.abs(rawX + draggedEl.width - (A4_WIDTH - SAFE_MARGIN)) <=
+          rightMarginThresh
+        ) {
+          snappedX = A4_WIDTH - SAFE_MARGIN - draggedEl.width;
+          guideX = {
+            pos: A4_WIDTH - SAFE_MARGIN,
+            type: "margin",
+            anchor: "right",
+            offset: draggedEl.width,
+            label: "Margin Kanan",
+          };
+        }
+      }
     }
 
-    // 2. Snap Sumbu Y (Garis Horizontal Tengah Canvas & Elemen Lain)
-    if (Math.abs(elCenterY - canvasCenterY) <= CENTER_SNAP_THRESHOLD) {
+    // 2. Snap Sumbu Y (Garis Horizontal Tengah Canvas -> Elemen Lain -> Batas Margin)
+    const centerEnterY =
+      prevY?.type === "canvas-center" && prevY?.anchor === "center"
+        ? CENTER_SNAP_EXIT
+        : CENTER_SNAP_ENTER;
+    const edgeCenterEnterY =
+      prevY?.type === "canvas-center" && prevY?.anchor !== "center"
+        ? ELEMENT_SNAP_EXIT
+        : ELEMENT_SNAP_ENTER;
+
+    if (Math.abs(elCenterY - canvasCenterY) <= centerEnterY) {
       snappedY = Math.round(canvasCenterY - draggedEl.height / 2);
-      guideY = { pos: canvasCenterY, type: "canvas-center", label: "Tengah Horizontal" };
-    } else if (Math.abs(rawY - canvasCenterY) <= ELEMENT_SNAP_THRESHOLD) {
+      guideY = {
+        pos: canvasCenterY,
+        type: "canvas-center",
+        anchor: "center",
+        offset: draggedEl.height / 2,
+        label: "Tengah Horizontal",
+      };
+    } else if (Math.abs(rawY - canvasCenterY) <= edgeCenterEnterY) {
       snappedY = Math.round(canvasCenterY);
-      guideY = { pos: canvasCenterY, type: "canvas-center", label: "Tengah Horizontal" };
-    } else if (Math.abs(rawY + draggedEl.height - canvasCenterY) <= ELEMENT_SNAP_THRESHOLD) {
+      guideY = {
+        pos: canvasCenterY,
+        type: "canvas-center",
+        anchor: "top",
+        offset: 0,
+        label: "Tengah Horizontal",
+      };
+    } else if (Math.abs(rawY + draggedEl.height - canvasCenterY) <= edgeCenterEnterY) {
       snappedY = Math.round(canvasCenterY - draggedEl.height);
-      guideY = { pos: canvasCenterY, type: "canvas-center", label: "Tengah Horizontal" };
+      guideY = {
+        pos: canvasCenterY,
+        type: "canvas-center",
+        anchor: "bottom",
+        offset: draggedEl.height,
+        label: "Tengah Horizontal",
+      };
+    } else if (
+      prevY?.type === "element" &&
+      Math.abs(rawY + prevY.offset - prevY.pos) <= ELEMENT_SNAP_EXIT
+    ) {
+      snappedY = Math.round(prevY.pos - prevY.offset);
+      guideY = prevY;
     } else {
-      let minDiffY = ELEMENT_SNAP_THRESHOLD + 1;
+      let minDiffY = ELEMENT_SNAP_ENTER + 1;
       elements.forEach((other) => {
         if (other.id === draggedEl.id || other.isHidden) return;
         const otherCenterY = other.y + other.height / 2;
@@ -273,13 +387,161 @@ export default function CertificateEditorCanvas({
           if (diff < minDiffY) {
             minDiffY = diff;
             snappedY = Math.round(target - offset);
-            guideY = { pos: Math.round(target), type: "element" };
+            guideY = {
+              pos: Math.round(target),
+              type: "element",
+              offset,
+              label: "Sejajar",
+            };
           }
         });
       });
+
+      if (!guideY) {
+        const topMarginThresh =
+          prevY?.type === "margin" && prevY?.anchor === "top"
+            ? MARGIN_SNAP_EXIT
+            : MARGIN_SNAP_ENTER;
+        const bottomMarginThresh =
+          prevY?.type === "margin" && prevY?.anchor === "bottom"
+            ? MARGIN_SNAP_EXIT
+            : MARGIN_SNAP_ENTER;
+
+        if (Math.abs(rawY - SAFE_MARGIN) <= topMarginThresh) {
+          snappedY = SAFE_MARGIN;
+          guideY = {
+            pos: SAFE_MARGIN,
+            type: "margin",
+            anchor: "top",
+            offset: 0,
+            label: "Margin Atas",
+          };
+        } else if (
+          Math.abs(rawY + draggedEl.height - (A4_HEIGHT - SAFE_MARGIN)) <=
+          bottomMarginThresh
+        ) {
+          snappedY = A4_HEIGHT - SAFE_MARGIN - draggedEl.height;
+          guideY = {
+            pos: A4_HEIGHT - SAFE_MARGIN,
+            type: "margin",
+            anchor: "bottom",
+            offset: draggedEl.height,
+            label: "Margin Bawah",
+          };
+        }
+      }
     }
 
     return { x: snappedX, y: snappedY, guideX, guideY };
+  };
+
+  useEffect(() => {
+    return () => {
+      if (dragCleanupRef.current) dragCleanupRef.current();
+    };
+  }, []);
+
+  /**
+   * Native Pointer Drag Engine dengan requestAnimationFrame:
+   * Bebas delay CSS transition maupun desync state internal react-draggable.
+   */
+  const startElementDrag = (e, el) => {
+    if (el.isHidden) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (dragCleanupRef.current) {
+      dragCleanupRef.current();
+    }
+
+    if (selectedId !== el.id) {
+      handleSelectFromCanvas(el.id);
+    }
+
+    const startElX = el.x;
+    const startElY = el.y;
+    const startClientX = e.clientX;
+    const startClientY = e.clientY;
+    let latestClientX = startClientX;
+    let latestClientY = startClientY;
+    let rafId = null;
+    let hasMoved = false;
+
+    const computeFramePos = () => {
+      const dx = (latestClientX - startClientX) / scale;
+      const dy = (latestClientY - startClientY) / scale;
+      const rawX = Math.max(0, Math.min(A4_WIDTH - el.width, startElX + dx));
+      const rawY = Math.max(0, Math.min(A4_HEIGHT - el.height, startElY + dy));
+
+      if (showGuides) {
+        const { x: snappedX, y: snappedY, guideX, guideY } = computeSnap(
+          el,
+          rawX,
+          rawY,
+          activeGuidesRef.current
+        );
+        activeGuidesRef.current = { x: guideX, y: guideY };
+        setActiveGuides({ x: guideX, y: guideY });
+        setDragPos({ id: el.id, x: snappedX, y: snappedY });
+        return { x: snappedX, y: snappedY };
+      }
+
+      const rx = Math.round(rawX);
+      const ry = Math.round(rawY);
+      activeGuidesRef.current = { x: null, y: null };
+      setActiveGuides({ x: null, y: null });
+      setDragPos({ id: el.id, x: rx, y: ry });
+      return { x: rx, y: ry };
+    };
+
+    const onPointerMove = (moveEvent) => {
+      latestClientX = moveEvent.clientX;
+      latestClientY = moveEvent.clientY;
+      if (
+        !hasMoved &&
+        Math.abs(latestClientX - startClientX) < 1 &&
+        Math.abs(latestClientY - startClientY) < 1
+      ) {
+        return;
+      }
+      hasMoved = true;
+
+      if (rafId === null) {
+        rafId = requestAnimationFrame(() => {
+          rafId = null;
+          computeFramePos();
+        });
+      }
+    };
+
+    const cleanup = () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+      dragCleanupRef.current = null;
+    };
+
+    const onPointerUp = () => {
+      cleanup();
+      if (hasMoved) {
+        const finalPos = computeFramePos();
+        updateElement(el.id, { x: finalPos.x, y: finalPos.y });
+      }
+      activeGuidesRef.current = { x: null, y: null };
+      setActiveGuides({ x: null, y: null });
+      setDragPos(null);
+    };
+
+    dragCleanupRef.current = cleanup;
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
   };
 
   // Urutkan elemen di sidebar sesuai urutan pada contoh gambar
@@ -727,13 +989,19 @@ export default function CertificateEditorCanvas({
                       <div
                         className={
                           activeGuides.x.type === "canvas-center"
-                            ? "h-full w-[1.5px] bg-[#F43F5E] shadow-[0_0_8px_rgba(244,63,94,0.6)]"
+                            ? "h-full w-[2px] bg-[#F43F5E] shadow-[0_0_8px_rgba(244,63,94,0.65)]"
+                            : activeGuides.x.type === "margin"
+                            ? "h-full border-l-[1.5px] border-dashed border-[#0EA5E9]"
                             : "h-full border-l-[1.5px] border-dashed border-[#F43F5E]"
                         }
                       />
-                      {activeGuides.x.type === "canvas-center" && (
-                        <span className="absolute top-3 bg-[#F43F5E] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap">
-                          Tengah Vertikal
+                      {activeGuides.x.label && (
+                        <span
+                          className={`absolute top-3 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap ${
+                            activeGuides.x.type === "margin" ? "bg-[#0EA5E9]" : "bg-[#F43F5E]"
+                          }`}
+                        >
+                          {activeGuides.x.label}
                         </span>
                       )}
                     </div>
@@ -753,13 +1021,19 @@ export default function CertificateEditorCanvas({
                       <div
                         className={
                           activeGuides.y.type === "canvas-center"
-                            ? "w-full h-[1.5px] bg-[#F43F5E] shadow-[0_0_8px_rgba(244,63,94,0.6)]"
+                            ? "w-full h-[2px] bg-[#F43F5E] shadow-[0_0_8px_rgba(244,63,94,0.65)]"
+                            : activeGuides.y.type === "margin"
+                            ? "w-full border-t-[1.5px] border-dashed border-[#0EA5E9]"
                             : "w-full border-t-[1.5px] border-dashed border-[#F43F5E]"
                         }
                       />
-                      {activeGuides.y.type === "canvas-center" && (
-                        <span className="absolute left-3 bg-[#F43F5E] text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap">
-                          Tengah Horizontal
+                      {activeGuides.y.label && (
+                        <span
+                          className={`absolute left-3 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm whitespace-nowrap ${
+                            activeGuides.y.type === "margin" ? "bg-[#0EA5E9]" : "bg-[#F43F5E]"
+                          }`}
+                        >
+                          {activeGuides.y.label}
                         </span>
                       )}
                     </div>
@@ -783,7 +1057,7 @@ export default function CertificateEditorCanvas({
 
               {/* Layer Rnd dalam piksel asli A4 */}
               <div
-                onMouseDown={() => setSelectedId(null)}
+                onPointerDown={() => setSelectedId(null)}
                 style={{
                   position: "absolute",
                   inset: 0,
@@ -791,89 +1065,32 @@ export default function CertificateEditorCanvas({
                 }}
               >
                 {elements.map((el) => {
-                  const isSelected = !el.isHidden && selectedId === el.id;
+                  if (el.isHidden) return null;
+
+                  const isSelected = selectedId === el.id;
+                  const isDraggingThis = dragPos?.id === el.id;
+                  const displayX = isDraggingThis ? dragPos.x : el.x;
+                  const displayY = isDraggingThis ? dragPos.y : el.y;
+
                   return (
                     <Rnd
                       key={el.id}
-                      position={{ x: el.x, y: el.y }}
+                      position={{ x: displayX, y: displayY }}
                       size={{ width: el.width, height: el.height }}
-                      disableDragging={el.isHidden}
-                      enableResizing={!el.isHidden}
+                      disableDragging={true}
+                      enableResizing={true}
+                      onPointerDown={(e) => e.stopPropagation()}
                       style={{
-                        pointerEvents: el.isHidden ? "none" : "auto",
-                      }}
-                      onMouseDown={(e) => {
-                        if (el.isHidden) return;
-                        e.stopPropagation();
-                        handleSelectFromCanvas(el.id);
-                      }}
-                      onDragStart={() => {
-                        if (el.isHidden) return;
-                        handleSelectFromCanvas(el.id);
-                        dragVirtualPosRef.current = { x: el.x, y: el.y };
-                      }}
-                      onDrag={(event, d) => {
-                        if (el.isHidden) return;
-                        const dx = d.x - el.x;
-                        const dy = d.y - el.y;
-                        const rawX = Math.max(
-                          0,
-                          Math.min(A4_WIDTH - el.width, dragVirtualPosRef.current.x + dx)
-                        );
-                        const rawY = Math.max(
-                          0,
-                          Math.min(A4_HEIGHT - el.height, dragVirtualPosRef.current.y + dy)
-                        );
-                        dragVirtualPosRef.current = { x: rawX, y: rawY };
-
-                        if (showGuides) {
-                          const { x: snappedX, y: snappedY, guideX, guideY } =
-                            computeSnap(el, rawX, rawY);
-                          setActiveGuides({ x: guideX, y: guideY });
-                          updateElement(el.id, { x: snappedX, y: snappedY });
-                        } else {
-                          setActiveGuides({ x: null, y: null });
-                          updateElement(el.id, {
-                            x: Math.round(rawX),
-                            y: Math.round(rawY),
-                          });
-                        }
-                      }}
-                      onDragStop={(event, d) => {
-                        if (el.isHidden) return;
-                        const dx = d.x - el.x;
-                        const dy = d.y - el.y;
-                        if (dx !== 0 || dy !== 0) {
-                          const rawX = Math.max(
-                            0,
-                            Math.min(A4_WIDTH - el.width, dragVirtualPosRef.current.x + dx)
-                          );
-                          const rawY = Math.max(
-                            0,
-                            Math.min(A4_HEIGHT - el.height, dragVirtualPosRef.current.y + dy)
-                          );
-                          if (showGuides) {
-                            const { x: snappedX, y: snappedY } = computeSnap(
-                              el,
-                              rawX,
-                              rawY
-                            );
-                            updateElement(el.id, { x: snappedX, y: snappedY });
-                          } else {
-                            updateElement(el.id, {
-                              x: Math.round(rawX),
-                              y: Math.round(rawY),
-                            });
-                          }
-                        }
-                        setActiveGuides({ x: null, y: null });
+                        willChange: isDraggingThis ? "transform" : undefined,
+                        cursor: "move",
                       }}
                       onResizeStart={() => {
-                        if (el.isHidden) return;
-                        handleSelectFromCanvas(el.id);
+                        if (selectedId !== el.id) {
+                          handleSelectFromCanvas(el.id);
+                        }
                       }}
                       onResizeStop={(event, direction, ref, delta, position) => {
-                        if (el.isHidden) return;
+                        activeGuidesRef.current = { x: null, y: null };
                         setActiveGuides({ x: null, y: null });
                         updateElement(el.id, {
                           width: parseInt(ref.style.width),
@@ -884,22 +1101,20 @@ export default function CertificateEditorCanvas({
                       }}
                       scale={scale}
                       bounds="parent"
-                      className={`group transition-all rounded-md ${
-                        el.isHidden
-                          ? "border border-transparent cursor-default pointer-events-none"
-                          : isSelected
-                          ? "cursor-move border-2 border-dashed border-[#167A61] bg-[#167A61]/15 shadow-sm"
-                          : "cursor-move border border-transparent hover:border-dashed hover:border-[#167A61]/60 hover:bg-[#167A61]/5"
+                      className={`group transition-colors rounded-md cursor-move ${
+                        isSelected
+                          ? "border-2 border-dashed border-[#167A61] bg-[#167A61]/15 shadow-sm"
+                          : "border border-transparent hover:border-dashed hover:border-[#167A61]/60 hover:bg-[#167A61]/5"
                       }`}
                     >
                       {el.id === "qr_code" ? (
                         <div
+                          onPointerDown={(e) => startElementDrag(e, el)}
                           style={{
                             width: "100%",
                             height: "100%",
                             userSelect: "none",
-                            pointerEvents: "none",
-                            opacity: el.isHidden ? 0.3 : 1,
+                            touchAction: "none",
                           }}
                           className={`rounded-md p-2 flex flex-col items-center justify-center gap-1 transition-colors ${
                             isSelected
@@ -907,7 +1122,7 @@ export default function CertificateEditorCanvas({
                               : "border border-[#167A61]/50 bg-white/90 shadow-sm"
                           }`}
                         >
-                          <div className="bg-[#0F172A] text-white p-2 rounded flex items-center justify-center flex-1 w-full max-w-[96px] max-h-[96px]">
+                          <div className="bg-[#0F172A] text-white p-2 rounded flex items-center justify-center flex-1 w-full max-w-[96px] max-h-[96px] pointer-events-none">
                             <QrCode className="w-full h-full" strokeWidth={1.8} />
                           </div>
                           <span
@@ -916,21 +1131,21 @@ export default function CertificateEditorCanvas({
                               color: el.color || "#000000",
                               fontFamily: el.fontFamily || "Open Sans",
                             }}
-                            className="font-mono font-bold tracking-tight leading-none mt-0.5"
+                            className="font-mono font-bold tracking-tight leading-none mt-0.5 pointer-events-none"
                           >
-                            {el.isHidden ? `(Hidden) ${el.label}` : el.label}
+                            {el.label}
                           </span>
                         </div>
                       ) : (
                         <div
+                          onPointerDown={(e) => startElementDrag(e, el)}
                           style={{
                             width: "100%",
                             height: "100%",
                             display: "flex",
                             alignItems: "center",
                             userSelect: "none",
-                            pointerEvents: "none",
-                            opacity: el.isHidden ? 0.3 : 1,
+                            touchAction: "none",
                             overflow: "hidden",
                           }}
                         >
@@ -950,9 +1165,10 @@ export default function CertificateEditorCanvas({
                               overflow: "hidden",
                               textOverflow: "ellipsis",
                               whiteSpace: "nowrap",
+                              pointerEvents: "none",
                             }}
                           >
-                            {el.isHidden ? `(Hidden) ${el.label}` : el.label}
+                            {el.label}
                           </span>
                         </div>
                       )}

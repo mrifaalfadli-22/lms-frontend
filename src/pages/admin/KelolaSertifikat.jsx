@@ -104,7 +104,6 @@ export default function KelolaSertifikat() {
 
       await fetchActiveTemplate();
       await fetchSertifikat();
-      setIsTemplateModalOpen(false);
     } catch (err) {
       console.error("Gagal simpan template", err);
       throw err; // biarkan modal yang handle error-nya

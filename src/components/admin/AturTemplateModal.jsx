@@ -1,19 +1,18 @@
 import { useState, useRef, useEffect } from "react";
-import { UploadCloud, X, File, Loader2 } from "lucide-react";
+import { UploadCloud, X, File, FileText, Check, CheckCircle2, Loader2 } from "lucide-react";
 import CertificateEditorCanvas from "./CertificateEditorCanvas";
-import api from "../../config/api";
 
 const DEFAULT_LAYOUT = [
-  { id: "nama_peserta",      label: "[NAMA_PESERTA]",      x: 361, y: 320, width: 400, height: 60,  fontSize: 32, color: "#000000", fontWeight: "bold",    fontFamily: "Playfair Display", textAlign: "center", isHidden: false },
-  { id: "npm",               label: "[NPM]",               x: 361, y: 380, width: 400, height: 30,  fontSize: 18, color: "#333333", fontWeight: "normal",  fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
-  { id: "nomor_sertifikat",  label: "[NOMOR_SERTIFIKAT]",  x: 361, y: 80,  width: 400, height: 40,  fontSize: 18, color: "#475569", fontWeight: "normal",  fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
-  { id: "mata_kuliah_kelas", label: "[KURSUS_KELAS]", x: 361, y: 420, width: 400, height: 40,  fontSize: 20, color: "#1E293B", fontWeight: "semibold", fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
-  { id: "nama_dosen",        label: "[NAMA_PENGAJAR]",        x: 361, y: 450, width: 400, height: 30,  fontSize: 18, color: "#333333", fontWeight: "normal",  fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
+  { id: "nama_peserta",      label: "[NAMA_PESERTA]",      x: 361, y: 320, width: 400, height: 60,  fontSize: 32, color: "#000000", fontWeight: "bold",     fontFamily: "Playfair Display", textAlign: "center", isHidden: false },
+  { id: "npm",               label: "[NPM]",               x: 361, y: 380, width: 400, height: 30,  fontSize: 18, color: "#333333", fontWeight: "normal",   fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
+  { id: "nomor_sertifikat",  label: "[NOMOR_SERTIFIKAT]",  x: 361, y: 80,  width: 400, height: 40,  fontSize: 18, color: "#475569", fontWeight: "normal",   fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
+  { id: "mata_kuliah_kelas", label: "[KURSUS_KELAS]",      x: 361, y: 420, width: 400, height: 40,  fontSize: 20, color: "#1E293B", fontWeight: "semibold", fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
+  { id: "nama_dosen",        label: "[NAMA_PENGAJAR]",     x: 361, y: 450, width: 400, height: 30,  fontSize: 18, color: "#333333", fontWeight: "normal",   fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
   { id: "nilai_tugas",       label: "[NILAI_TUGAS]",       x: 361, y: 470, width: 400, height: 30,  fontSize: 18, color: "#167A61", fontWeight: "semibold", fontFamily: "Montserrat",       textAlign: "center", isHidden: false },
-  { id: "status_kelulusan",  label: "[STATUS_KELULUSAN]",  x: 361, y: 520, width: 400, height: 40,  fontSize: 24, color: "#167A61", fontWeight: "bold",    fontFamily: "Montserrat",       textAlign: "center", isHidden: false },
-  { id: "tanggal_terbit",    label: "[TANGGAL_TERBIT]",    x: 361, y: 620, width: 400, height: 36,  fontSize: 16, color: "#64748B", fontWeight: "normal",  fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
-  { id: "qr_code",           label: "[QR_CODE]",           x: 80,  y: 80,  width: 150, height: 150, fontSize: 16, color: "#000000", fontWeight: "normal",  fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
-  { id: "daftar_nilai",      label: "[DAFTAR_NILAI]",      x: 80,  y: 250, width: 300, height: 200, fontSize: 14, color: "#000000", fontWeight: "normal",  fontFamily: "Open Sans",        textAlign: "left",   isHidden: false },
+  { id: "status_kelulusan",  label: "[STATUS_KELULUSAN]",  x: 361, y: 520, width: 400, height: 40,  fontSize: 24, color: "#167A61", fontWeight: "bold",     fontFamily: "Montserrat",       textAlign: "center", isHidden: false },
+  { id: "tanggal_terbit",    label: "[TANGGAL_TERBIT]",    x: 361, y: 620, width: 400, height: 36,  fontSize: 16, color: "#64748B", fontWeight: "normal",   fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
+  { id: "qr_code",           label: "[QR_CODE]",           x: 80,  y: 80,  width: 150, height: 150, fontSize: 16, color: "#000000", fontWeight: "normal",   fontFamily: "Open Sans",        textAlign: "center", isHidden: false },
+  { id: "daftar_nilai",      label: "[DAFTAR_NILAI]",      x: 80,  y: 250, width: 300, height: 200, fontSize: 14, color: "#000000", fontWeight: "normal",   fontFamily: "Open Sans",        textAlign: "left",   isHidden: false },
 ];
 
 const TABS = [
@@ -29,6 +28,7 @@ export default function AturTemplateModal({ isOpen, onClose, onSave, activeTempl
   const [layoutData, setLayoutData] = useState(DEFAULT_LAYOUT);
   const [idTemplate, setIdTemplate] = useState(null);
   const [saving, setSaving]     = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const fileInputRef = useRef(null);
 
   // Setiap kali tab berubah atau modal terbuka → load template dari activeTemplates
@@ -44,6 +44,7 @@ export default function AturTemplateModal({ isOpen, onClose, onSave, activeTempl
       setFileUrl(null);
       setLayoutData(DEFAULT_LAYOUT);
       setIdTemplate(null);
+      setShowSuccessModal(false);
     }
   }, [isOpen]);
 
@@ -81,7 +82,7 @@ export default function AturTemplateModal({ isOpen, onClose, onSave, activeTempl
     const parsed = tmpl.layout_data
       ? (typeof tmpl.layout_data === "string" ? JSON.parse(tmpl.layout_data) : tmpl.layout_data)
       : null;
-      
+
     let finalLayout = DEFAULT_LAYOUT;
     if (parsed && Array.isArray(parsed) && parsed.length > 0) {
       finalLayout = [...parsed];
@@ -92,7 +93,7 @@ export default function AturTemplateModal({ isOpen, onClose, onSave, activeTempl
         }
       });
     }
-    
+
     setLayoutData(finalLayout);
   };
 
@@ -112,7 +113,7 @@ export default function AturTemplateModal({ isOpen, onClose, onSave, activeTempl
     setSaving(true);
     try {
       await onSave(file, layoutData, tipeSertifikat, idTemplate);
-      onClose();
+      setShowSuccessModal(true);
     } catch (err) {
       console.error("Gagal simpan:", err);
       alert("Gagal menyimpan template. Lihat console untuk detail.");
@@ -123,121 +124,178 @@ export default function AturTemplateModal({ isOpen, onClose, onSave, activeTempl
 
   if (!isOpen) return null;
 
-  const hasBackground = !!fileUrl; // Ada background = tampilkan editor
+  const hasBackground = !!fileUrl;
+  const activeTabLabel =
+    TABS.find((t) => t.id === tipeSertifikat)?.label || "Sertifikat";
 
   return (
-    <div className="fixed inset-0 z-[998] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl flex flex-col w-[92vw] h-[92vh] overflow-hidden">
+    <div className="fixed inset-0 z-[998] flex items-center justify-center bg-black/45 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl flex flex-col w-[94vw] max-w-[1360px] h-[92vh] overflow-hidden border border-[#E2E8F0]">
 
         {/* ── Header + Tabs ── */}
-        <div className="border-b border-gray-100 shrink-0">
-          <div className="px-7 py-4 flex justify-between items-center">
-            <h3 className="text-[17px] font-bold text-[#1E293B]">Atur Template Sertifikat</h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+        <div className="border-b border-[#E2E8F0] bg-white shrink-0">
+          <div className="px-7 pt-5 pb-3 flex justify-between items-start">
+            <div>
+              <div className="flex items-center gap-2">
+                <FileText size={18} className="text-[#167A61] shrink-0" strokeWidth={2.2} />
+                <h3 className="text-[18px] font-bold text-[#0F172A] leading-tight">
+                  Atur Template Sertifikat
+                </h3>
+              </div>
+              <p className="text-[12.5px] text-[#64748B] mt-1">
+                Konfigurasi tata letak placeholder data dinamis sertifikat & transkrip nilai
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-[#94A3B8] hover:text-[#475569] transition-colors p-1 rounded-lg hover:bg-gray-50"
+            >
               <X size={20} />
             </button>
           </div>
-          <div className="px-7 flex gap-6">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setTipeSertifikat(tab.id)}
-                className={`py-3 px-1 border-b-2 text-sm font-semibold transition-colors ${
-                  tipeSertifikat === tab.id
-                    ? "border-[#167A61] text-[#167A61]"
-                    : "border-transparent text-gray-400 hover:text-gray-600"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+
+          <div className="px-7 flex gap-7">
+            {TABS.map((tab) => {
+              const isActive = tipeSertifikat === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setTipeSertifikat(tab.id)}
+                  className={`py-3 px-0.5 border-b-2 text-[13.5px] flex items-center gap-2 transition-colors ${
+                    isActive
+                      ? "border-[#167A61] text-[#167A61] font-bold"
+                      : "border-transparent text-[#64748B] hover:text-[#334155] font-medium"
+                  }`}
+                >
+                  {isActive && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#167A61] shrink-0" />
+                  )}
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* ── Body ── */}
-        <div className="flex-1 min-h-0 overflow-hidden bg-gray-50 relative flex flex-col items-center justify-center p-4">
+        {/* ── Hidden File Input ── */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          className="hidden"
+          accept=".png,.jpg,.jpeg"
+        />
 
+        {/* ── Body ── */}
+        <div className="flex-1 min-h-0 overflow-hidden bg-[#F8FAFC] relative flex">
           {!hasBackground ? (
             /* ── Empty state: belum ada background ── */
-            <div className="bg-white p-10 rounded-2xl border border-gray-100 shadow-sm max-w-md w-full text-center flex flex-col items-center">
-              <div className="w-16 h-16 bg-blue-50 text-blue-400 rounded-full flex items-center justify-center mb-4">
-                <File size={32} />
+            <div className="w-full h-full flex items-center justify-center p-6">
+              <div className="bg-white p-10 rounded-2xl border border-[#E2E8F0] shadow-sm max-w-md w-full text-center flex flex-col items-center">
+                <div className="w-16 h-16 bg-blue-50 text-blue-400 rounded-full flex items-center justify-center mb-4">
+                  <File size={32} />
+                </div>
+                <h4 className="text-lg font-bold text-[#1E293B] mb-2">Desain Belum Tersedia</h4>
+                <p className="text-sm text-gray-500 mb-6">
+                  Belum ada desain template untuk{" "}
+                  <b>{TABS.find(t => t.id === tipeSertifikat)?.label}</b>.
+                  Silakan upload gambar latar belakang (PNG/JPG) terlebih dahulu.
+                </p>
+                <div
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full border-2 border-dashed border-[#167A61]/40 bg-[#167A61]/5 hover:bg-[#167A61]/10 p-8 rounded-xl cursor-pointer transition-colors flex flex-col items-center gap-2"
+                >
+                  <UploadCloud size={28} className="text-[#167A61]" />
+                  <span className="text-sm font-semibold text-[#167A61]">Pilih File atau Drag & Drop</span>
+                  <span className="text-xs text-gray-400">PNG, JPG — maks. 5MB</span>
+                </div>
               </div>
-              <h4 className="text-lg font-bold text-[#1E293B] mb-2">Desain Belum Tersedia</h4>
-              <p className="text-sm text-gray-500 mb-6">
-                Belum ada desain template untuk{" "}
-                <b>{TABS.find(t => t.id === tipeSertifikat)?.label}</b>.
-                Silakan upload gambar latar belakang (PNG/JPG) terlebih dahulu.
-              </p>
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full border-2 border-dashed border-[#167A61]/40 bg-[#167A61]/5 hover:bg-[#167A61]/10 p-8 rounded-xl cursor-pointer transition-colors flex flex-col items-center gap-2"
-              >
-                <UploadCloud size={28} className="text-[#167A61]" />
-                <span className="text-sm font-semibold text-[#167A61]">Pilih File atau Drag & Drop</span>
-                <span className="text-xs text-gray-400">PNG, JPG — maks. 5MB</span>
-              </div>
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                accept=".png,.jpg,.jpeg"
-              />
             </div>
           ) : (
             /* ── Editor: sudah ada background ── */
-            <div className="w-full h-full flex flex-col">
-              {/* Tombol "Ganti Desain" di pojok kiri atas */}
-              <div className="absolute top-4 left-4 z-10">
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="bg-white shadow border border-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
-                >
-                  <UploadCloud size={15} />
-                  Ganti Desain
-                </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                  accept=".png,.jpg,.jpeg"
-                />
-              </div>
-
-              <CertificateEditorCanvas
-                key={`${tipeSertifikat}-${idTemplate || "new"}-${fileUrl}`}
-                backgroundUrl={fileUrl}
-                initialLayout={layoutData}
-                onLayoutChange={setLayoutData}
-              />
-            </div>
+            <CertificateEditorCanvas
+              key={`${tipeSertifikat}-${idTemplate || "new"}-${fileUrl}`}
+              backgroundUrl={fileUrl}
+              idTemplate={idTemplate}
+              tipeSertifikat={tipeSertifikat}
+              initialLayout={layoutData}
+              onLayoutChange={setLayoutData}
+              onChangeDesign={() => fileInputRef.current?.click()}
+            />
           )}
         </div>
 
         {/* ── Footer ── */}
-        <div className="px-7 py-4 border-t border-gray-100 flex justify-end gap-3 bg-white shrink-0">
+        <div className="px-7 py-4 border-t border-[#E2E8F0] flex justify-end items-center gap-3 bg-white shrink-0">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-xl transition-colors"
+            className="px-6 py-2.5 bg-white hover:bg-gray-50 text-[#1E293B] border border-[#CBD5E1] text-[13.5px] font-semibold rounded-xl transition-colors"
           >
             Batal
           </button>
           <button
             onClick={handleSave}
             disabled={!hasBackground || saving}
-            className="px-6 py-2.5 bg-[#167A61] hover:bg-[#0E5C46] disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition-colors flex items-center gap-2"
+            className="px-6 py-2.5 bg-[#167A61] hover:bg-[#0E5C46] disabled:opacity-50 text-white text-[13.5px] font-semibold rounded-xl transition-colors flex items-center gap-2"
           >
-            {saving
-              ? <><Loader2 size={15} className="animate-spin" /> Menyimpan...</>
-              : "Simpan Template & Layout"
-            }
+            {saving ? (
+              <>
+                <Loader2 size={15} className="animate-spin" /> Menyimpan...
+              </>
+            ) : (
+              <>
+                <Check size={16} strokeWidth={2.5} />
+                Simpan Template & Layout
+              </>
+            )}
           </button>
         </div>
       </div>
+
+      {/* ── Modal Sukses Menyimpan Template ── */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl w-full max-w-[400px] overflow-hidden shadow-2xl border border-[#E2E8F0] animate-in fade-in zoom-in duration-200">
+            <div className="px-8 pt-8 pb-6 flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-[#E8F5F1] rounded-full flex items-center justify-center mb-5 ring-8 ring-[#167A61]/5">
+                <CheckCircle2 size={32} className="text-[#167A61]" strokeWidth={2.2} />
+              </div>
+
+              <h3 className="text-[17px] font-bold text-[#0F172A] mb-2">
+                Template Berhasil Disimpan!
+              </h3>
+              <p className="text-[13px] text-[#64748B] leading-relaxed">
+                Konfigurasi desain dan tata letak elemen untuk{" "}
+                <span className="font-semibold text-[#1E293B]">{activeTabLabel}</span>{" "}
+                telah berhasil disimpan dan diperbarui.
+              </p>
+            </div>
+
+            <div className="px-8 pb-7 flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full py-3 bg-[#167A61] hover:bg-[#0E5C46] text-white text-[13px] font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Check size={15} strokeWidth={2.5} />
+                Oke, Mengerti
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  onClose();
+                }}
+                className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-[#475569] text-[13px] font-semibold rounded-xl transition-colors cursor-pointer"
+              >
+                Selesai & Tutup Editor
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

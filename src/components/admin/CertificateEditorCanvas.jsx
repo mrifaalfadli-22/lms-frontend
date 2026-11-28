@@ -15,6 +15,8 @@ import {
   Download,
   Loader2,
   FileText,
+  Check,
+  ImagePlus,
 } from "lucide-react";
 import api from "../../config/api";
 import { A4_WIDTH, A4_HEIGHT } from "../../config/certificateConstants";
@@ -63,14 +65,21 @@ export default function CertificateEditorCanvas({
   initialLayout,
   onLayoutChange,
   onChangeDesign,
+  sponsorLogos = [],
+  uploadingLogo = false,
+  deletingLogoId = null,
+  onUploadLogos,
+  onDeleteLogo,
 }) {
   const wrapperRef = useRef(null);
+  const logoInputRef = useRef(null);
   const cardRefs = useRef({});
   const activeGuidesRef = useRef({ x: null, y: null });
   const dragCleanupRef = useRef(null);
   const [fitScale, setFitScale] = useState(0.85);
   const [customScale, setCustomScale] = useState(null);
   const [expandedIds, setExpandedIds] = useState([]);
+  const [isImagesCardExpanded, setIsImagesCardExpanded] = useState(true);
   const [selectedId, setSelectedId] = useState(null);
   const [showGuides, setShowGuides] = useState(true);
   const [activeGuides, setActiveGuides] = useState({ x: null, y: null });
@@ -124,6 +133,16 @@ export default function CertificateEditorCanvas({
 
   const handleSelectFromCanvas = (id) => {
     setSelectedId(id);
+    if (String(id).startsWith("logo_")) {
+      setIsImagesCardExpanded(true);
+      setTimeout(() => {
+        cardRefs.current["sponsor_logos_card"]?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 60);
+      return;
+    }
     setExpandedIds([id]);
     setTimeout(() => {
       cardRefs.current[id]?.scrollIntoView({
@@ -544,14 +563,77 @@ export default function CertificateEditorCanvas({
     window.addEventListener("pointercancel", onPointerUp);
   };
 
-  // Urutkan elemen di sidebar sesuai urutan pada contoh gambar
-  const sortedSidebarElements = [...elements].sort((a, b) => {
-    const idxA = SIDEBAR_ORDER.indexOf(a.id);
-    const idxB = SIDEBAR_ORDER.indexOf(b.id);
-    const orderA = idxA === -1 ? 999 : idxA;
-    const orderB = idxB === -1 ? 999 : idxB;
-    return orderA - orderB;
-  });
+  // Sinkronkan perubahan galeri logo sponsor global ke dalam state elements
+  useEffect(() => {
+    if (!Array.isArray(sponsorLogos)) return;
+    setElements((prev) => {
+      const nonLogo = prev.filter(
+        (item) =>
+          item.type !== "image" && !String(item.id || "").startsWith("logo_")
+      );
+      const initialList = Array.isArray(initialLayout) ? initialLayout : [];
+
+      const logoItems = sponsorLogos.map((logo, idx) => {
+        const elId = `logo_${logo.id_logo}`;
+        const existing =
+          prev.find(
+            (item) => item.id === elId || item.logoId === logo.id_logo
+          ) ||
+          initialList.find(
+            (item) => item.id === elId || item.logoId === logo.id_logo
+          );
+
+        if (existing) {
+          return {
+            ...existing,
+            id: elId,
+            type: "image",
+            logoId: logo.id_logo,
+            label: `[LOGO_${idx + 1}]`,
+            namaFile: logo.nama_file,
+            imageUrl: logo.url,
+            downloadUrl: logo.download_url,
+          };
+        }
+
+        return {
+          id: elId,
+          type: "image",
+          logoId: logo.id_logo,
+          label: `[LOGO_${idx + 1}]`,
+          namaFile: logo.nama_file,
+          imageUrl: logo.url,
+          downloadUrl: logo.download_url,
+          x: Math.max(80, 920 - idx * 125),
+          y: 75,
+          width: 110,
+          height: 110,
+          isHidden: false,
+        };
+      });
+
+      const merged = [...nonLogo, ...logoItems];
+      if (onLayoutChange) onLayoutChange(merged);
+      return merged;
+    });
+  }, [sponsorLogos]); // eslint-disable-line
+
+  // Urutkan elemen teks di sidebar sesuai urutan pada contoh gambar
+  const sortedSidebarElements = [...elements]
+    .filter(
+      (el) => el.type !== "image" && !String(el.id || "").startsWith("logo_")
+    )
+    .sort((a, b) => {
+      const idxA = SIDEBAR_ORDER.indexOf(a.id);
+      const idxB = SIDEBAR_ORDER.indexOf(b.id);
+      const orderA = idxA === -1 ? 999 : idxA;
+      const orderB = idxB === -1 ? 999 : idxB;
+      return orderA - orderB;
+    });
+
+  const logoElements = elements.filter(
+    (el) => el.type === "image" || String(el.id || "").startsWith("logo_")
+  );
 
   // Bersihkan blob URL saat unmount atau berubah
   useEffect(() => {
@@ -701,6 +783,35 @@ export default function CertificateEditorCanvas({
       // Render setiap elemen aktif dengan data statis
       for (const el of elements) {
         if (el.isHidden) continue;
+
+        if (el.type === "image" || String(el.id || "").startsWith("logo_")) {
+          const logoSrc = el.downloadUrl || el.imageUrl;
+          if (!logoSrc) continue;
+          try {
+            let logoImg;
+            try {
+              logoImg = await loadBgImage(logoSrc);
+            } catch {
+              if (el.imageUrl && el.imageUrl !== logoSrc) {
+                logoImg = await loadBgImage(el.imageUrl);
+              }
+            }
+            if (logoImg) {
+              const fitRatio = Math.min(
+                el.width / logoImg.width,
+                el.height / logoImg.height
+              );
+              const drawW = logoImg.width * fitRatio;
+              const drawH = logoImg.height * fitRatio;
+              const drawX = el.x + (el.width - drawW) / 2;
+              const drawY = el.y + (el.height - drawH) / 2;
+              ctx.drawImage(logoImg, drawX, drawY, drawW, drawH);
+            }
+          } catch (e) {
+            console.warn("Gagal me-render logo pada preview PDF:", e);
+          }
+          continue;
+        }
 
         if (el.id === "qr_code") {
           drawStaticQrCode(ctx, el.x, el.y, el.width, el.height);
@@ -1107,7 +1218,26 @@ export default function CertificateEditorCanvas({
                           : "border border-transparent hover:border-dashed hover:border-[#167A61]/60 hover:bg-[#167A61]/5"
                       }`}
                     >
-                      {el.id === "qr_code" ? (
+                      {el.type === "image" ||
+                      String(el.id || "").startsWith("logo_") ? (
+                        <div
+                          onPointerDown={(e) => startElementDrag(e, el)}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            userSelect: "none",
+                            touchAction: "none",
+                          }}
+                          className="p-1 flex items-center justify-center w-full h-full"
+                        >
+                          <img
+                            src={el.imageUrl}
+                            alt={el.namaFile || el.label}
+                            draggable={false}
+                            className="w-full h-full object-contain pointer-events-none select-none"
+                          />
+                        </div>
+                      ) : el.id === "qr_code" ? (
                         <div
                           onPointerDown={(e) => startElementDrag(e, el)}
                           style={{
@@ -1197,6 +1327,195 @@ export default function CertificateEditorCanvas({
 
         {/* Sidebar Element Cards */}
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 bg-[#F8FAFC]/60">
+          {/* ── Card Gambar / Logo Sponsor (Sekali Upload untuk 3 Sertifikat) ── */}
+          <div
+            ref={(node) => {
+              cardRefs.current["sponsor_logos_card"] = node;
+            }}
+            className={`bg-white border rounded-xl overflow-hidden shadow-sm transition-all shrink-0 ${
+              String(selectedId || "").startsWith("logo_")
+                ? "border-[#167A61] ring-2 ring-[#167A61]/15"
+                : "border-[#E2E8F0] hover:border-[#CBD5E1]"
+            }`}
+          >
+            {/* Header Card Gambar */}
+            <div
+              onClick={() => setIsImagesCardExpanded((prev) => !prev)}
+              className="px-4 py-3 border-b border-[#F1F5F9] flex items-center justify-between cursor-pointer select-none"
+            >
+              <div className="flex items-center gap-2">
+                <ImagePlus size={15} className="text-[#167A61] shrink-0" />
+                <span className="text-[12.5px] font-bold text-[#0F172A]">
+                  Gambar / Logo
+                </span>
+                {logoElements.length > 0 && (
+                  <span className="bg-[#E8F5F1] text-[#167A61] text-[10.5px] font-bold px-2 py-0.5 rounded-full">
+                    {logoElements.filter((l) => !l.isHidden).length}/
+                    {logoElements.length} Aktif
+                  </span>
+                )}
+              </div>
+              <button
+                type="button"
+                className="text-[11.5px] font-medium text-[#167A61] hover:text-[#0E5C46] flex items-center gap-1 cursor-pointer"
+              >
+                {isImagesCardExpanded ? (
+                  <>
+                    <span>Tutup</span>
+                    <ChevronUp size={14} />
+                  </>
+                ) : (
+                  <>
+                    <span>Buka</span>
+                    <ChevronDown size={14} />
+                  </>
+                )}
+              </button>
+            </div>
+
+            {isImagesCardExpanded && (
+              <div className="p-4">
+                {/* Input File Tersembunyi (Multiple) */}
+                <input
+                  type="file"
+                  ref={logoInputRef}
+                  multiple
+                  accept=".jpg,.jpeg,.png"
+                  onChange={(e) => {
+                    if (e.target.files?.length && onUploadLogos) {
+                      onUploadLogos(e.target.files);
+                      e.target.value = "";
+                    }
+                  }}
+                  className="hidden"
+                />
+
+                {/* Area Dropzone Upload Gambar */}
+                <div
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (e.dataTransfer.files?.length && onUploadLogos) {
+                      onUploadLogos(e.dataTransfer.files);
+                    }
+                  }}
+                  onClick={() => !uploadingLogo && logoInputRef.current?.click()}
+                  className="border border-dashed border-[#CBD5E1] bg-[#F8FAFC] hover:bg-[#F1F5F9]/80 rounded-xl px-4 py-5 flex flex-col items-center justify-center text-center cursor-pointer transition-colors"
+                >
+                  <button
+                    type="button"
+                    disabled={uploadingLogo}
+                    className="bg-white hover:bg-gray-50 text-[#0F172A] border border-[#E2E8F0] shadow-sm rounded-xl px-4 py-2 text-[12.5px] font-bold flex items-center gap-2 mb-2.5 cursor-pointer disabled:opacity-60"
+                  >
+                    {uploadingLogo ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin text-[#167A61]" />
+                        <span>Mengunggah...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Upload size={14} strokeWidth={2.2} className="text-[#0F172A]" />
+                        <span>Upload</span>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-[11.5px] font-medium text-[#334155]">
+                    Pilih gambar atau drag & drop di sini.
+                  </p>
+                  <p className="text-[10.5px] text-[#94A3B8] mt-0.5">
+                    JPG, JPEG, dan PNG. Maks 5 MB.
+                  </p>
+                </div>
+
+                {/* Grid 4 Kolom Thumbnail Gambar + Slot Placeholder */}
+                <div className="grid grid-cols-4 gap-2.5 mt-3.5">
+                  {logoElements.map((logoEl) => {
+                    const isVisible = !logoEl.isHidden;
+                    const isActiveSelected = selectedId === logoEl.id && isVisible;
+                    const isDeleting = deletingLogoId === logoEl.logoId;
+
+                    return (
+                      <div
+                        key={logoEl.id}
+                        title={
+                          isVisible
+                            ? `${logoEl.namaFile || logoEl.label} (Klik untuk sembunyikan di sertifikat ini)`
+                            : `${logoEl.namaFile || logoEl.label} (Klik untuk tampilkan di sertifikat ini)`
+                        }
+                        onClick={() => {
+                          const nextHidden = !logoEl.isHidden;
+                          updateElement(logoEl.id, { isHidden: nextHidden });
+                          if (!nextHidden) {
+                            setSelectedId(logoEl.id);
+                          } else if (selectedId === logoEl.id) {
+                            setSelectedId(null);
+                          }
+                        }}
+                        className={`relative group aspect-square rounded-xl overflow-hidden border transition-all cursor-pointer flex items-center justify-center p-1.5 ${
+                          isVisible
+                            ? isActiveSelected
+                              ? "border-[#167A61] ring-2 ring-[#167A61] bg-white shadow-sm"
+                              : "border-[#167A61]/70 ring-1 ring-[#167A61]/25 bg-white"
+                            : "border-[#E2E8F0] bg-[#F8FAFC] opacity-45 hover:opacity-75"
+                        }`}
+                      >
+                        <img
+                          src={logoEl.imageUrl}
+                          alt={logoEl.namaFile || logoEl.label}
+                          draggable={false}
+                          className="w-full h-full object-contain select-none"
+                        />
+
+                        {/* Indikator aktif (ditampilkan di canvas) */}
+                        {isVisible && (
+                          <span className="absolute bottom-1 left-1 w-4 h-4 rounded-full bg-[#167A61] text-white flex items-center justify-center shadow-sm">
+                            <Check size={10} strokeWidth={3} />
+                          </span>
+                        )}
+
+                        {/* Tombol Hapus (×) di pojok kanan atas */}
+                        <button
+                          type="button"
+                          title="Hapus gambar dari semua sertifikat"
+                          disabled={isDeleting}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onDeleteLogo) onDeleteLogo(logoEl.logoId);
+                          }}
+                          className="absolute top-1 right-1 w-5 h-5 rounded-md bg-black/40 hover:bg-[#EF4444] group-hover:bg-[#EF4444] text-white flex items-center justify-center transition-colors shadow-sm cursor-pointer"
+                        >
+                          {isDeleting ? (
+                            <Loader2 size={11} className="animate-spin" />
+                          ) : (
+                            <X size={12} strokeWidth={2.5} />
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  {/* Slot Kosong Abu-abu agar minimal 4 kotak seperti contoh gambar */}
+                  {Array.from({
+                    length: Math.max(0, 4 - logoElements.length),
+                  }).map((_, idx) => (
+                    <div
+                      key={`empty-slot-${idx}`}
+                      onClick={() => !uploadingLogo && logoInputRef.current?.click()}
+                      className="aspect-square rounded-xl bg-[#F1F5F9] hover:bg-[#E2E8F0]/60 transition-colors cursor-pointer"
+                    />
+                  ))}
+                </div>
+
+                {logoElements.length > 0 && (
+                  <p className="text-[10.5px] text-[#94A3B8] mt-2.5 leading-snug">
+                    Klik thumbnail untuk menampilkan/menyembunyikan logo di sertifikat ini, atau klik{" "}
+                    <b className="text-[#EF4444]">×</b> untuk menghapus permanen.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
           {sortedSidebarElements.map((el) => {
             const isExpanded = expandedIds.includes(el.id);
             const isSelected = !el.isHidden && selectedId === el.id;
@@ -1414,7 +1733,7 @@ export default function CertificateEditorCanvas({
       {/* ── Jendela Modal Preview PDF Sertifikat ── */}
       {previewPdfUrl && (
         <div className="fixed inset-0 z-[1005] flex items-center justify-center bg-black/55 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-[90vw] max-w-[1180px] h-[88vh] flex flex-col overflow-hidden border border-[#E2E8F0] animate-in fade-in zoom-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-[94vw] max-w-[1360px] h-[92vh] flex flex-col overflow-hidden border border-[#E2E8F0] animate-in fade-in zoom-in duration-200">
             {/* Header Jendela PDF */}
             <div className="px-6 py-3.5 border-b border-[#E2E8F0] flex items-center justify-between bg-white shrink-0">
               <div className="flex items-center gap-3">

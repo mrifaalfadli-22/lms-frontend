@@ -150,6 +150,38 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
       for (const el of elements) {
         if (el.isHidden) continue;
 
+        if (el.type === "image" || String(el.id || "").startsWith("logo_")) {
+          const baseUrl = api.defaults?.baseURL
+            ? api.defaults.baseURL.replace("/api", "")
+            : "";
+          const corsLogoUrl =
+            el.downloadUrl ||
+            (el.logoId && baseUrl
+              ? `${baseUrl}/api/template-sertifikat/logos/${el.logoId}/download`
+              : el.imageUrl);
+          if (!corsLogoUrl) continue;
+
+          await new Promise((resolve) => {
+            const logoImg = new Image();
+            logoImg.crossOrigin = "anonymous";
+            logoImg.onload = () => {
+              const fitRatio = Math.min(
+                el.width / logoImg.width,
+                el.height / logoImg.height
+              );
+              const drawW = logoImg.width * fitRatio;
+              const drawH = logoImg.height * fitRatio;
+              const drawX = el.x + (el.width - drawW) / 2;
+              const drawY = el.y + (el.height - drawH) / 2;
+              ctx.drawImage(logoImg, drawX, drawY, drawW, drawH);
+              resolve();
+            };
+            logoImg.onerror = () => resolve();
+            logoImg.src = corsLogoUrl;
+          });
+          continue;
+        }
+
         if (el.id === 'qr_code') {
           await new Promise((resolve) => {
             const qr = new Image();
@@ -365,6 +397,34 @@ export default function LihatSertifikatModal({ isOpen, onClose, data }) {
                 {/* Text overlays — koordinat identik dengan editor */}
                 {layoutElements.map((el) => {
                   if (el.isHidden) return null;
+
+                  if (el.type === "image" || String(el.id || "").startsWith("logo_")) {
+                    return (
+                      <div
+                        key={el.id}
+                        style={{
+                          position: "absolute",
+                          left: el.x,
+                          top: el.y,
+                          width: el.width,
+                          height: el.height,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <img
+                          src={el.imageUrl || el.downloadUrl}
+                          alt={el.namaFile || el.label}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "contain",
+                          }}
+                        />
+                      </div>
+                    );
+                  }
                   
                   if (el.id === 'qr_code') {
                     return (

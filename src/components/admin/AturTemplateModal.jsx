@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { UploadCloud, X, File, FileText, Check, CheckCircle2, Loader2 } from "lucide-react";
 import CertificateEditorCanvas from "./CertificateEditorCanvas";
+import api from "../../config/api";
 
 const DEFAULT_LAYOUT = [
   { id: "nama_peserta",      label: "[NAMA_PESERTA]",      x: 361, y: 320, width: 400, height: 60,  fontSize: 32, color: "#000000", fontWeight: "bold",     fontFamily: "Playfair Display", textAlign: "center", isHidden: false },
@@ -21,6 +22,54 @@ const TABS = [
   { id: "nilai",     label: "Transkrip Nilai" },
 ];
 
+/**
+ * Gabungkan daftar logo sponsor global ke dalam layoutData sertifikat aktif.
+ * Mempertahankan posisi/ukuran/isHidden logo jika sudah pernah diatur di tab ini.
+ */
+function mergeLogosWithLayout(baseLayout, logosList = []) {
+  const safeBase = Array.isArray(baseLayout) ? baseLayout : DEFAULT_LAYOUT;
+  const nonLogoItems = safeBase.filter(
+    (item) => item.type !== "image" && !String(item.id || "").startsWith("logo_")
+  );
+
+  const logoItems = logosList.map((logo, idx) => {
+    const elId = `logo_${logo.id_logo}`;
+    const existing = safeBase.find(
+      (item) => item.id === elId || item.logoId === logo.id_logo
+    );
+
+    if (existing) {
+      return {
+        ...existing,
+        id: elId,
+        type: "image",
+        logoId: logo.id_logo,
+        label: `[LOGO_${idx + 1}]`,
+        namaFile: logo.nama_file,
+        imageUrl: logo.url,
+        downloadUrl: logo.download_url,
+      };
+    }
+
+    return {
+      id: elId,
+      type: "image",
+      logoId: logo.id_logo,
+      label: `[LOGO_${idx + 1}]`,
+      namaFile: logo.nama_file,
+      imageUrl: logo.url,
+      downloadUrl: logo.download_url,
+      x: Math.max(80, 920 - idx * 125),
+      y: 75,
+      width: 110,
+      height: 110,
+      isHidden: false,
+    };
+  });
+
+  return [...nonLogoItems, ...logoItems];
+}
+
 export default function AturTemplateModal({ isOpen, onClose, onSave, activeTemplates }) {
   const [tipeSertifikat, setTipeSertifikat] = useState("pelatihan");
   const [file, setFile]         = useState(null);        // File baru yang dipilih user
@@ -29,12 +78,24 @@ export default function AturTemplateModal({ isOpen, onClose, onSave, activeTempl
   const [idTemplate, setIdTemplate] = useState(null);
   const [saving, setSaving]     = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Galeri Logo Sponsor Global (sekali upload berlaku untuk ketiga sertifikat)
+  const [sponsorLogos, setSponsorLogos] = useState([]);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [deletingLogoId, setDeletingLogoId] = useState(null);
+
   const fileInputRef = useRef(null);
 
-  // Setiap kali tab berubah atau modal terbuka → load template dari activeTemplates
+  // Muat daftar logo sponsor global saat modal dibuka
   useEffect(() => {
     if (!isOpen) return;
-    loadTab(tipeSertifikat);
+    fetchSponsorLogos();
+  }, [isOpen]);
+
+  // Setiap kali tab berubah, modal terbuka, atau daftar template/logo berubah → load tab
+  useEffect(() => {
+    if (!isOpen) return;
+    loadTab(tipeSertifikat, sponsorLogos);
   }, [isOpen, tipeSertifikat, activeTemplates]); // eslint-disable-line
 
   // Bersihkan state saat modal ditutup
@@ -56,45 +117,115 @@ export default function AturTemplateModal({ isOpen, onClose, onSave, activeTempl
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  const loadTab = (type) => {
+  const fetchSponsorLogos = async () => {
+    try {
+      const res = await api.get("/template-sertifikat/logos");
+      if (res.data?.status === "success") {
+        const list = res.data.data || [];
+        setSponsorLogos(list);
+        setLayoutData((prev) => mergeLogosWithLayout(prev, list));
+      }
+    } catch (err) {
+      console.error("Gagal memuat galeri logo:", err);
+    }
+  };
+
+  const loadTab = (type, currentLogos = sponsorLogos) => {
     // Reset ke default dulu
     setFile(null);
     setIdTemplate(null);
-    setLayoutData(DEFAULT_LAYOUT);
 
     if (!activeTemplates || activeTemplates.length === 0) {
       setFileUrl(null);
+      setLayoutData(mergeLogosWithLayout(DEFAULT_LAYOUT, currentLogos));
       return;
     }
 
-    const tmpl = activeTemplates.find(t => t.tipe_sertifikat === type);
+    const tmpl = activeTemplates.find((t) => t.tipe_sertifikat === type);
     if (!tmpl) {
       setFileUrl(null);
+      setLayoutData(mergeLogosWithLayout(DEFAULT_LAYOUT, currentLogos));
       return;
     }
 
-    // Gunakan background_url (URL publik langsung) — tidak perlu download via API
     const bgUrl = tmpl.background_url || null;
     setFileUrl(bgUrl);
     setIdTemplate(tmpl.id_template);
 
-    // Layout data — fallback ke default jika null/kosong
     const parsed = tmpl.layout_data
-      ? (typeof tmpl.layout_data === "string" ? JSON.parse(tmpl.layout_data) : tmpl.layout_data)
+      ? typeof tmpl.layout_data === "string"
+        ? JSON.parse(tmpl.layout_data)
+        : tmpl.layout_data
       : null;
 
-    let finalLayout = DEFAULT_LAYOUT;
+    let finalLayout = [...DEFAULT_LAYOUT];
     if (parsed && Array.isArray(parsed) && parsed.length > 0) {
       finalLayout = [...parsed];
-      // Tambahkan item baru dari DEFAULT_LAYOUT yang belum ada di database
-      DEFAULT_LAYOUT.forEach(defItem => {
-        if (!finalLayout.find(item => item.id === defItem.id)) {
+      DEFAULT_LAYOUT.forEach((defItem) => {
+        if (!finalLayout.find((item) => item.id === defItem.id)) {
           finalLayout.push(defItem);
         }
       });
     }
 
-    setLayoutData(finalLayout);
+    setLayoutData(mergeLogosWithLayout(finalLayout, currentLogos));
+  };
+
+  const handleUploadLogos = async (filesList) => {
+    const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+    const rawFiles = Array.from(filesList || []);
+    const oversized = rawFiles.some((f) => f.size > MAX_SIZE_BYTES);
+    if (oversized) {
+      alert("Ukuran file gambar maksimal 5 MB.");
+      return;
+    }
+
+    const validFiles = rawFiles.filter((f) =>
+      ["image/jpeg", "image/jpg", "image/png"].includes(f.type)
+    );
+    if (validFiles.length === 0) {
+      alert("Format file hanya mendukung JPG, JPEG, dan PNG.");
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      validFiles.forEach((f) => formData.append("files[]", f));
+
+      const res = await api.post("/template-sertifikat/logos", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (res.data?.status === "success") {
+        const updatedLogos = res.data.data || [];
+        setSponsorLogos(updatedLogos);
+        setLayoutData((prev) => mergeLogosWithLayout(prev, updatedLogos));
+      }
+    } catch (err) {
+      console.error("Gagal mengunggah logo sponsor:", err);
+      alert("Gagal mengunggah gambar logo. Pastikan format JPG, JPEG, atau PNG dan ukuran maks 5 MB.");
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleDeleteLogo = async (idLogo) => {
+    if (!idLogo || deletingLogoId) return;
+    setDeletingLogoId(idLogo);
+    try {
+      const res = await api.delete(`/template-sertifikat/logos/${idLogo}`);
+      if (res.data?.status === "success") {
+        const remainingLogos = res.data.data || [];
+        setSponsorLogos(remainingLogos);
+        setLayoutData((prev) => mergeLogosWithLayout(prev, remainingLogos));
+      }
+    } catch (err) {
+      console.error("Gagal menghapus logo sponsor:", err);
+      alert("Gagal menghapus gambar logo.");
+    } finally {
+      setDeletingLogoId(null);
+    }
   };
 
   const handleFileChange = (e) => {
@@ -223,6 +354,11 @@ export default function AturTemplateModal({ isOpen, onClose, onSave, activeTempl
               initialLayout={layoutData}
               onLayoutChange={setLayoutData}
               onChangeDesign={() => fileInputRef.current?.click()}
+              sponsorLogos={sponsorLogos}
+              uploadingLogo={uploadingLogo}
+              deletingLogoId={deletingLogoId}
+              onUploadLogos={handleUploadLogos}
+              onDeleteLogo={handleDeleteLogo}
             />
           )}
         </div>
